@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Checks every trail in a region's trail pack against official trail lists (read-only: changes nothing).
 
-    check_official_trails.py <region.trails> <state name> [report.md]
+    check_official_trails.py <region.trails> <region.json> [report.md] [summary.json]
 
-Official lists (public ArcGIS services): the USGS National Digital Trails, the Forest Service, the National Park
-Service, and the state and local lists in STATE_SOURCES. Each trail in the pack is matched by shape (the share of its
+Official lists (public ArcGIS services): in the US the USGS National Digital Trails, the Forest Service and the
+National Park Service; in Canada Parks Canada and the Trans Canada Trail; plus, for every state or province, the trail
+lists its agencies publish (state parks, conservation, provincial parks, cities), found in ArcGIS Online's public
+catalogue, and the hand-picked ones in STATE_SOURCES. Each trail in the pack is matched by shape (the share of its
 line within 25 m of the official lines); the report says, for named and unnamed trails, which lists confirm them and
 under what name, and lists the official trails in the state that the pack is missing.
 """
-import json, os, sys, time, urllib.parse, urllib.request, zlib
+import json, math, os, sys, time, urllib.parse, urllib.request, zlib
 from collections import Counter, defaultdict
 
-from shapely.geometry import Point, shape
+from shapely.geometry import Point, box, shape
+from shapely.ops import unary_union
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_trail_pack import decode, dist, length  # noqa: E402
@@ -20,7 +23,7 @@ NEAR_M = 25
 CONFIRM = 0.7      # this share of a trail on official lines: the same trail
 TILE = 0.25
 
-NATIONAL = [
+NATIONAL_US = [
     # (label, layer url, name fields, number fields, detail fields)
     ("USGS National Digital Trails", "https://partnerships.nationalmap.gov/arcgis/rest/services/USGSTrails/MapServer/0",
      ["name"], ["trailnumber"], ["primarytrailmaintainer", "sourceoriginator"]),
@@ -29,6 +32,8 @@ NATIONAL = [
     ("National Park Service", "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer/0",
      ["trlname", "maplabel"], [], ["unitname", "trltype"]),
 ]
+NATIONAL = {"US": NATIONAL_US, "CA": []}   # Canada's national lists are found in the catalogue (CANADA_WORDS)
+CANADA_WORDS = ["Parks Canada trails", "Trans Canada Trail"]
 STATE_SOURCES = {
     "Missouri": [
         ("Missouri State Parks", "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/MissouriStateParkTrailGuide/FeatureServer/2",
@@ -40,6 +45,12 @@ STATE_SOURCES = {
     ],
 }
 STATES = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer"
+CATALOGUE = "https://www.arcgis.com/sharing/rest/search"
+NAME_FIELDS = ["trail_name", "trailname", "trlname", "trl_name", "trail_nm", "name", "trail", "maplabel", "label",
+               "name_en", "nom", "name1", "full_name"]
+DETAIL_FIELDS = ["park_name", "area_name", "unitname", "parkname", "park", "site_name", "property", "managing_agency",
+                 "agency", "owner", "jurisdiction"]
+TRAILISH = ("trail", "path", "sentier", "greenway", "hik")
 
 def get(url, params, tries=4):
     for attempt in range(tries):
@@ -51,54 +62,132 @@ def get(url, params, tries=4):
                 raise
             time.sleep(5 * (attempt + 1))
 
-def state_shape(name):
-    layers = get(STATES, {"f": "json"})["layers"]
-    lid = next(l["id"] for l in layers if l["name"].lower() == "states")
-    data = get(f"{STATES}/{lid}/query", {"where": f"NAME='{name}'", "outFields": "NAME", "returnGeometry": "true",
-                                         "outSR": 4326, "f": "geojson"})
-    return shape(data["features"][0]["geometry"])
+def region_area(region):
+    """The state's outline from the Census in the US; elsewhere the 1° squares the region's pack covers."""
+    if region.get("country", "US") == "US":
+        try:
+            layers = get(STATES, {"f": "json"})["layers"]
+            lid = next(l["id"] for l in layers if l["name"].lower() == "states")
+            data = get(f"{STATES}/{lid}/query", {"where": f"NAME='{region['name']}'", "outFields": "NAME",
+                                                 "returnGeometry": "true", "outSR": 4326, "f": "geojson"})
+            return shape(data["features"][0]["geometry"]), "Census outline"
+        except Exception as ex:
+            print(f"  no Census outline ({ex}); using the pack's squares")
+    squares = [box(int(c.split("_")[1]), int(c.split("_")[0]), int(c.split("_")[1]) + 1, int(c.split("_")[0]) + 1)
+               for c in region.get("coverage", [])]
+    return unary_union(squares), "the pack's 1° squares"
+
+def squares_of(area):
+    """1° squares (south, west) that touch the area."""
+    w, s, e, n = area.bounds
+    out = []
+    for lat in range(math.floor(s), math.ceil(n)):
+        for lon in range(math.floor(w), math.ceil(e)):
+            if area.intersects(box(lon, lat, lon + 1, lat + 1)):
+                out.append((lat, lon))
+    return out
+
+def layer_source(label, url, info):
+    fields = {f["name"].lower(): f["name"] for f in info.get("fields", [])}
+    name_f = [f for f in NAME_FIELDS if f in fields]
+    if not name_f:
+        return None
+    return (label, url, name_f[:1] + [f for f in ("maplabel",) if f in fields and f not in name_f[:1]],
+            [f for f in ("trail_no", "trailnumber", "trail_number", "trlnumber") if f in fields],
+            [f for f in DETAIL_FIELDS if f in fields][:1])
+
+def count_in(url, area):
+    w, s, e, n = area.bounds
+    try:
+        return get(url + "/query", {"where": "1=1", "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope",
+                                   "inSR": 4326, "spatialRel": "esriSpatialRelIntersects", "returnCountOnly": "true",
+                                   "f": "json"}, tries=2).get("count") or 0
+    except Exception:
+        return 0
+
+def discover(region, area, known_urls):
+    """Trail layers the region's agencies publish, from ArcGIS Online's public catalogue."""
+    name = region["name"].split(",")[0]
+    if region.get("country") == "CA-national":
+        words = [name]
+    elif region.get("country", "US") == "US":
+        words = [f"{name} state park trails", f"{name} trails", f"{name} conservation trails"]
+    else:
+        words = [f"{name} trails", f"{name} provincial park trails", f"{name} sentiers"]
+    found = []
+    for q in words:
+        try:
+            res = get(CATALOGUE, {"q": f'{q} (type:"Feature Service" OR type:"Map Service")', "num": 30, "f": "json"}, tries=2)
+        except Exception:
+            continue
+        for item in res.get("results", []):
+            url = (item.get("url") or "").rstrip("/")
+            if not url or url in known_urls:
+                continue
+            known_urls.add(url)
+            try:
+                info = get(url, {"f": "json"}, tries=2)
+            except Exception:
+                continue
+            layers = [(f"{url}/{l['id']}", l) for l in info.get("layers", []) or []] if "layers" in info else [(url, info)]
+            for lurl, l in layers:
+                if l.get("geometryType") != "esriGeometryPolyline" or not any(w in l.get("name", "").lower() for w in TRAILISH):
+                    continue
+                try:
+                    linfo = get(lurl, {"f": "json"}, tries=2)
+                except Exception:
+                    continue
+                src = layer_source(f"{item.get('title')} [{item.get('owner')}]", lurl, linfo)
+                n = count_in(lurl, area) if src else 0
+                if src and n >= 10:
+                    found.append((n, src))
+    found.sort(key=lambda x: -x[0])
+    return [src for _, src in found[:8]]
 
 def pick(attrs, keys):
     for k in keys:
-        v = attrs.get(k)
+        v = attrs.get(k.lower())
         if v not in (None, "", " "):
             return str(v).strip()
     return ""
 
-def fetch(source, box):
+def fetch(source, area):
     label, url, name_f, no_f, detail_f = source
-    s, w, n, e = box
     seen, out = set(), []
-    lat = s
-    while lat < n:
-        lon = w
-        while lon < e:
-            env = f"{lon},{lat},{min(lon + TILE, e)},{min(lat + TILE, n)}"
-            offset = 0
-            while True:
-                data = get(url + "/query", {
-                    "where": "1=1", "geometry": env, "geometryType": "esriGeometryEnvelope", "inSR": 4326,
-                    "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "true",
-                    "outSR": 4326, "f": "json", "resultOffset": offset, "resultRecordCount": 1000})
-                feats = data.get("features", [])
-                new = 0
-                for f in feats:
-                    a = {k.lower(): v for k, v in f["attributes"].items()}
-                    lines = [[(p[1], p[0]) for p in path] for path in (f.get("geometry") or {}).get("paths", [])]
-                    if not lines:
-                        continue
-                    key = (pick(a, name_f), tuple(round(c, 5) for c in lines[0][0]), len(lines[0]))
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    new += 1
-                    out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
-                                "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines})
-                if not data.get("exceededTransferLimit") or not feats or not new:
-                    break
-                offset += len(feats)
-            lon += TILE
-        lat += TILE
+    def grab(w, s, e, n, depth=0):
+        offset = 0
+        while True:
+            data = get(url + "/query", {
+                "where": "1=1", "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
+                "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "true",
+                "outSR": 4326, "f": "json", "resultOffset": offset, "resultRecordCount": 1000})
+            if "error" in data:
+                raise RuntimeError(data["error"].get("message"))
+            feats = data.get("features", [])
+            new = 0
+            for f in feats:
+                a = {k.lower(): v for k, v in f["attributes"].items()}
+                lines = [[(p[1], p[0]) for p in path] for path in (f.get("geometry") or {}).get("paths", [])]
+                if not lines:
+                    continue
+                key = (pick(a, name_f), tuple(round(c, 5) for c in lines[0][0]), len(lines[0]))
+                if key in seen:
+                    continue
+                seen.add(key)
+                new += 1
+                out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
+                            "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines})
+            if not data.get("exceededTransferLimit") or not feats:
+                return
+            if not new:          # the service ignores paging: split the square instead
+                if depth < 4:
+                    mx, my = (w + e) / 2, (s + n) / 2
+                    for q in ((w, s, mx, my), (mx, s, e, my), (w, my, mx, n), (mx, my, e, n)):
+                        grab(*q, depth + 1)
+                return
+            offset += len(feats)
+    for lat, lon in squares_of(area):
+        grab(lon, lat, lon + 1, lat + 1)
     return out
 
 def densify(line, step):
@@ -163,24 +252,32 @@ def same_name(a, b):
     return a in b or b in a
 
 def main():
-    pack, state = sys.argv[1], sys.argv[2]
+    pack, region_file = sys.argv[1], sys.argv[2]
     report = sys.argv[3] if len(sys.argv) > 3 else "report.md"
+    summary_file = sys.argv[4] if len(sys.argv) > 4 else "summary.json"
+    region = json.load(open(region_file))
+    state = region["name"]
     header, trails = read_pack(pack)
-    area = state_shape(state)
-    w, s, e, n = area.bounds
-    box = [s, w, n, e]
-    sources = NATIONAL + STATE_SOURCES.get(state, [])
+    area, outline = region_area(region)
+    country = region.get("country", "US")
+    sources = list(NATIONAL.get(country, [])) + STATE_SOURCES.get(state, [])
+    known = {src[1].rsplit("/", 1)[0] for src in sources} | {src[1] for src in sources}
+    if country != "US":
+        for q in CANADA_WORDS:
+            sources += discover({"name": q, "country": "CA-national"}, area, known)
+    sources += discover(region, area, known)
     md = [f"# {state}: trail pack vs official trail lists", ""]
     def say(line=""):
         print(line)
         md.append(line)
+    summary = {"region": region["region"], "name": state, "country": country, "lists": {}}
 
     official, grids = {}, {}
-    say(f"Pack: {len(trails)} trails. Official lists, inside {state}:")
+    say(f"Pack: {len(trails)} trails. Inside {state} ({outline}), official lists:")
     say()
     for src in sources:
         try:
-            feats = fetch(src, box)
+            feats = fetch(src, area)
         except Exception as ex:
             say(f"- **{src[0]}**: couldn't fetch ({ex})")
             continue
@@ -193,6 +290,7 @@ def main():
         grids[src[0]] = g
         miles = sum(length(l) for f in feats for l in f["lines"]) / 1609.34
         say(f"- **{src[0]}**: {len(feats)} pieces, {miles:.0f} mi")
+        summary["lists"][src[0]] = {"pieces": len(feats), "miles": round(miles)}
     say()
 
     # every trail in the pack against every list
@@ -217,6 +315,7 @@ def main():
         conf = [r for r in group if confirmed(r[2])]
         part = [r for r in group if not confirmed(r[2]) and r[2]]
         none = [r for r in group if not r[2]]
+        summary[kind] = {"total": len(group), "confirmed": len(conf), "partly": len(part), "none": len(none)}
         say(f"## {kind}: {len(group)}")
         say(f"- confirmed by at least one official list (≥{CONFIRM:.0%} of the line): **{len(conf)}**")
         say(f"- partly on official trails (30–70%): {len(part)}")
@@ -226,6 +325,7 @@ def main():
         if want:
             nameable = [r for r in conf if any(v[1]["name"] for v in confirmed(r[2]).values())]
             say(f"- **can take an official name: {len(nameable)}**")
+            summary[kind]["nameable"] = len(nameable)
             say()
             for t, _, hits in sorted(nameable, key=lambda r: -r[0]["length"])[:40]:
                 best = max(confirmed(hits).items(), key=lambda kv: (bool(kv[1][1]["name"]), kv[1][0]))
@@ -238,6 +338,7 @@ def main():
             differ = [(t, k, v) for t, _, hits in conf for k, v in confirmed(hits).items()
                       if v[1]["name"] and not same_name(t["name"], v[1]["name"])]
             say(f"- official name differs (per list): {len(differ)}")
+            summary[kind]["name_differs"] = len(differ)
             say()
             for t, k, v in sorted(differ, key=lambda x: -x[0]["length"])[:25]:
                 say(f"  - {t['name']} → {label(v[1])} ({k})")
@@ -265,9 +366,12 @@ def main():
                 missing.append((f, total))
         miles = sum(m[1] for m in missing) / 1609.34
         say(f"- **{name}**: {len(missing)} ({miles:.0f} mi)")
+        summary["lists"].setdefault(name, {})["missing"] = len(missing)
+        summary["lists"][name]["missing_miles"] = round(miles)
         for f, total in sorted(missing, key=lambda m: -m[1])[:10]:
             say(f"  - {label(f)} ({total / 1609.34:.1f} mi{', ' + f['detail'] if f['detail'] else ''}) {link(f['lines'][0][0])}")
     open(report, "w").write("\n".join(md) + "\n")
+    json.dump(summary, open(summary_file, "w"), indent=1)
 
 if __name__ == "__main__":
     main()

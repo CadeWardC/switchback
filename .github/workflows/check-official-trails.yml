@@ -1,18 +1,16 @@
 name: Check trails against official lists (Switchback)
 
-# Read-only report: checks every trail in a state's pack against the official trail lists (USGS, Forest Service,
-# National Park Service, and the state's own; scripts/check_official_trails.py). Changes nothing; the findings are in
-# the job log and in the report-<region> artifact.
+# Read-only report: checks every trail in every area's pack (all US states and Canadian provinces, or the ones named)
+# against the official trail lists: USGS, Forest Service and National Park Service in the US, Parks Canada and the
+# Trans Canada Trail in Canada, and each state's or province's own lists (state parks, conservation, provincial parks,
+# cities). scripts/check_official_trails.py; changes nothing. One report per area, plus a combined summary.
 
 on:
   workflow_dispatch:
     inputs:
-      region:
-        description: "Trail pack to check (e.g. missouri)"
-        default: "missouri"
-      state:
-        description: "State name as the Census spells it"
-        default: "Missouri"
+      only:
+        description: "Areas to check, space separated (empty: all)"
+        default: ""
   push:
     branches: ["**"]
     paths:
@@ -22,25 +20,99 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: check-official-trails
+  cancel-in-progress: true
+
 jobs:
-  check:
+  areas:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      REGION: ${{ inputs.region || 'missouri' }}
-      STATE: ${{ inputs.state || 'Missouri' }}
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+    steps:
+      - id: list
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          curl -fsSL --retry 4 -o regions.json "https://github.com/${{ github.repository }}/releases/download/trails-us/regions.json"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          regions = json.load(open("regions.json"))["regions"]
+          only = os.environ.get("ONLY", "").split()
+          ids = sorted(r for r in regions if not only or r in only)
+          # biggest first, so the long ones start early
+          ids.sort(key=lambda r: -regions[r].get("bytes", 0))
+          print("list=" + json.dumps(ids))
+          PY
+
+  check:
+    needs: areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        region: ${{ fromJSON(needs.areas.outputs.list) }}
     steps:
       - uses: actions/checkout@v4
       - name: Install the builder's helpers
         run: pip install --quiet osmium shapely numpy
       - name: Download the trail pack
-        run: curl -fsSL --retry 4 -o pack.trails "https://github.com/${{ github.repository }}/releases/download/trails-us/$REGION.trails"
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/trails-us"
+          curl -fsSL --retry 4 -o pack.trails "$base/${{ matrix.region }}.trails"
+          curl -fsSL --retry 4 -o regions.json "$base/regions.json"
+          python3 -c "import json; json.dump(json.load(open('regions.json'))['regions']['${{ matrix.region }}'], open('region.json', 'w'))"
       - name: Compare with the official trail lists
-        run: python3 scripts/check_official_trails.py pack.trails "$STATE" "report-$REGION.md"
+        run: |
+          mkdir -p out
+          python3 scripts/check_official_trails.py pack.trails region.json "out/${{ matrix.region }}.md" "out/${{ matrix.region }}.json"
       - name: Save the report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: report-${{ env.REGION }}
-          path: report-*.md
+          name: report-${{ matrix.region }}
+          path: out/
           if-no-files-found: ignore
+
+  combine:
+    needs: check
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          path: out
+          merge-multiple: true
+      - name: Combine
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          rows = [json.load(open(f)) for f in sorted(glob.glob("out/*.json"))]
+          md = ["# All areas: trail packs vs official trail lists", "",
+                "| Area | Lists | Named | confirmed | on no list | Unnamed | confirmed | can take a name | on no list | Official trails missing |",
+                "|---|---|---|---|---|---|---|---|---|---|"]
+          tot = {}
+          for r in rows:
+              n, u = r.get("Named trails", {}), r.get("Unnamed lines", {})
+              lists = len([l for l in r["lists"].values() if l.get("pieces")])
+              miss = sum(l.get("missing", 0) for l in r["lists"].values())
+              miss_mi = sum(l.get("missing_miles", 0) for l in r["lists"].values())
+              md.append(f"| {r['name']} | {lists} | {n.get('total', 0)} | {n.get('confirmed', 0)} | {n.get('none', 0)} | "
+                        f"{u.get('total', 0)} | {u.get('confirmed', 0)} | {u.get('nameable', 0)} | {u.get('none', 0)} | {miss} ({miss_mi} mi) |")
+              for k, v in (("named", n.get("total", 0)), ("named_ok", n.get("confirmed", 0)), ("named_none", n.get("none", 0)),
+                           ("un", u.get("total", 0)), ("un_ok", u.get("confirmed", 0)), ("un_name", u.get("nameable", 0)),
+                           ("un_none", u.get("none", 0)), ("miss", miss), ("miss_mi", miss_mi)):
+                  tot[k] = tot.get(k, 0) + v
+          md.append(f"| **All {len(rows)} areas** | | {tot.get('named', 0)} | {tot.get('named_ok', 0)} | {tot.get('named_none', 0)} | "
+                    f"{tot.get('un', 0)} | {tot.get('un_ok', 0)} | {tot.get('un_name', 0)} | {tot.get('un_none', 0)} | "
+                    f"{tot.get('miss', 0)} ({tot.get('miss_mi', 0)} mi) |")
+          open("out/ALL.md", "w").write("\n".join(md) + "\n")
+          print("\n".join(md))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-reports
+          path: out/
