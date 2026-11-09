@@ -47,7 +47,7 @@ def fetch_usfs(box):
             while True:
                 q = urllib.parse.urlencode({
                     "where": "1=1", "geometry": env, "geometryType": "esriGeometryEnvelope", "inSR": 4326,
-                    "spatialRel": "esriSpatialRelIntersects", "outFields": "OBJECTID,TRAIL_NO,TRAIL_NAME",
+                    "spatialRel": "esriSpatialRelIntersects", "outFields": "*",
                     "returnGeometry": "true", "outSR": 4326, "f": "json",
                     "resultOffset": offset, "resultRecordCount": 1000})
                 for attempt in range(4):
@@ -62,10 +62,12 @@ def fetch_usfs(box):
                 feats = data.get("features", [])
                 for f in feats:
                     a = f["attributes"]
-                    if a["OBJECTID"] in seen:
-                        continue
-                    seen.add(a["OBJECTID"])
                     lines = [[(p[1], p[0]) for p in path] for path in (f.get("geometry") or {}).get("paths", [])]
+                    # the same trail comes back from each tile it crosses: one copy by number, name and shape
+                    key = (a.get("TRAIL_NO"), a.get("TRAIL_NAME"), tuple(round(c, 5) for c in lines[0][0]) if lines else None)
+                    if key in seen:
+                        continue
+                    seen.add(key)
                     if lines:
                         out.append({"no": (a.get("TRAIL_NO") or "").strip(), "name": (a.get("TRAIL_NAME") or "").strip(),
                                     "lines": lines})
