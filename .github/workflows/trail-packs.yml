@@ -2,17 +2,16 @@ name: Build trail packs (Switchback)
 
 # Turns OpenStreetMap extracts from Geofabrik (US states, Canadian provinces, …) into Switchback's trail packs: one compact file per state
 # (<state>.trails) plus a small summary (<state>.json), all in the single release "trails-us", with the list of
-# states (regions.json). Weekly, by hand, or when the builder changes.
+# states (regions.json). Monthly (trails change slowly), by hand, or when the builder changes.
 
 on:
   schedule:
-    - cron: "17 7 * * 1"
+    - cron: "17 7 1 * *"
   workflow_dispatch:
   push:
     branches: ["**"]
     paths:
       - "scripts/build_trail_pack.py"
-      - ".github/workflows/trail-packs.yml"
 
 permissions:
   contents: write
@@ -31,6 +30,7 @@ jobs:
       matrix:
         # one file per area: add more (Geofabrik paths) to cover more of the world
         region:
+          - {id: missouri, path: north-america/us/missouri, country: US, name: "Missouri"}  # first: most used
           - {id: alabama, path: north-america/us/alabama, country: US, name: "Alabama"}
           - {id: alaska, path: north-america/us/alaska, country: US, name: "Alaska"}
           - {id: arizona, path: north-america/us/arizona, country: US, name: "Arizona"}
@@ -56,7 +56,6 @@ jobs:
           - {id: michigan, path: north-america/us/michigan, country: US, name: "Michigan"}
           - {id: minnesota, path: north-america/us/minnesota, country: US, name: "Minnesota"}
           - {id: mississippi, path: north-america/us/mississippi, country: US, name: "Mississippi"}
-          - {id: missouri, path: north-america/us/missouri, country: US, name: "Missouri"}
           - {id: montana, path: north-america/us/montana, country: US, name: "Montana"}
           - {id: nebraska, path: north-america/us/nebraska, country: US, name: "Nebraska"}
           - {id: nevada, path: north-america/us/nevada, country: US, name: "Nevada"}
@@ -134,7 +133,7 @@ jobs:
         run: |
           gh release view trails-us > /dev/null 2>&1 || gh release create trails-us --target "${{ github.sha }}" \
             --title "Switchback trail packs (US)" --latest=false \
-            --notes "Trails for Switchback built from OpenStreetMap (© OpenStreetMap contributors, ODbL) via Geofabrik: one file per state plus regions.json. Rebuilt weekly." || true
+            --notes "Trails for Switchback built from OpenStreetMap (© OpenStreetMap contributors, ODbL) via Geofabrik: one file per state plus regions.json. Rebuilt monthly." || true
           for i in 1 2 3 4; do gh release upload trails-us out/* --clobber && break; sleep $((i * 15)); done
 
   index:

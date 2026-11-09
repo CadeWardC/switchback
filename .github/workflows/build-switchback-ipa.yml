@@ -10,6 +10,7 @@ on:
       - "scripts/build_trail_pack.py"
       - "scripts/elevation.py"
       - ".github/workflows/trail-packs.yml"
+      - ".github/workflows/copy-trail-packs.yml"
   workflow_dispatch:
 
 permissions:

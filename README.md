@@ -29,7 +29,7 @@ subscription and no API keys.
   file the app writes is compressed with LZFSE; files from earlier versions still load.
 - **Trail packs (fastest, lightest), US states and Canadian provinces:** `.github/workflows/trail-packs.yml` turns each state's
   OpenStreetMap extract (Geofabrik) into one compact file per state (`<state>.trails`: a table of contents, then one
-  compressed block per 0.25° cell), all published weekly in the single release `trails-us` with `regions.json`. The app
+  compressed block per 0.25° cell), all published monthly in the single release `trails-us` with `regions.json`. The app
   downloads a state's file once, the first time the map shows it, then has every trail there instantly and offline,
   unpacking only the cells around the map. As soon as the map knows where you are, your area's file downloads (Missouri is about
   0.4 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 38 MB), so trails work

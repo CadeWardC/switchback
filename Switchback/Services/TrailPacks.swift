@@ -1,6 +1,6 @@
 import Foundation
 
-/// Trail packs: one compact file per US state, pre-built weekly from OpenStreetMap (scripts/build_trail_pack.py) and
+/// Trail packs: one compact file per US state, pre-built monthly from OpenStreetMap (scripts/build_trail_pack.py) and
 /// published in the release "trails-us". The app downloads a state's file once, the first time the map shows it, and
 /// keeps it: every trail in the state is then on the phone, instantly and offline. The file starts with a table of
 /// contents, so only the cells (0.25°, about 25 km) around the map are unpacked.
@@ -282,7 +282,7 @@ actor TrailPacks {
         return data
     }
 
-    /// Checks for newer weekly trail files now, and updates every state already on the phone (downloaded or
+    /// Checks for newer monthly trail files now, and updates every state already on the phone (downloaded or
     /// built in). Returns a short summary.
     func checkForUpdates() async -> String {
         listFailedUntil = .distantPast
