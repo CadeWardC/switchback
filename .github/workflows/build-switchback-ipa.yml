@@ -9,6 +9,7 @@ on:
       - "**.md"
       - "scripts/**"
       - ".github/workflows/check-official-trails.yml"
+      - ".github/workflows/find-trail-sources.yml"
       - ".github/workflows/trail-packs.yml"
       - ".github/workflows/copy-trail-packs.yml"
   workflow_dispatch:

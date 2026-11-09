@@ -1,0 +1,30 @@
+name: Find official trail sources (Switchback)
+
+# Read-only: lists public official trail datasets for a place (scripts/find_trail_sources.py). Changes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      words:
+        description: "Search words"
+        default: "Missouri trails"
+      box:
+        description: "south,west,north,east"
+        default: "36.0,-95.8,40.6,-89.1"
+  push:
+    branches: ["**"]
+    paths:
+      - "scripts/find_trail_sources.py"
+      - ".github/workflows/find-trail-sources.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search
+        run: python3 scripts/find_trail_sources.py "${{ inputs.words || 'Missouri trails' }}" "${{ inputs.box || '36.0,-95.8,40.6,-89.1' }}"
