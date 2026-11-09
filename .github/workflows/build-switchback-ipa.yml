@@ -41,11 +41,24 @@ jobs:
         env:
           # areas whose trail files ship inside the app: "none" (the app downloads your area first, then the rest of
           # your country on Wi-Fi), "all" (every US state, about 38 MB), or a list like "missouri kansas"
-          BUNDLED_STATES: "none"
+          BUNDLED_STATES: "missouri"
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p Switchback/Resources/Packs
           base=https://github.com/${{ github.repository }}/releases/download/trails-us
-          curl -fsSL --retry 4 -o Switchback/Resources/Packs/regions.json "$base/regions.json" || echo "no regions.json yet"
+          if ! curl -fsSL --retry 4 -o Switchback/Resources/Packs/regions.json "$base/regions.json"; then
+            # no list published yet: make one from the areas the release already has
+            mkdir -p idx
+            gh release download trails-us -R "${{ github.repository }}" -p "*.json" -D idx --clobber || true
+            python3 -c "
+          import json, glob
+          r = {}
+          for f in glob.glob('idx/*.json'):
+              i = json.load(open(f))
+              if i.get('bbox'): r[i['region']] = i
+          json.dump({'regions': r}, open('Switchback/Resources/Packs/regions.json', 'w'), separators=(',', ':'))
+          print(len(r), 'areas in the list')"
+          fi
           states="$BUNDLED_STATES"
           if [ "$states" = "all" ] && [ -f Switchback/Resources/Packs/regions.json ]; then
             # every US state (other countries download when the map first shows them)
