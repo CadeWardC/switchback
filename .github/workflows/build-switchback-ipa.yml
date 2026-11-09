@@ -41,7 +41,7 @@ jobs:
         env:
           # areas whose trail files ship inside the app: "none" (the app downloads your area first, then the rest of
           # your country on Wi-Fi), "all" (every US state, about 38 MB), or a list like "missouri kansas"
-          BUNDLED_STATES: "missouri"
+          BUNDLED_STATES: "none"
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p Switchback/Resources/Packs
@@ -58,6 +58,8 @@ jobs:
               if i.get('bbox'): r[i['region']] = i
           json.dump({'regions': r}, open('Switchback/Resources/Packs/regions.json', 'w'), separators=(',', ':'))
           print(len(r), 'areas in the list')"
+            # publish it, so the app can download the areas that are ready (the full list replaces it later)
+            gh release upload trails-us Switchback/Resources/Packs/regions.json -R "${{ github.repository }}" || true
           fi
           states="$BUNDLED_STATES"
           if [ "$states" = "all" ] && [ -f Switchback/Resources/Packs/regions.json ]; then
