@@ -7,7 +7,7 @@ on:
     inputs:
       words:
         description: "Search words"
-        default: "Missouri trails"
+        default: "Missouri trails;Missouri Department of Conservation trails;Missouri State Parks trails;Corps of Engineers trails Missouri;National Digital Trails;National Park Service trails"
       box:
         description: "south,west,north,east"
         default: "36.0,-95.8,40.6,-89.1"
@@ -27,4 +27,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Search
-        run: python3 scripts/find_trail_sources.py "${{ inputs.words || 'Missouri trails' }}" "${{ inputs.box || '36.0,-95.8,40.6,-89.1' }}"
+        run: python3 scripts/find_trail_sources.py "${{ inputs.words || 'Missouri trails;Missouri Department of Conservation trails;Missouri State Parks trails;Corps of Engineers trails Missouri;National Digital Trails;National Park Service trails' }}" "${{ inputs.box || '36.0,-95.8,40.6,-89.1' }}"
