@@ -172,7 +172,9 @@ actor TrailPacks {
     // MARK: State files
 
     private func pack(for r: Region) async -> Pack? {
-        if let p = packs[r.region], p.header.version == r.version { return p }
+        if let p = packs[r.region], p.header.version == r.version, FileManager.default.fileExists(atPath: p.url.path) {
+            return p
+        }
         let url = dir.appendingPathComponent("\(r.region)-\(r.version).trails")
         if let p = open(url) {
             packs[r.region] = p
@@ -222,7 +224,11 @@ actor TrailPacks {
         memory = memory.filter { !$0.key.hasPrefix(region + "/") }
         // older versions of this state's file aren't needed any more
         let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
-        for f in files where f.lastPathComponent.hasPrefix(region + "-") && f != url { try? FileManager.default.removeItem(at: f) }
+        // compare names, not URLs: iOS lists the folder as /private/var/… while ours says /var/…, so a URL
+        // comparison would call the file we just saved "older" and delete it
+        for f in files where f.lastPathComponent.hasPrefix(region + "-") && f.lastPathComponent != url.lastPathComponent {
+            try? FileManager.default.removeItem(at: f)
+        }
         return p
     }
 
@@ -239,8 +245,13 @@ actor TrailPacks {
     private func cell(_ key: String, region: String, pack: Pack) -> [Trail] {
         let memKey = "\(region)/\(key)"
         if let ts = memory[memKey] { return ts }
-        guard let range = pack.header.cells[key], range.count == 2,
-              let handle = try? FileHandle(forReadingFrom: pack.url) else { return [] }
+        guard let range = pack.header.cells[key], range.count == 2 else { return [] }
+        guard let handle = try? FileHandle(forReadingFrom: pack.url) else {
+            // the file is gone: forget it, so the next look at the map downloads it again
+            note("\(region) file missing, downloading again")
+            if packs[region]?.url == pack.url { packs[region] = nil }
+            return []
+        }
         defer { try? handle.close() }
         guard (try? handle.seek(toOffset: pack.bodyStart + UInt64(range[0]))) != nil,
               let blob = try? handle.read(upToCount: range[1]) else {

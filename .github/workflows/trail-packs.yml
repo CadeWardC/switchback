@@ -124,7 +124,7 @@ jobs:
       - name: Build the packs
         run: |
           export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
-          PACK_VERSION=$(date -u +%Y%m%d) python3 scripts/build_trail_pack.py trails.osm.pbf "${{ matrix.region.id }}" out "${{ matrix.region.country }}" "${{ matrix.region.name }}"
+          PACK_VERSION=$(date -u +%Y%m%d%H%M) python3 scripts/build_trail_pack.py trails.osm.pbf "${{ matrix.region.id }}" out "${{ matrix.region.country }}" "${{ matrix.region.name }}"
           du -sh out
 
       - name: Publish
