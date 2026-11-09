@@ -10,7 +10,7 @@ and reports:
   - named trails whose official name is different
   - official trails with nothing in the pack (missing from OpenStreetMap, or dropped by the builder)
 """
-import json, math, sys, time, urllib.parse, urllib.request, zlib
+import json, math, os, sys, time, urllib.parse, urllib.request, zlib
 from collections import defaultdict
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
@@ -61,7 +61,9 @@ def fetch_usfs(box):
                         time.sleep(5 * (attempt + 1))
                 feats = data.get("features", [])
                 for f in feats:
-                    a = f["attributes"]
+                    a = {k.upper(): v for k, v in f["attributes"].items()}
+                    if not out and not seen:
+                        print("  fields:", {k: v for k, v in a.items() if not isinstance(v, (int, float)) or k.endswith("NO")})
                     lines = [[(p[1], p[0]) for p in path] for path in (f.get("geometry") or {}).get("paths", [])]
                     # the same trail comes back from each tile it crosses: one copy by number, name and shape
                     key = (a.get("TRAIL_NO"), a.get("TRAIL_NAME"), tuple(round(c, 5) for c in lines[0][0]) if lines else None)
@@ -69,7 +71,8 @@ def fetch_usfs(box):
                         continue
                     seen.add(key)
                     if lines:
-                        out.append({"no": (a.get("TRAIL_NO") or "").strip(), "name": (a.get("TRAIL_NAME") or "").strip(),
+                        out.append({"no": str(a.get("TRAIL_NO") or "").strip(), "name": str(a.get("TRAIL_NAME") or "").strip(),
+                                    "forest": str(a.get("ADMIN_ORG_NAME") or a.get("MANAGING_ORG_NAME") or a.get("FOREST") or a.get("ADMIN_ORG") or "").strip(),
                                     "lines": lines})
                 if not data.get("exceededTransferLimit") or not feats:
                     break
@@ -129,6 +132,14 @@ def main():
     print(f"pack: {len(trails)} trails; box {box}")
     official = fetch_usfs(box)
     official = [o for o in official if sum(length(l) for l in o["lines"]) >= 100]
+    forests = defaultdict(int)
+    for o in official:
+        forests[o["forest"] or "?"] += 1
+    print("  by forest:", dict(forests))
+    only = os.environ.get("FOREST")
+    if only:
+        official = [o for o in official if only.lower() in o["forest"].lower()]
+        print(f"  keeping {only}: {len(official)}")
     print(f"Forest Service: {len(official)} official trails in the box "
           f"({sum(sum(length(l) for l in o['lines']) for o in official) / 1609.34:.0f} mi)")
 
