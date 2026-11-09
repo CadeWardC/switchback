@@ -1,7 +1,8 @@
 name: Check trails against official lists (Switchback)
 
-# Read-only report: compares a state's trail pack with the Forest Service's official trail list
-# (scripts/check_official_trails.py). Changes nothing; the findings are in the job log.
+# Read-only report: checks every trail in a state's pack against the official trail lists (USGS, Forest Service,
+# National Park Service, and the state's own; scripts/check_official_trails.py). Changes nothing; the findings are in
+# the job log and in the report-<region> artifact.
 
 on:
   workflow_dispatch:
@@ -9,6 +10,9 @@ on:
       region:
         description: "Trail pack to check (e.g. missouri)"
         default: "missouri"
+      state:
+        description: "State name as the Census spells it"
+        default: "Missouri"
   push:
     branches: ["**"]
     paths:
@@ -21,14 +25,22 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       REGION: ${{ inputs.region || 'missouri' }}
+      STATE: ${{ inputs.state || 'Missouri' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install the builder's helpers
         run: pip install --quiet osmium shapely numpy
       - name: Download the trail pack
         run: curl -fsSL --retry 4 -o pack.trails "https://github.com/${{ github.repository }}/releases/download/trails-us/$REGION.trails"
-      - name: Compare with the Forest Service's trails
-        run: python3 scripts/check_official_trails.py pack.trails
+      - name: Compare with the official trail lists
+        run: python3 scripts/check_official_trails.py pack.trails "$STATE" "report-$REGION.md"
+      - name: Save the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ env.REGION }}
+          path: report-*.md
+          if-no-files-found: ignore
