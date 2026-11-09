@@ -11,13 +11,15 @@ Writes, into <out-dir>:
 The trail rules mirror the app's live search (Overpass.swift), so ids match and the two can be mixed:
 hiking/foot/walking route relations, named paths/footways/bridleways and named tracks, and unnamed paths (joined,
 800 m or more). Lines are simplified to 4 m and stored at 1e-5° (about a metre).
+Pieces of one named trail that meet along other trails (or across a gap of a few metres) are joined into one trail:
+a loop mapped as two halves joined by another trail becomes one closed loop.
 
 Each trail also gets its area: the smallest named park, nature reserve or protected area (conservation areas,
 national forests, wildernesses…) its middle lies in, as the tag "switchback:area". Unnamed paths are named from the
 map where it says something true ("Connector: A – B" between two named trails, "A spur" off one), and dropped when
 they're neither in an area nor joined to a trail nor tagged for hiking (city shortcuts, yard paths).
 """
-import json, math, os, re, sys, zlib
+import heapq, json, math, os, re, sys, zlib
 from collections import defaultdict
 
 import osmium
@@ -31,6 +33,8 @@ KEEP_TAGS = {"sac_scale", "surface", "trail_visibility", "operator", "network", 
 SKIP_ROLES = {"alternative", "excursion", "approach", "connection", "link"}
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett", "compacted"}
 NO_ACCESS = {"private", "no"}
+LINK_M = 1000   # pieces of one named trail this close along other trails are one trail (a loop mapped in halves)
+GAP_M = 30      # a straight jump allowed between pieces where the map has a small gap
 
 # ---------------------------------------------------------------- geometry
 
@@ -170,6 +174,119 @@ def chains(pieces, with_nodes=False):
         out.append(chain if with_nodes else [c for _, c in chain])
     return out
 
+# ---------------------------------------------------------------- joining the pieces of one named trail
+
+def network(lines):
+    """Every trail line as a graph: node id -> [(neighbour, metres)], plus each node's position."""
+    adj, where = defaultdict(list), {}
+    for nodes in lines:
+        for (a, pa), (b, pb) in zip(nodes, nodes[1:]):
+            where[a], where[b] = pa, pb
+            if a != b:
+                d = dist(pa, pb)
+                adj[a].append((b, d))
+                adj[b].append((a, d))
+    return adj, where
+
+def reach(adj, src, targets, limit):
+    """Shortest walks (metres, node ids) from src to the targets within limit metres along the network."""
+    best, prev, heap, found = {src: 0.0}, {}, [(0.0, src)], {}
+    want = targets - {src}
+    while heap and len(found) < len(want):
+        d, n = heapq.heappop(heap)
+        if d > best.get(n, math.inf):
+            continue
+        if n in want:
+            found[n] = d
+        for m, w in adj.get(n, ()):
+            nd = d + w
+            if nd <= limit and nd < best.get(m, math.inf):
+                best[m], prev[m] = nd, n
+                heapq.heappush(heap, (nd, m))
+    walks = {}
+    for t, d in found.items():
+        path = [t]
+        while path[-1] != src:
+            path.append(prev[path[-1]])
+        walks[t] = (d, path[::-1])
+    return walks
+
+def link_pieces(pieces, adj, where):
+    """Joins the pieces of one named trail (lines of (node id, (lat, lon))) that meet along other trails, or across a
+    small gap, into walks: a loop mapped as two halves joined by another trail becomes one closed loop, and a trail
+    broken where it shares a stretch with another becomes one line. Returns [(walk, segments)]: the line to follow,
+    and the lines to draw (the pieces and the stretches that join them)."""
+    pieces = [p for p in pieces if len(p) >= 2]
+    if len(pieces) < 2:
+        return [([c for _, c in p], [[c for _, c in p]]) for p in pieces]
+    end_node = lambda i, e: pieces[i][-1 if e else 0][0]
+    ends = defaultdict(list)                  # node -> [(piece, which end)]
+    for i in range(len(pieces)):
+        for e in (0, 1):
+            ends[end_node(i, e)].append((i, e))
+    links = []                                # (metres, (i, e), (j, f), coords between them)
+    for i in range(len(pieces)):
+        for e in (0, 1):
+            a = end_node(i, e)
+            others = {n for n, owners in ends.items() if any(j != i for j, _ in owners)}
+            walks = reach(adj, a, others, LINK_M)
+            for n in others:
+                if n == a:
+                    walk = (0.0, [a])
+                elif n in walks:
+                    walk = walks[n]
+                elif dist(where[a], where[n]) <= GAP_M:
+                    walk = (dist(where[a], where[n]), [a, n])
+                else:
+                    continue
+                for j, f in ends[n]:
+                    if (j, f) > (i, e):       # each pair once
+                        links.append((walk[0], (i, e), (j, f), [where[x] for x in walk[1]]))
+    links.sort(key=lambda l: l[0])
+    group = list(range(len(pieces)))
+    def root(x):
+        while group[x] != x:
+            group[x] = group[group[x]]
+            x = group[x]
+        return x
+    linked = {}                               # (i, e) -> ((j, f), coords from (i, e) to (j, f))
+    for d, a, b, coords in links:
+        if a[0] == b[0] or a in linked or b in linked:
+            continue
+        if root(a[0]) == root(b[0]):
+            # closes a loop: only where the pieces really go round (not two ends of one line far apart)
+            if d > LINK_M / 2:
+                continue
+        group[root(a[0])] = root(b[0])
+        linked[a] = (b, coords)
+        linked[b] = (a, coords[::-1])
+    out, done = [], set()
+    for start in range(len(pieces)):
+        if start in done:
+            continue
+        # begin at a free end of this group if it has one (a line), else anywhere (a loop)
+        members = [i for i in range(len(pieces)) if root(i) == root(start)]
+        free = next(((i, e) for i in members for e in (0, 1) if (i, e) not in linked), None)
+        i, e_in = free if free else (members[0], 0)
+        walk, segs = [], []
+        while i not in done:
+            done.add(i)
+            line = [c for _, c in pieces[i]]
+            if e_in == 1:
+                line = line[::-1]
+            segs.append(line)
+            walk += line if not walk or walk[-1] != line[0] else line[1:]
+            nxt = linked.get((i, 1 - e_in))
+            if not nxt:
+                break
+            (j, f), coords = nxt
+            if len(coords) >= 2:
+                segs.append(coords)
+                walk += coords[1:]
+            i, e_in = j, f
+        out.append((walk, segs))
+    return out
+
 # ---------------------------------------------------------------- reading OSM
 
 POI_KINDS = [  # (tag, values, kind as the app names it)
@@ -297,11 +414,11 @@ class Ways(osmium.SimpleHandler):
 
 # ---------------------------------------------------------------- trails
 
-def make_trail(tid, osm_id, source, name, lines, tags, min_len):
+def make_trail(tid, osm_id, source, name, lines, tags, min_len, main=None):
     measured = [(l, length(l)) for l in lines if len(l) >= 2]
     if not measured:
         return None
-    main, main_len = max(measured, key=lambda m: m[1])
+    main, main_len = (main, length(main)) if main else max(measured, key=lambda m: m[1])
     if main_len < min_len:
         return None
     segs = [simplify(l) for l, ln in measured if ln >= 30]
@@ -392,16 +509,22 @@ def build(pbf):
     for wid, name, tags, nodes in ways.named:
         if name.lower() not in relation_names:
             by_name[name].append((wid, tags, nodes))
+    # every trail line, so pieces of one named trail can be joined along the trails between them
+    adj, where = network([n for n in ways.geom.values()] + [n for _, _, _, n in ways.named] +
+                         [n for _, _, n in ways.unnamed])
+    joined = 0
     for name, group in by_name.items():
-        end_owner = {}
-        for wid, tags, nodes in group:
-            end_owner[nodes[0][0]] = end_owner[nodes[-1][0]] = (wid, tags)
-        for line in chains([nodes for _, _, nodes in group]):
-            first = line[0]
+        lines = chains([nodes for _, _, nodes in group], with_nodes=True)
+        walks = link_pieces(lines, adj, where)
+        joined += len(lines) - len(walks)
+        for walk, segs in walks:
+            first = walk[0]
             owner = next(((wid, tags) for wid, tags, nodes in group if any(c == first for _, c in nodes)), (group[0][0], group[0][1]))
-            made = make_trail("w%s-%.3f,%.3f" % (name, first[0], first[1]), owner[0], "osmWay", name, [line], owner[1], 400)
+            made = make_trail("w%s-%.3f,%.3f" % (name, first[0], first[1]), owner[0], "osmWay", name, segs, owner[1], 400,
+                              main=walk)
             if made:
                 trails.append(made)
+    print(f"  named trails: joined {joined} pieces mapped apart into the trail they belong to")
 
     pieces, tags_by_end = [], {}
     for wid, tags, nodes in ways.unnamed:

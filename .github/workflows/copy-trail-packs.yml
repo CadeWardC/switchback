@@ -1,9 +1,8 @@
 name: Copy trail packs from Edge (Switchback)
 
-# One-off move of the trail packs already built in CadeWardC/Edge's "trails-us" release to this repo's, so they don't
-# have to be rebuilt. Missouri goes first. Then it waits for the first 8 states of the running rebuild to finish, stops
-# that rebuild, copies every other state that isn't here yet, and rebuilds the list of areas (regions.json). Then it
-# waits for Edge's own rebuild to finish and copies over every file that is newer there, and rebuilds the list again.
+# Fills in the areas this repo's "trails-us" release doesn't have yet with the ones already built in CadeWardC/Edge,
+# so the app has every area while the rebuild runs. It never replaces a file that's already here (the rebuild's
+# files are newer), then rebuilds the list of areas (regions.json).
 
 on:
   workflow_dispatch:
@@ -14,7 +13,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: copy-trail-packs
@@ -25,53 +23,13 @@ env:
   REPO: ${{ github.repository }}
   FROM: CadeWardC/Edge
   TAG: trails-us
-  PRIORITY: missouri
-  # the states the rebuild started first: it is stopped once they're done
-  KEEP_BUILDING: alabama alaska arizona arkansas california colorado connecticut delaware
 
 jobs:
   copy:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 60
     steps:
-      - name: Make sure this repo has the release
-        run: |
-          gh release view "$TAG" -R "$REPO" > /dev/null 2>&1 || gh release create "$TAG" -R "$REPO" --target "${{ github.sha }}" \
-            --title "Switchback trail packs (US)" --latest=false \
-            --notes "Trails for Switchback built from OpenStreetMap (© OpenStreetMap contributors, ODbL) via Geofabrik: one file per state plus regions.json."
-
-      - name: Copy Missouri first
-        run: |
-          have=$(gh release view "$TAG" -R "$REPO" --json assets -q '.assets[].name')
-          mkdir -p p && cd p
-          for f in "$PRIORITY.trails" "$PRIORITY.json"; do
-            if grep -qx "$f" <<< "$have"; then echo "$f is already here"; continue; fi
-            gh release download "$TAG" -R "$FROM" -p "$f" --clobber < /dev/null
-            for i in 1 2 3 4; do gh release upload "$TAG" "$f" -R "$REPO" --clobber < /dev/null && break; sleep $((i * 15)); done
-          done
-          ls -l
-
-      - name: Wait for the first 8 states of the rebuild, then stop it
-        run: |
-          run=$(gh run list -R "$REPO" -w trail-packs.yml --json databaseId,status \
-            -q '[.[] | select(.status != "completed")][0].databaseId')
-          if [ -z "$run" ]; then echo "no rebuild running"; exit 0; fi
-          echo "rebuild run $run"
-          while :; do
-            jobs=$(gh api "repos/$REPO/actions/runs/$run/jobs?per_page=100" --paginate -q '.jobs[] | "\(.name)\t\(.status)"')
-            left=""
-            for s in $KEEP_BUILDING; do
-              grep -P "^pack \($s, " <<< "$jobs" | grep -qv -P "\tcompleted$" && left="$left $s"
-            done
-            [ -z "$left" ] && break
-            echo "$(date -u +%H:%M) still building:$left"
-            sleep 60
-          done
-          gh run cancel "$run" -R "$REPO" || true
-          until [ "$(gh run view "$run" -R "$REPO" --json status -q .status)" = "completed" ]; do sleep 20; done
-          echo "rebuild stopped"
-
-      - name: Copy every other state that isn't here yet
+      - name: Copy every area that isn't here yet
         run: |
           have=$(gh release view "$TAG" -R "$REPO" --json assets -q '.assets[] | select(.size > 0) | .name')
           want=$(gh release view "$TAG" -R "$FROM" --json assets -q '.assets[].name' | grep -E '\.(trails|json)$' | grep -vx regions.json)
@@ -80,57 +38,13 @@ jobs:
           for f in $want; do
             grep -qx "$f" <<< "$have" && continue
             gh release download "$TAG" -R "$FROM" -p "$f" --clobber < /dev/null
-            for i in 1 2 3 4; do gh release upload "$TAG" "$f" -R "$REPO" --clobber < /dev/null && break; sleep $((i * 15)); done
-            rm -f "$f"; n=$((n + 1))
+            # no --clobber: if the rebuild published this area meanwhile, keep its newer file
+            gh release upload "$TAG" "$f" -R "$REPO" < /dev/null && n=$((n + 1)) || echo "kept the file already here: $f"
+            rm -f "$f"
           done
           echo "copied $n files"
 
       - name: Build and publish the list of areas (regions.json)
-        run: |
-          mkdir -p idx
-          gh release download "$TAG" -R "$REPO" -p "*.json" -D idx --clobber
-          rm -f idx/regions.json
-          python3 - <<'PY'
-          import json, glob
-          regions, total, trails = {}, 0, 0
-          for f in sorted(glob.glob("idx/*.json")):
-              i = json.load(open(f))
-              if not i.get("bbox"):
-                  continue
-              regions[i["region"]] = i
-              total += i["bytes"]; trails += i.get("trails", 0)
-          json.dump({"regions": regions}, open("regions.json", "w"), separators=(",", ":"))
-          print(f"{len(regions)} regions, {trails} trails, {total / 1024 / 1024:.1f} MB in all")
-          PY
-          gh release upload "$TAG" regions.json -R "$REPO" --clobber
-
-      - name: Wait for Edge's rebuild to finish
-        run: |
-          while :; do
-            left=$(gh run list -R "$FROM" -w trail-packs.yml --json status -q '[.[] | select(.status != "completed")] | length')
-            [ "$left" = "0" ] && break
-            echo "$(date -u +%H:%M) Edge is still building trail packs"
-            sleep 120
-          done
-
-      - name: Copy every file that's newer in Edge
-        run: |
-          gh api "repos/$REPO/releases/tags/$TAG" -q '.assets[] | select(.size > 0) | "\(.name)\t\(.updated_at)"' > here.tsv
-          gh api "repos/$FROM/releases/tags/$TAG" -q '.assets[] | "\(.name)\t\(.updated_at)"' > there.tsv
-          mkdir -p n && cd n
-          n=0
-          while IFS=$'\t' read -r f t; do
-            case "$f" in *.trails|*.json) ;; *) continue ;; esac
-            [ "$f" = regions.json ] && continue
-            mine=$(awk -F'\t' -v f="$f" '$1 == f { print $2 }' ../here.tsv)
-            [ -n "$mine" ] && [[ ! "$t" > "$mine" ]] && continue
-            gh release download "$TAG" -R "$FROM" -p "$f" --clobber < /dev/null
-            for i in 1 2 3 4; do gh release upload "$TAG" "$f" -R "$REPO" --clobber < /dev/null && break; sleep $((i * 15)); done
-            rm -f "$f"; n=$((n + 1))
-          done < ../there.tsv
-          echo "copied $n newer files"
-
-      - name: Build and publish the list of areas again
         run: |
           mkdir -p idx
           gh release download "$TAG" -R "$REPO" -p "*.json" -D idx --clobber
