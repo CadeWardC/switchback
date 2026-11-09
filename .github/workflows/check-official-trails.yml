@@ -1,0 +1,34 @@
+name: Check trails against official lists (Switchback)
+
+# Read-only report: compares a state's trail pack with the Forest Service's official trail list
+# (scripts/check_official_trails.py). Changes nothing; the findings are in the job log.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Trail pack to check (e.g. missouri)"
+        default: "missouri"
+  push:
+    branches: ["**"]
+    paths:
+      - "scripts/check_official_trails.py"
+      - ".github/workflows/check-official-trails.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REGION: ${{ inputs.region || 'missouri' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the builder's helpers
+        run: pip install --quiet osmium shapely numpy
+      - name: Download the trail pack
+        run: curl -fsSL --retry 4 -o pack.trails "https://github.com/${{ github.repository }}/releases/download/trails-us/$REGION.trails"
+      - name: Compare with the Forest Service's trails
+        run: python3 scripts/check_official_trails.py pack.trails
