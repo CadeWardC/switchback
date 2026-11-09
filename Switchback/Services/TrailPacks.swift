@@ -7,7 +7,7 @@ import Foundation
 actor TrailPacks {
     static let shared = TrailPacks()
 
-    private static let release = "https://github.com/CadeWardC/Edge/releases/download/trails-us/"
+    private static let release = "https://github.com/CadeWardC/switchback/releases/download/trails-us/"
     private static let magic = Data("SBTP1".utf8)
 
     private struct Region: Codable {

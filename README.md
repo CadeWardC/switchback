@@ -1,6 +1,6 @@
 # Switchback: find trails, follow them, record your hikes
 
-A separate iPhone app from Edge and Shuō. Like the big trail apps, but built on open data with no account, no
+An iPhone app for hiking. Like the big trail apps, but built on open data with no account, no
 subscription and no API keys.
 
 - **Explore:** trails load by themselves as you move the map, drawn in their difficulty colour with a white outline and
@@ -96,9 +96,9 @@ Difficulty is worked out from length + climb (and the SAC scale when mapped); OS
 Offline downloads are capped at 12,000 tiles per area and use three connections at a time, to stay polite to the free
 tile servers.
 
-Every push to `Switchback/` builds `Switchback-unsigned.ipa` into a `switchback-build-N` release
+Every push builds `Switchback-unsigned.ipa` into a `switchback-build-N` release
 (`.github/workflows/build-switchback-ipa.yml`). Sign it while installing with AltStore / SideStore / Sideloadly, or use
 TrollStore.
 
-Build locally: `cd Switchback && xcodegen generate && open Switchback.xcodeproj`. The icon is drawn by
+Build locally: `xcodegen generate && open Switchback.xcodeproj`. The icon is drawn by
 `scripts/make-icon.py`.

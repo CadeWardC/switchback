@@ -1,0 +1,171 @@
+name: Build trail packs (Switchback)
+
+# Turns OpenStreetMap extracts from Geofabrik (US states, Canadian provinces, …) into Switchback's trail packs: one compact file per state
+# (<state>.trails) plus a small summary (<state>.json), all in the single release "trails-us", with the list of
+# states (regions.json). Weekly, by hand, or when the builder changes.
+
+on:
+  schedule:
+    - cron: "17 7 * * 1"
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "scripts/build_trail_pack.py"
+      - ".github/workflows/trail-packs.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trail-packs
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        # one file per area: add more (Geofabrik paths) to cover more of the world
+        region:
+          - {id: alabama, path: north-america/us/alabama, country: US, name: "Alabama"}
+          - {id: alaska, path: north-america/us/alaska, country: US, name: "Alaska"}
+          - {id: arizona, path: north-america/us/arizona, country: US, name: "Arizona"}
+          - {id: arkansas, path: north-america/us/arkansas, country: US, name: "Arkansas"}
+          - {id: california, path: north-america/us/california, country: US, name: "California"}
+          - {id: colorado, path: north-america/us/colorado, country: US, name: "Colorado"}
+          - {id: connecticut, path: north-america/us/connecticut, country: US, name: "Connecticut"}
+          - {id: delaware, path: north-america/us/delaware, country: US, name: "Delaware"}
+          - {id: district-of-columbia, path: north-america/us/district-of-columbia, country: US, name: "District of Columbia"}
+          - {id: florida, path: north-america/us/florida, country: US, name: "Florida"}
+          - {id: georgia, path: north-america/us/georgia, country: US, name: "Georgia"}
+          - {id: hawaii, path: north-america/us/hawaii, country: US, name: "Hawaii"}
+          - {id: idaho, path: north-america/us/idaho, country: US, name: "Idaho"}
+          - {id: illinois, path: north-america/us/illinois, country: US, name: "Illinois"}
+          - {id: indiana, path: north-america/us/indiana, country: US, name: "Indiana"}
+          - {id: iowa, path: north-america/us/iowa, country: US, name: "Iowa"}
+          - {id: kansas, path: north-america/us/kansas, country: US, name: "Kansas"}
+          - {id: kentucky, path: north-america/us/kentucky, country: US, name: "Kentucky"}
+          - {id: louisiana, path: north-america/us/louisiana, country: US, name: "Louisiana"}
+          - {id: maine, path: north-america/us/maine, country: US, name: "Maine"}
+          - {id: maryland, path: north-america/us/maryland, country: US, name: "Maryland"}
+          - {id: massachusetts, path: north-america/us/massachusetts, country: US, name: "Massachusetts"}
+          - {id: michigan, path: north-america/us/michigan, country: US, name: "Michigan"}
+          - {id: minnesota, path: north-america/us/minnesota, country: US, name: "Minnesota"}
+          - {id: mississippi, path: north-america/us/mississippi, country: US, name: "Mississippi"}
+          - {id: missouri, path: north-america/us/missouri, country: US, name: "Missouri"}
+          - {id: montana, path: north-america/us/montana, country: US, name: "Montana"}
+          - {id: nebraska, path: north-america/us/nebraska, country: US, name: "Nebraska"}
+          - {id: nevada, path: north-america/us/nevada, country: US, name: "Nevada"}
+          - {id: new-hampshire, path: north-america/us/new-hampshire, country: US, name: "New Hampshire"}
+          - {id: new-jersey, path: north-america/us/new-jersey, country: US, name: "New Jersey"}
+          - {id: new-mexico, path: north-america/us/new-mexico, country: US, name: "New Mexico"}
+          - {id: new-york, path: north-america/us/new-york, country: US, name: "New York"}
+          - {id: north-carolina, path: north-america/us/north-carolina, country: US, name: "North Carolina"}
+          - {id: north-dakota, path: north-america/us/north-dakota, country: US, name: "North Dakota"}
+          - {id: ohio, path: north-america/us/ohio, country: US, name: "Ohio"}
+          - {id: oklahoma, path: north-america/us/oklahoma, country: US, name: "Oklahoma"}
+          - {id: oregon, path: north-america/us/oregon, country: US, name: "Oregon"}
+          - {id: pennsylvania, path: north-america/us/pennsylvania, country: US, name: "Pennsylvania"}
+          - {id: puerto-rico, path: north-america/us/puerto-rico, country: US, name: "Puerto Rico"}
+          - {id: rhode-island, path: north-america/us/rhode-island, country: US, name: "Rhode Island"}
+          - {id: south-carolina, path: north-america/us/south-carolina, country: US, name: "South Carolina"}
+          - {id: south-dakota, path: north-america/us/south-dakota, country: US, name: "South Dakota"}
+          - {id: tennessee, path: north-america/us/tennessee, country: US, name: "Tennessee"}
+          - {id: texas, path: north-america/us/texas, country: US, name: "Texas"}
+          - {id: utah, path: north-america/us/utah, country: US, name: "Utah"}
+          - {id: vermont, path: north-america/us/vermont, country: US, name: "Vermont"}
+          - {id: virginia, path: north-america/us/virginia, country: US, name: "Virginia"}
+          - {id: washington, path: north-america/us/washington, country: US, name: "Washington"}
+          - {id: west-virginia, path: north-america/us/west-virginia, country: US, name: "West Virginia"}
+          - {id: wisconsin, path: north-america/us/wisconsin, country: US, name: "Wisconsin"}
+          - {id: wyoming, path: north-america/us/wyoming, country: US, name: "Wyoming"}
+          - {id: ca-alberta, path: north-america/canada/alberta, country: CA, name: "Alberta, Canada"}
+          - {id: ca-british-columbia, path: north-america/canada/british-columbia, country: CA, name: "British Columbia, Canada"}
+          - {id: ca-manitoba, path: north-america/canada/manitoba, country: CA, name: "Manitoba, Canada"}
+          - {id: ca-new-brunswick, path: north-america/canada/new-brunswick, country: CA, name: "New Brunswick, Canada"}
+          - {id: ca-newfoundland-and-labrador, path: north-america/canada/newfoundland-and-labrador, country: CA, name: "Newfoundland and Labrador, Canada"}
+          - {id: ca-northwest-territories, path: north-america/canada/northwest-territories, country: CA, name: "Northwest Territories, Canada"}
+          - {id: ca-nova-scotia, path: north-america/canada/nova-scotia, country: CA, name: "Nova Scotia, Canada"}
+          - {id: ca-nunavut, path: north-america/canada/nunavut, country: CA, name: "Nunavut, Canada"}
+          - {id: ca-ontario, path: north-america/canada/ontario, country: CA, name: "Ontario, Canada"}
+          - {id: ca-prince-edward-island, path: north-america/canada/prince-edward-island, country: CA, name: "Prince Edward Island, Canada"}
+          - {id: ca-quebec, path: north-america/canada/quebec, country: CA, name: "Quebec, Canada"}
+          - {id: ca-saskatchewan, path: north-america/canada/saskatchewan, country: CA, name: "Saskatchewan, Canada"}
+          - {id: ca-yukon, path: north-america/canada/yukon, country: CA, name: "Yukon, Canada"}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install osmium, shapely, numpy and pillow
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq osmium-tool
+          pip install --quiet osmium shapely numpy pillow
+
+      - name: Download the ${{ matrix.region.name }} extract
+        run: |
+          curl -fsSL --retry 5 --retry-delay 15 -o region.osm.pbf \
+            "https://download.geofabrik.de/${{ matrix.region.path }}-latest.osm.pbf"
+          ls -lh region.osm.pbf
+
+      - name: Keep only trails, routes, parks and trail highlights
+        run: |
+          osmium tags-filter region.osm.pbf \
+            r/route=hiking,foot,walking w/highway=path,footway,bridleway,track \
+            nwr/boundary=protected_area,national_park nwr/leisure=park,nature_reserve \
+            n/tourism=viewpoint,alpine_hut,wilderness_hut,camp_site,picnic_site \
+            n/natural=peak,volcano,spring,cave_entrance n/waterway=waterfall \
+            n/amenity=drinking_water,water_point,toilets,shelter,parking \
+            -o trails.osm.pbf --overwrite
+          ls -lh trails.osm.pbf
+
+      - name: Build the packs
+        run: |
+          export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
+          PACK_VERSION=$(date -u +%Y%m%d) python3 scripts/build_trail_pack.py trails.osm.pbf "${{ matrix.region.id }}" out "${{ matrix.region.country }}" "${{ matrix.region.name }}"
+          du -sh out
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view trails-us > /dev/null 2>&1 || gh release create trails-us --target "${{ github.sha }}" \
+            --title "Switchback trail packs (US)" --latest=false \
+            --notes "Trails for Switchback built from OpenStreetMap (© OpenStreetMap contributors, ODbL) via Geofabrik: one file per state plus regions.json. Rebuilt weekly." || true
+          for i in 1 2 3 4; do gh release upload trails-us out/* --clobber && break; sleep $((i * 15)); done
+
+  index:
+    needs: pack
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build the list of states (regions.json)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p idx
+          gh release download trails-us -R "$REPO" -p "*.json" -D idx --clobber
+          rm -f idx/regions.json
+          python3 - <<'PY'
+          import json, glob
+          regions, total, trails = {}, 0, 0
+          for f in sorted(glob.glob("idx/*.json")):
+              i = json.load(open(f))
+              if not i.get("bbox"):
+                  continue
+              regions[i["region"]] = i
+              total += i["bytes"]; trails += i.get("trails", 0)
+          json.dump({"regions": regions}, open("regions.json", "w"), separators=(",", ":"))
+          print(f"{len(regions)} regions, {trails} trails, {total / 1024 / 1024:.1f} MB in all")
+          for name, r in sorted(regions.items(), key=lambda kv: -kv[1]["bytes"]):
+              print(f"  {name:<22} {r['bytes'] / 1024:8.0f} KB  {r.get('trails', 0):7d} trails")
+          PY
+      - name: Publish regions.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: gh release upload trails-us regions.json -R "$REPO" --clobber

@@ -1,7 +1,7 @@
 import Foundation
 
 enum Net {
-    static let userAgent = "Switchback/1.0 (iOS hiking app; https://github.com/cadewardc/edge)"
+    static let userAgent = "Switchback/1.0 (iOS hiking app; https://github.com/cadewardc/switchback)"
 }
 
 enum Files {
