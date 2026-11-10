@@ -32,8 +32,7 @@ struct TrailDetailView: View {
     private func start(_ base: Trail) -> TrailAccess? {
         let points = base.accessPoints
         if let startId { return points.first { $0.id == startId } }
-        guard let here = recorder.lastLocation else { return points.first }
-        return points.min { Geo.distance(Coord(here.coordinate), $0.point) < Geo.distance(Coord(here.coordinate), $1.point) }
+        return base.defaultAccess(near: recorder.lastLocation.map { Coord($0.coordinate) })
     }
 
     var body: some View {
@@ -88,7 +87,7 @@ struct TrailDetailView: View {
                     }
                 }
 
-                hikeOptions(base, from: from)
+                hikeOptions(base, from: from, chartIsTrailOnly: t.tags["switchback:chart"] == "trail")
 
                 actions(t)
                 offlineButton(t)
@@ -182,7 +181,7 @@ struct TrailDetailView: View {
 
     /// Where to start from (trailheads and car parks, with the walk in) and side loops to add.
     @ViewBuilder
-    private func hikeOptions(_ base: Trail, from: TrailAccess?) -> some View {
+    private func hikeOptions(_ base: Trail, from: TrailAccess?, chartIsTrailOnly: Bool) -> some View {
         let points = base.accessPoints
         let extras = base.extensions
         if !points.isEmpty || !extras.isEmpty {
@@ -209,8 +208,8 @@ struct TrailDetailView: View {
                     }
                     if let from, from.distance >= 30 {
                         Text(base.isLoop
-                             ? "\(Fmt.distance(base.length)) loop + \(Fmt.distance(from.distance)) each way from the trailhead. Elevation is for the trail itself."
-                             : "\(Fmt.distance(base.length)) trail + \(Fmt.distance(from.distance)) from the trailhead. Elevation is for the trail itself.")
+                             ? "\(Fmt.distance(base.length)) loop + \(Fmt.distance(from.distance)) each way from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")"
+                             : "\(Fmt.distance(base.length)) trail + \(Fmt.distance(from.distance)) from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

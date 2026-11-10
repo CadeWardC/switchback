@@ -104,10 +104,13 @@ struct TrailRow: View {
         .contentShape(Rectangle())
     }
 
+    /// The numbers are for the hike as you'd walk it: from its trailhead (the one nearest you) and back.
     private var stats: String {
-        var parts = [Fmt.distance(trail.length)]
-        if let g = trail.profile?.gain { parts.append("↑ " + Fmt.elevation(g)) }
-        parts.append("~" + Fmt.duration(trail.estimatedDuration))
+        let from = trail.defaultAccess(near: Recorder.shared.lastLocation.map { Coord($0.coordinate) })
+        let hike = from.map { trail.hike(from: $0, adding: []) } ?? trail
+        var parts = [Fmt.distance(hike.length)]
+        if let g = hike.profile?.gain { parts.append("↑ " + Fmt.elevation(g)) }
+        parts.append("~" + Fmt.duration(hike.estimatedDuration))
         return parts.joined(separator: " · ")
     }
 }

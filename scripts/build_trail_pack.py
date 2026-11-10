@@ -114,7 +114,14 @@ def add_elevation(trails, cache_dir):
     for t, _ in trails:
         lines = [decode(x) for x in t["segments"]]
         paths.append(lines[t["pathIndex"]] if "pathIndex" in t else decode(t["path"]))
-    tiles = elevation.needed_tiles(paths, dist)
+    # the walks in from trailheads and the side loops get their elevation too, so a whole hike can be charted
+    extras = []      # (trail, tag, parsed entries)
+    for t, _ in trails:
+        for tag in ("switchback:access", "switchback:ext"):
+            if tag in t.get("tags", {}):
+                extras.append((t, tag, json.loads(t["tags"][tag])))
+    extra_paths = [decode(e["l"]) for _, _, entries in extras for e in entries if "l" in e]
+    tiles = elevation.needed_tiles(paths + extra_paths, dist)
     ok, todo = terrain.fetch_all(tiles)
     print(f"  terrain: {len(tiles)} tiles ({todo} downloaded now, {ok} ok)")
     done = 0
@@ -124,6 +131,18 @@ def add_elevation(trails, cache_dir):
             t["elev"] = e
             done += 1
     print(f"  elevation for {done} of {len(trails)} trails")
+    cache, walks = {}, 0
+    for t, tag, entries in extras:
+        for e in entries:
+            if "l" not in e:
+                continue
+            if e["l"] not in cache:
+                cache[e["l"]] = elevation.profile(decode(e["l"]), terrain, dist, encode_ints)
+            if cache[e["l"]]:
+                e["e"] = cache[e["l"]]
+                walks += 1
+        t["tags"][tag] = json.dumps(entries, ensure_ascii=False, separators=(",", ":"))
+    print(f"  elevation for {walks} walks in and side loops")
 
 def decode(s):
     out, i, lat, lon = [], 0, 0, 0

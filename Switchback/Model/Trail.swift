@@ -65,6 +65,99 @@ struct ElevationProfile: Codable, Hashable {
     }
 }
 
+extension ElevationProfile {
+    /// A profile as trail packs store it: {s: metres per step, p: (steps, metres) deltas, g, l, mn, mx}.
+    init?(packed: [String: Any]) {
+        guard let s = (packed["s"] as? NSNumber)?.doubleValue, let p = packed["p"] as? String else { return nil }
+        let ints = Polyline.decodeInts(p)
+        guard ints.count >= 4 else { return nil }
+        var distances: [Double] = [], elevations: [Double] = []
+        var step = 0, height = 0, i = 0
+        while i + 1 < ints.count {
+            step += ints[i]
+            height += ints[i + 1]
+            distances.append(Double(step) * s)
+            elevations.append(Double(height))
+            i += 2
+        }
+        self.init(distances: distances, elevations: elevations)
+        if let g = (packed["g"] as? NSNumber)?.doubleValue { gain = g }
+        if let l = (packed["l"] as? NSNumber)?.doubleValue { loss = l }
+        if let mn = (packed["mn"] as? NSNumber)?.doubleValue { minElevation = mn }
+        if let mx = (packed["mx"] as? NSNumber)?.doubleValue { maxElevation = mx }
+    }
+
+    var total: Double { distances.last ?? 0 }
+
+    /// The height at a distance along the profile.
+    func height(at d: Double) -> Double {
+        guard let first = elevations.first, let last = elevations.last else { return 0 }
+        if d <= (distances.first ?? 0) { return first }
+        if d >= total { return last }
+        let i = distances.firstIndex { $0 >= d } ?? (distances.count - 1)
+        guard i > 0, distances[i] > distances[i - 1] else { return elevations[i] }
+        let t = (d - distances[i - 1]) / (distances[i] - distances[i - 1])
+        return elevations[i - 1] + (elevations[i] - elevations[i - 1]) * t
+    }
+
+    /// The chart points between two distances, measured from the first.
+    private func points(from a: Double, to b: Double) -> [(Double, Double)] {
+        guard b > a else { return [] }
+        var out: [(Double, Double)] = [(0, height(at: a))]
+        for (d, e) in zip(distances, elevations) where d > a && d < b { out.append((d - a, e)) }
+        out.append((b - a, height(at: b)))
+        return out
+    }
+
+    /// Profiles walked one after another. The climb and descent are the parts' own (they come from finer samples
+    /// than the chart points).
+    private static func joined(_ parts: [[(Double, Double)]], gain: Double, loss: Double, low: Double, high: Double) -> ElevationProfile {
+        var distances: [Double] = [], elevations: [Double] = []
+        var offset = 0.0
+        for part in parts where !part.isEmpty {
+            for (d, e) in part {
+                distances.append(offset + d)
+                elevations.append(e)
+            }
+            offset += part.last?.0 ?? 0
+        }
+        var p = ElevationProfile(distances: distances, elevations: elevations)
+        p.gain = gain
+        p.loss = loss
+        p.minElevation = low
+        p.maxElevation = high
+        return p
+    }
+
+    private var all: [(Double, Double)] { points(from: 0, to: total) }
+
+    /// The same line walked the other way.
+    var backwards: ElevationProfile {
+        let pts = all.reversed().map { (total - $0.0, $0.1) }
+        return Self.joined([pts], gain: loss, loss: gain, low: minElevation, high: maxElevation)
+    }
+
+    /// A loop's profile starting from another point on it.
+    func rotated(to d: Double) -> ElevationProfile {
+        guard d > 0, d < total else { return self }
+        return Self.joined([points(from: d, to: total), points(from: 0, to: d)], gain: gain, loss: loss,
+                           low: minElevation, high: maxElevation)
+    }
+
+    /// This profile with another walked in the middle of it (a side loop from a junction).
+    func inserting(_ other: ElevationProfile, at d: Double) -> ElevationProfile {
+        Self.joined([points(from: 0, to: d), other.all, points(from: d, to: total)], gain: gain + other.gain,
+                    loss: loss + other.loss, low: min(minElevation, other.minElevation),
+                    high: max(maxElevation, other.maxElevation))
+    }
+
+    /// This profile, then another.
+    func then(_ other: ElevationProfile) -> ElevationProfile {
+        Self.joined([all, other.all], gain: gain + other.gain, loss: loss + other.loss,
+                    low: min(minElevation, other.minElevation), high: max(maxElevation, other.maxElevation))
+    }
+}
+
 struct TrailFact: Hashable {
     let title: String
     let value: String
@@ -130,7 +223,8 @@ struct Trail: Codable, Identifiable, Hashable {
             guard let name = r["n"] as? String, let d = (r["d"] as? NSNumber)?.doubleValue,
                   let p = r["p"] as? [NSNumber], p.count == 2 else { return nil }
             let point = Coord(lat: p[0].doubleValue, lon: p[1].doubleValue)
-            return TrailAccess(name: name, distance: d, point: point, line: (r["l"] as? String).map(Polyline.decode) ?? [])
+            return TrailAccess(name: name, distance: d, point: point, line: (r["l"] as? String).map(Polyline.decode) ?? [],
+                               profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
         }
     }
 
@@ -140,7 +234,8 @@ struct Trail: Codable, Identifiable, Hashable {
         return rows.compactMap { r in
             guard let id = r["id"] as? String, let name = r["n"] as? String, let m = (r["m"] as? NSNumber)?.doubleValue,
                   let line = r["l"] as? String else { return nil }
-            return TrailExtension(id: id, name: name, length: m, line: Polyline.decode(line))
+            return TrailExtension(id: id, name: name, length: m, line: Polyline.decode(line),
+                                  profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
         }
     }
 
@@ -154,11 +249,24 @@ struct Trail: Codable, Identifiable, Hashable {
     func hike(from access: TrailAccess?, adding added: [TrailExtension]) -> Trail {
         var t = self
         var route = path
+        // the elevation follows the route as long as every part has its own; otherwise it stays the trail's
+        var chart = profile
         func nearest(_ c: Coord) -> Int {
             route.indices.min { Geo.distance(route[$0], c) < Geo.distance(route[$1], c) } ?? 0
         }
+        /// How far along the route a point of it is, on the chart's scale.
+        func along(_ i: Int) -> Double {
+            var d = 0.0, whole = 0.0
+            for k in 1..<max(1, route.count) {
+                let step = Geo.distance(route[k - 1], route[k])
+                whole += step
+                if k <= i { d += step }
+            }
+            return whole > 0 ? d / whole * (chart?.total ?? 0) : 0
+        }
         for e in added where e.line.count > 1 {
             let at = nearest(e.line[0])
+            if let c = chart, let p = e.profile { chart = c.inserting(p, at: along(at)) } else { chart = nil }
             route.insert(contentsOf: e.line, at: at + 1)
             t.segments.append(e.line)
             t.length += e.length
@@ -166,18 +274,30 @@ struct Trail: Codable, Identifiable, Hashable {
         if let a = access, a.line.count > 1, let join = a.line.last, route.count > 1 {
             if isLoop {
                 let i = nearest(join)
+                if let c = chart, let p = a.profile { chart = p.then(c.rotated(to: along(i))).then(p.backwards) } else { chart = nil }
                 if i > 0 { route = Array(route[i...]) + Array(route[1...i]) }
                 route = a.line + route + a.line.reversed()
                 t.length += 2 * a.distance
             } else {
-                if Geo.distance(route[route.count - 1], join) < Geo.distance(route[0], join) { route.reverse() }
+                let flip = Geo.distance(route[route.count - 1], join) < Geo.distance(route[0], join)
+                if let c = chart, let p = a.profile { chart = p.then(flip ? c.backwards : c) } else { chart = nil }
+                if flip { route.reverse() }
                 route = a.line + route
                 t.length += a.distance
             }
             t.segments.append(a.line)
         }
         t.path = route
+        t.profile = chart ?? profile
+        t.tags["switchback:chart"] = chart == nil && t.length != length ? "trail" : nil
         return t
+    }
+
+    /// The trailhead a hike starts from unless another is picked: the one nearest you, else nearest the trail.
+    func defaultAccess(near here: Coord?) -> TrailAccess? {
+        let points = accessPoints
+        guard let here else { return points.first }
+        return points.min { Geo.distance(here, $0.point) < Geo.distance(here, $1.point) }
     }
 
     static let informalKey = "informalTrails"
@@ -274,6 +394,8 @@ struct TrailAccess: Hashable, Identifiable {
     let point: Coord
     /// The way in, from the trailhead to the trail (empty when the trailhead is on the trail).
     let line: [Coord]
+    /// Elevation along the way in.
+    var profile: ElevationProfile? = nil
 
     var id: String { "\(name)|\(point.lat)|\(point.lon)" }
 }
@@ -285,6 +407,7 @@ struct TrailExtension: Hashable, Identifiable {
     let length: Double
     /// The side loop, starting and ending at the junction.
     let line: [Coord]
+    var profile: ElevationProfile? = nil
 }
 
 /// A trail system: a named trail with its loops, sections and side trails ("Cedar Creek Trail").
