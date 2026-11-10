@@ -1,0 +1,32 @@
+name: What OpenStreetMap has at some points (Switchback)
+
+# Read-only diagnostic (scripts/whats_at.py): every walkable way near the given points and why the pack builder
+# keeps or drops it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Geofabrik path, e.g. north-america/us/missouri"
+        default: "north-america/us/missouri"
+      points:
+        description: "lat,lon;lat,lon;…"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+          pip install --quiet osmium
+          curl -fsSL --retry 5 -o region.osm.pbf "https://download.geofabrik.de/${{ inputs.region }}-latest.osm.pbf"
+          osmium tags-filter region.osm.pbf w/highway=path,footway,cycleway,track,bridleway,pedestrian,steps -o walk.osm.pbf --overwrite
+      - env:
+          POINTS: ${{ inputs.points }}
+        run: python3 scripts/whats_at.py walk.osm.pbf "$POINTS"
