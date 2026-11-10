@@ -17,6 +17,9 @@ on:
       skip_national:
         description: "Skip the US national services (any text)"
         default: ""
+      compact:
+        description: "One line per layer, and only layers with at least this many trails (e.g. 50)"
+        default: ""
   push:
     branches: ["**"]
     paths:
@@ -36,4 +39,6 @@ jobs:
         env:
           WFS: ${{ inputs.wfs }}
           SKIP_NATIONAL: ${{ inputs.skip_national }}
+          COMPACT: ${{ inputs.compact }}
+          MIN_COUNT: ${{ inputs.compact }}
         run: python3 scripts/find_trail_sources.py "${{ inputs.words || 'Missouri trails;Missouri Department of Conservation trails;Missouri State Parks trails;Corps of Engineers trails Missouri;National Digital Trails;National Park Service trails' }}" "${{ inputs.box || '36.0,-95.8,40.6,-89.1' }}"

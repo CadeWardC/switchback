@@ -45,8 +45,12 @@ def trail_layers(url, box, force=False):
     return [(url, info.get("name"), count_in(url, box), fields)]
 
 def show(rows, label=""):
+    minimum = int(os.environ.get("MIN_COUNT") or 1)
     for url, name, count, fields in rows:
-        if count == 0:
+        if count == 0 or (isinstance(count, int) and count < minimum):
+            continue
+        if os.environ.get("COMPACT"):
+            print(f"  {count:>6}  {name}  {url}  [{', '.join(fields[:12])}]")
             continue
         print(f"  {count if count is not None else '?':>6} in MO  {name}  {label}")
         print(f"         {url}")
@@ -90,7 +94,7 @@ def main():
             if not url or url in seen:
                 continue
             seen.add(url)
-            rows = [r for r in trail_layers(url, box) if r[2]]
+            rows = [r for r in trail_layers(url, box) if r[2] and (not isinstance(r[2], int) or r[2] >= int(os.environ.get("MIN_COUNT") or 1))]
             if rows:
                 print(f"* {item.get('title')}  [{item.get('owner')}]")
                 show(rows)
