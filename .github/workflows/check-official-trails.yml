@@ -91,24 +91,36 @@ jobs:
           python3 - <<'PY'
           import glob, json
           rows = [json.load(open(f)) for f in sorted(glob.glob("out/*.json"))]
+          cols = ["named", "named_ok", "named_none", "named_none_park", "named_not_hike",
+                  "un", "un_ok", "un_name", "un_not_hike", "un_none", "un_none_out", "miss", "miss_mi", "miss_q", "miss_q_mi"]
           md = ["# All areas: trail packs vs official trail lists", "",
-                "| Area | Lists | Named | confirmed | on no list | Unnamed | confirmed | can take a name | on no list | Official trails missing |",
-                "|---|---|---|---|---|---|---|---|---|---|"]
-          tot = {}
+                "Confirmed = at least 70% of the trail lies on an official list's line. Missing = official trails open to",
+                "hikers (joined into whole trails, 0.25 mi or longer) that aren't in the pack.", "",
+                "| Area | Lists | Named | confirmed | on no list (in a park) | not for hikers | Unnamed | confirmed | can take a name | not for hikers | on no list (outside parks) | Missing hiking trails | + use unknown |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+          tot = dict.fromkeys(cols, 0)
+          def park(d, inside):
+              return sum(v for k, v in d.get("none_by_place", {}).items() if k.startswith("in a park") == inside)
           for r in rows:
               n, u = r.get("Named trails", {}), r.get("Unnamed lines", {})
-              lists = len([l for l in r["lists"].values() if l.get("pieces")])
-              miss = sum(l.get("missing", 0) for l in r["lists"].values())
-              miss_mi = sum(l.get("missing_miles", 0) for l in r["lists"].values())
-              md.append(f"| {r['name']} | {lists} | {n.get('total', 0)} | {n.get('confirmed', 0)} | {n.get('none', 0)} | "
-                        f"{u.get('total', 0)} | {u.get('confirmed', 0)} | {u.get('nameable', 0)} | {u.get('none', 0)} | {miss} ({miss_mi} mi) |")
-              for k, v in (("named", n.get("total", 0)), ("named_ok", n.get("confirmed", 0)), ("named_none", n.get("none", 0)),
-                           ("un", u.get("total", 0)), ("un_ok", u.get("confirmed", 0)), ("un_name", u.get("nameable", 0)),
-                           ("un_none", u.get("none", 0)), ("miss", miss), ("miss_mi", miss_mi)):
-                  tot[k] = tot.get(k, 0) + v
-          md.append(f"| **All {len(rows)} areas** | | {tot.get('named', 0)} | {tot.get('named_ok', 0)} | {tot.get('named_none', 0)} | "
-                    f"{tot.get('un', 0)} | {tot.get('un_ok', 0)} | {tot.get('un_name', 0)} | {tot.get('un_none', 0)} | "
-                    f"{tot.get('miss', 0)} ({tot.get('miss_mi', 0)} mi) |")
+              ls = r["lists"].values()
+              v = dict(named=n.get("total", 0), named_ok=n.get("confirmed", 0), named_none=n.get("none", 0),
+                       named_none_park=park(n, True), named_not_hike=n.get("not_for_hikers", 0),
+                       un=u.get("total", 0), un_ok=u.get("confirmed", 0), un_name=u.get("nameable", 0),
+                       un_not_hike=u.get("not_for_hikers", 0), un_none=u.get("none", 0), un_none_out=park(u, False),
+                       miss=sum(l.get("missing", 0) for l in ls), miss_mi=sum(l.get("missing_miles", 0) for l in ls),
+                       miss_q=sum(l.get("missing_unknown_use", 0) for l in ls),
+                       miss_q_mi=sum(l.get("missing_unknown_miles", 0) for l in ls))
+              lists = len([l for l in ls if l.get("pieces")])
+              for k in cols:
+                  tot[k] += v[k]
+              md.append(f"| {r['name']} | {lists} | {v['named']} | {v['named_ok']} | {v['named_none']} ({v['named_none_park']}) | "
+                        f"{v['named_not_hike']} | {v['un']} | {v['un_ok']} | {v['un_name']} | {v['un_not_hike']} | "
+                        f"{v['un_none']} ({v['un_none_out']}) | {v['miss']} ({v['miss_mi']} mi) | {v['miss_q']} ({v['miss_q_mi']} mi) |")
+          t = tot
+          md.append(f"| **All {len(rows)} areas** | | {t['named']} | {t['named_ok']} | {t['named_none']} ({t['named_none_park']}) | "
+                    f"{t['named_not_hike']} | {t['un']} | {t['un_ok']} | {t['un_name']} | {t['un_not_hike']} | "
+                    f"{t['un_none']} ({t['un_none_out']}) | {t['miss']} ({t['miss_mi']} mi) | {t['miss_q']} ({t['miss_q_mi']} mi) |")
           open("out/ALL.md", "w").write("\n".join(md) + "\n")
           print("\n".join(md))
           PY
