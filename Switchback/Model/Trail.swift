@@ -210,6 +210,14 @@ struct Trail: Codable, Identifiable, Hashable {
     /// appears in its trail system, and as the walk in to the hikes it leads to).
     var isSide: Bool { tags["switchback:side"] == "yes" }
 
+    /// A hike to list: a loop, a trail with a trailhead, a trail an official list has, or part of a trail system.
+    /// Side trails, road walks, short fragments and unnamed lines aren't; they stay on the map. Trail files decide
+    /// (switchback:hike=no); a trail from anywhere else counts unless it's plainly a side trail.
+    var isHike: Bool {
+        tags["switchback:hike"] != "no" && !isSide && !isInformal && !isUnnamed
+    }
+
+    /// "List every trail" in Settings: the list shows side trails, road walks, fragments and unnamed paths too.
     static let sideKey = "sideTrails"
     static var showsSide: Bool { UserDefaults.standard.bool(forKey: sideKey) }
 

@@ -234,8 +234,8 @@ struct TrailSystemView: View {
     @State private var selectedId: String?
 
     var body: some View {
-        let hikes = system.trails.filter { !$0.isSide }
-        let sides = system.trails.filter(\.isSide)
+        let hikes = system.trails.filter(\.isHike)
+        let sides = system.trails.filter { !$0.isHike }
         List {
             Section {
                 ZStack(alignment: .bottomLeading) {
@@ -254,7 +254,7 @@ struct TrailSystemView: View {
                 }
             }
             if !sides.isEmpty {
-                Section("Access trails and connectors") {
+                Section("Access trails, connectors and short pieces") {
                     ForEach(sides) { t in
                         NavigationLink(value: t) { TrailRow(trail: t) }
                             .listRowBackground(t.id == selectedId ? Color.trailGreen.opacity(0.12) : nil)

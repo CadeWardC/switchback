@@ -14,7 +14,9 @@ import numpy as np
 ZOOM = 13
 STEP = 10.0          # metres between samples
 TOLERANCE = 1.5      # metres of height the simplified chart may be off by
-THRESHOLD = 2.0      # ignore wiggles smaller than this when adding up the climb (as the app does)
+THRESHOLD = 5.0      # ignore wiggles smaller than this when adding up the climb. Heights come from a terrain model,
+                     # not a barometer: 2 m (a barometer's threshold) counts its noise as climbing
+SMOOTH = 5           # samples (about 50 m) averaged before adding up the climb
 TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 
 def tile_xy(lat, lon, z=ZOOM):
@@ -157,9 +159,11 @@ def profile(pts, terrain, dist, encode_ints):
         filled.append(last)
     # a light median filter removes single-pixel spikes without flattening real bumps
     sm = [sorted(filled[max(0, i - 1):i + 2])[len(filled[max(0, i - 1):i + 2]) // 2] for i in range(len(filled))]
+    half = SMOOTH // 2
+    flat = [sum(sm[max(0, i - half):i + half + 1]) / len(sm[max(0, i - half):i + half + 1]) for i in range(len(sm))]
     gain = loss = 0.0
-    ref = sm[0]
-    for e in sm[1:]:
+    ref = flat[0]
+    for e in flat[1:]:
         if e - ref >= THRESHOLD:
             gain += e - ref
             ref = e

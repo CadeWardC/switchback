@@ -102,7 +102,7 @@ struct ExploreView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if !trails.isEmpty {
                     Button { mode = .list } label: {
-                        Label("\(trails.count) trails · List", systemImage: "list.bullet")
+                        Label("\(model.listed.count) hikes · List", systemImage: "list.bullet")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
@@ -181,14 +181,14 @@ struct ExploreView: View {
     // MARK: List
 
     private var listMode: some View {
-        let trails = model.filtered
+        let trails = model.listed
         let groups = model.grouped(trails)
         return List {
             Section {
                 EmptyView()
             } header: {
                 HStack {
-                    Text(model.isLoading ? "Searching…" : "\(trails.count) trails")
+                    Text(model.isLoading ? "Searching…" : "\(trails.count) hikes")
                     Spacer()
                     Menu {
                         Picker("Sort", selection: $model.sort) {

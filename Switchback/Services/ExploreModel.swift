@@ -92,7 +92,10 @@ final class ExploreModel: ObservableObject {
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                Task { @MainActor in self?.refreshResults() }
+                Task { @MainActor in
+                    self?.refreshResults()
+                    self?.objectWillChange.send()
+                }
             }
             .store(in: &cancellables)
     }
@@ -159,6 +162,12 @@ final class ExploreModel: ObservableObject {
         case .mostClimb: list.sort { ($0.profile?.gain ?? -1) > ($1.profile?.gain ?? -1) }
         }
         return list
+    }
+
+    /// What the list shows: hikes, unless "List every trail" is on. The map shows everything in `filtered`.
+    var listed: [Trail] {
+        let all = filtered
+        return Trail.showsSide ? all : all.filter(\.isHike)
     }
 
     var selectedTrail: Trail? {
@@ -347,10 +356,8 @@ final class ExploreModel: ObservableObject {
         guard let r = visibleRegion else { return }
         let view = BBox(region: r).expanded(byDegrees: 0.005)
         let c = view.center
-        let informal = Trail.showsInformal, side = Trail.showsSide
-        var list = known.values.filter {
-            (informal || !$0.isInformal) && (side || !$0.isSide) && (knownBoxes[$0.id]?.intersects(view) ?? false)
-        }
+        let informal = Trail.showsInformal
+        var list = known.values.filter { (informal || !$0.isInformal) && (knownBoxes[$0.id]?.intersects(view) ?? false) }
         // add the quick versions read from the map, unless the exact version of that trail is already here
         if !previews.isEmpty {
             var exact: [String: [BBox]] = [:]

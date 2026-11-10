@@ -28,7 +28,7 @@ from shapely.strtree import STRtree
 
 CELL = 0.25
 SIMPLIFY_M = 4.0
-KEEP_TAGS = {"switchback:multiuse", "sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
+KEEP_TAGS = {"switchback:multiuse", "switchback:roadwalk", "informal", "access", "foot", "sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
              "wikidata", "wikimedia_commons", "dog", "symbol", "description", "description:en", "note", "name:en"}
 SKIP_ROLES = {"alternative", "excursion", "approach", "connection", "link"}
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett", "compacted"}
@@ -36,6 +36,8 @@ NO_ACCESS = {"private", "no"}
 NO_PARKING = {"private", "no", "customers", "permit", "delivery", "employees"}
 TRAILHEAD_M = 100    # a trailhead or car park this close to a trail is a place to start from
 ACCESS_M = 3000      # …and trails within this walk of it (along trails) can be started from there
+FAR_LINK_M = 3000    # …or this close when both pieces are in the same park (see link_pieces)
+FRAGMENT_M = 805     # a named piece shorter than this (half a mile) isn't a hike on its own
 LINK_M = 1000   # pieces of one named trail this close along other trails are one trail (a loop mapped in halves)
 GAP_M = 30      # a straight jump allowed between pieces where the map has a small gap
 
@@ -233,12 +235,16 @@ def reach(adj, src, targets, limit):
         walks[t] = (d, path[::-1])
     return walks
 
-def link_pieces(pieces, adj, where):
+def link_pieces(pieces, adj, where, parks=None):
     """Joins the pieces of one named trail (lines of (node id, (lat, lon))) that meet along other trails, or across a
     small gap, into walks: a loop mapped as two halves joined by another trail becomes one closed loop, and a trail
     broken where it shares a stretch with another becomes one line. Returns [(walk, segments)]: the line to follow,
     and the lines to draw (the pieces and the stretches that join them)."""
-    pieces = [p for p in pieces if len(p) >= 2]
+    keep = [k for k, p in enumerate(pieces) if len(p) >= 2]
+    parks = [parks[k] for k in keep] if parks else None
+    pieces = [pieces[k] for k in keep]
+    far = parks is not None and any(p for p in parks)
+    sizes = [length([c for _, c in p]) for p in pieces]
     if len(pieces) < 2:
         return [([c for _, c in p], [[c for _, c in p]]) for p in pieces]
     end_node = lambda i, e: pieces[i][-1 if e else 0][0]
@@ -251,7 +257,7 @@ def link_pieces(pieces, adj, where):
         for e in (0, 1):
             a = end_node(i, e)
             others = {n for n, owners in ends.items() if any(j != i for j, _ in owners)}
-            walks = reach(adj, a, others, LINK_M)
+            walks = reach(adj, a, others, FAR_LINK_M if far else LINK_M)
             for n in others:
                 if n == a:
                     walk = (0.0, [a])
@@ -275,6 +281,12 @@ def link_pieces(pieces, adj, where):
     for d, a, b, coords in links:
         if a[0] == b[0] or a in linked or b in linked:
             continue
+        if d > LINK_M:
+            # a longer gap is joined only inside one park, and only when the trail's own pieces are most of the
+            # result (the stretch between them is at most 40% of the two pieces it joins)
+            same_park = parks and parks[a[0]] and parks[a[0]] == parks[b[0]]
+            if not same_park or d > 0.4 * (sizes[a[0]] + sizes[b[0]]):
+                continue
         if root(a[0]) == root(b[0]):
             # closes a loop: only where the pieces really go round (not two ends of one line far apart)
             if d > LINK_M / 2:
@@ -510,6 +522,14 @@ def make_trail(tid, osm_id, source, name, lines, tags, min_len, main=None):
         t["pathIndex"] = segs.index(path)
     else:
         t["path"] = encode(path)
+    # OpenStreetMap's own word that this isn't an official trail: informal=yes, or walking is discouraged
+    # (an operator means someone manages it, so it isn't informal whatever the tag says)
+    if "operator" not in kept and (kept.get("informal") == "yes" or "discouraged" in (kept.get("access"), kept.get("foot"))):
+        kept["switchback:informal"] = "yes"
+        kept["switchback:informal_reason"] = ("Mapped in OpenStreetMap as an informal path." if kept.get("informal") == "yes"
+                                              else "Mapped in OpenStreetMap as a path walkers are asked not to use.")
+    kept.pop("access", None)
+    kept.pop("foot", None)
     if kept:
         t["tags"] = kept
     t["_main"] = list(main)
@@ -720,8 +740,32 @@ def hikes(trails, adj, where, node_names, heads):
         with_access += 1
     print(f"  trailheads: {len(placed)} next to trails; {with_access} of {len(hikeable)} hikes can be started from one")
 
+    # 3b. fragments: a short named piece with no trailhead isn't a hike of its own. If it joins other trails at both
+    # ends it's a connector (a side trail); otherwise it's a fragment. Both stay on the map.
+    through = defaultdict(set)        # node -> trails through it
+    for i, (t, _) in enumerate(trails):
+        for n in ids(t["_main"]):
+            if n is not None:
+                through[n].add(i)
+    fragments = connectors = 0
+    for i in hikeable:
+        t = trails[i][0]
+        tags = t.setdefault("tags", {})
+        if t["length"] >= FRAGMENT_M or i in loops or "switchback:access" in tags:
+            continue
+        nodes = ids(t["_main"])
+        ends = [n for n in (nodes[0], nodes[-1]) if n is not None]
+        if len(ends) == 2 and all(through[n] - {i} for n in ends):
+            tags["switchback:side"] = "yes"
+            connectors += 1
+        else:
+            tags["switchback:fragment"] = "yes"
+            fragments += 1
+    print(f"  short pieces: {connectors} that join two trails (connectors), {fragments} fragments")
+
     # 4. extensions: a loop that hangs off another loop (shares a junction and at most a third of its line) can be added to it
     extended = 0
+    side_now = lambda j: trails[j][0].get("tags", {}).get("switchback:side") == "yes"
     for i in loops:
         nodes = [n for n in ids(trails[i][0]["_main"]) if n is not None]
         mine = set(nodes)
@@ -834,8 +878,9 @@ def build(pbf):
             hiking = any(k in tags for k in HIKING_HINTS) or tags.get("foot") == "designated"
             if trailish or touches or hiking or finder.find(*middle(pts)):
                 # a dirt road you can walk is a road walk, not a trail ("Road walk: County Road 356")
-                shown = f"Road walk: {name}" if ROAD_NAME.search(name) and not trailish else name
-                ways.named.append((group[0][0], shown, tags, line))
+                road = bool(ROAD_NAME.search(name)) and not trailish
+                shown = f"Road walk: {name}" if road else name
+                ways.named.append((group[0][0], shown, dict(tags, **{"switchback:roadwalk": "yes"}) if road else tags, line))
                 kept_tracks += 1
             else:
                 dropped_tracks += 1
@@ -851,7 +896,10 @@ def build(pbf):
     joined = 0
     for name, group in by_name.items():
         lines = chains([nodes for _, _, nodes in group], with_nodes=True)
-        walks = link_pieces(lines, adj, where)
+        # generic names ("Connector", "White Connector 1") are many different trails: never joined across gaps
+        generic = bool(SIDE_WORDS.search(name)) or name.lower() in NOT_SYSTEMS
+        parks = None if generic or len(lines) < 2 else [finder.find(*middle([c for _, c in l])) for l in lines]
+        walks = link_pieces(lines, adj, where, parks)
         joined += len(lines) - len(walks)
         for walk, segs in walks:
             first = walk[0]

@@ -270,7 +270,7 @@ struct LibreTrailMap: UIViewRepresentable {
             if trailSig != shownTrails {
                 shownTrails = trailSig
                 let lines: [MLNShape & MLNFeature] = p.trails.map { Self.lineFeature($0) }
-                let heads: [MLNShape & MLNFeature] = p.trails.filter { !$0.isUnnamed }.map { Self.headFeature($0) }
+                let heads: [MLNShape & MLNFeature] = p.trails.filter { $0.isHike }.map { Self.headFeature($0) }
                 sources["sb-trails"]?.shape = MLNShapeCollectionFeature(shapes: lines)
                 sources["sb-heads"]?.shape = MLNShapeCollectionFeature(shapes: heads)
             }

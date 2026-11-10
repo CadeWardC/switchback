@@ -4,7 +4,7 @@
     check_official_trails.py <region.trails> <region.json> [report.md] [summary.json]
 
 Official lists (public ArcGIS services): in the US the USGS National Digital Trails, the Forest Service and the
-National Park Service; in Canada the Trans Canada Trail; for each province the official lists picked by hand in STATE_SOURCES (BC Recreation
+National Park Service; in Canada, for each province, the official lists picked by hand in STATE_SOURCES (BC Recreation
 Sites and Trails, the Ontario Trail Network, the Governments of PEI, Manitoba and Yukon, …); plus, for every state or
 province, the trail lists its agencies publish (state parks, conservation, cities), found in ArcGIS Online's public
 catalogue. Each trail in the pack is matched by shape (the share of its
@@ -33,10 +33,8 @@ NATIONAL_US = [
     ("National Park Service", "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer/0",
      ["trlname", "maplabel"], [], ["unitname", "trltype"]),
 ]
-NATIONAL_CA = [
-    ("Trans Canada Trail", "https://services2.arcgis.com/rDdKyyk7uludsLpI/arcgis/rest/services/ExploreTheMap_EN_2026/FeatureServer/15",
-     ["name_trail"], [], ["category"]),
-]
+# The Trans Canada Trail is NOT a source: the only terms found for its data allow personal, non-commercial use.
+NATIONAL_CA = []
 NATIONAL = {"US": NATIONAL_US, "CA": NATIONAL_CA}
 NCC = ("National Capital Commission", "https://services2.arcgis.com/WLyMuW006nKOfa5Z/arcgis/rest/services/NCC_Paths_and_Trails/FeatureServer/1",
        ["trail_name"], ["trail_numb"], ["trail_type"])
@@ -89,6 +87,27 @@ STATE_SOURCES = {
          ["trail_name"], [], ["park_name"]),
     ],
 }
+# Accounts of government agencies on ArcGIS Online (seen publishing their own trail layers). A layer from one of
+# these is an official list for its state; anything else the catalogue finds is only reported, never used.
+VETTED_PUBLISHERS = {
+    "dnrgis_indnr": "Indiana DNR", "MichiganDNR": "Michigan DNR", "NCStateParks_NCDPR": "North Carolina State Parks",
+    "TPWD_StateParks": "Texas Parks & Wildlife", "TDEC_Bureau_of_Conservation": "Tennessee Dept. of Environment & Conservation",
+    "Ben_Donatelle_wa_rco": "Washington Recreation and Conservation Office", "WVDOT_Publisher": "West Virginia DOT",
+    "vtanrgis": "Vermont Agency of Natural Resources", "ajtorgerson@nd.gov_ndparks": "North Dakota Parks & Recreation",
+    "dlnr_dmatsuwaki": "Hawaii DLNR", "RA_NRARCGIS": "Pennsylvania DCNR", "commons_etl_user": "Minnesota Geospatial Commons",
+    "Michael.Krumrin_DNRECGIS": "Delaware DNREC", "FirstMap@De": "Delaware FirstMap", "deepgis": "Connecticut DEEP",
+    "jamie.vanemmerik_vdcr": "Virginia DCR", "Kentucky_DGI": "Kentucky Division of Geographic Information",
+    "BLM_OR_Public": "Bureau of Land Management (Oregon/Washington)", "blm_arcgis_hub_or": "Bureau of Land Management (Oregon/Washington)",
+    "NGPC.GISAdmin": "Nebraska Game and Parks", "rsaccoCPW": "Colorado Parks and Wildlife",
+    "AlaskaGeospatialOffice": "Alaska Geospatial Office", "WyomingGeoHub": "Wyoming GeoHub", "pdudley_sts": "Tennessee STS GIS",
+    "Manitoba_Government": "Government of Manitoba", "Yukon.government": "Government of Yukon",
+    "gpei_wdmacdonald": "Government of Prince Edward Island", "OntarioProvincialMapping": "Ontario Provincial Mapping",
+    "NCC_CCN": "National Capital Commission", "svc_ParksNB": "New Brunswick Parks",
+}
+# layers that aren't lists of trails to hike
+NOT_TRAIL_LISTS = ("snowmobile", "motoneige", "proposed", "planned", "plan ", "historic", "atv", "orv", "ohv", "motor",
+                   "water", "paddl", "bike", "bicycle", "cycl", "ski", "winter", "road", "survey", "decommission")
+
 STATES = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer"
 CATALOGUE = "https://www.arcgis.com/sharing/rest/search"
 NAME_FIELDS = ["trail_name", "trailname", "trlname", "trl_name", "trail_nm", "name_trail", "t_name", "name", "trail", "maplabel", "label",
@@ -150,8 +169,9 @@ def count_in(url, area):
     except Exception:
         return 0
 
-def discover(region, area, known_urls):
-    """Trail layers the region's agencies publish, from ArcGIS Online's public catalogue."""
+def discover(region, area, known_urls, vetted_only=False):
+    """Trail layers the region's agencies publish, from ArcGIS Online's public catalogue. With vetted_only, just the
+    layers published by a government account in VETTED_PUBLISHERS that are lists of trails to hike."""
     name = region["name"].split(",")[0]
     if region.get("country") == "CA-national":
         words = [name]
@@ -169,6 +189,9 @@ def discover(region, area, known_urls):
             url = (item.get("url") or "").rstrip("/")
             if not url or url in known_urls:
                 continue
+            if vetted_only and (item.get("owner") not in VETTED_PUBLISHERS
+                                or any(w in (item.get("title") or "").lower() for w in NOT_TRAIL_LISTS)):
+                continue
             known_urls.add(url)
             try:
                 info = get(url, {"f": "json"}, tries=2)
@@ -178,16 +201,19 @@ def discover(region, area, known_urls):
             for lurl, l in layers:
                 if l.get("geometryType") != "esriGeometryPolyline" or not any(w in l.get("name", "").lower() for w in TRAILISH):
                     continue
+                if vetted_only and any(w in l.get("name", "").lower() for w in NOT_TRAIL_LISTS):
+                    continue
                 try:
                     linfo = get(lurl, {"f": "json"}, tries=2)
                 except Exception:
                     continue
-                src = layer_source(f"{item.get('title')} [{item.get('owner')}]", lurl, linfo)
+                who = VETTED_PUBLISHERS.get(item.get("owner"), item.get("owner"))
+                src = layer_source(f"{item.get('title')} [{who}]", lurl, linfo)
                 n = count_in(lurl, area) if src else 0
                 if src and n >= 10:
                     found.append((n, src))
     found.sort(key=lambda x: -x[0])
-    return [src for _, src in found[:8]]
+    return [src for _, src in found[:4 if vetted_only else 8]]
 
 def pick(attrs, keys):
     for k in keys:
@@ -501,6 +527,14 @@ def evaluate(trails, area, sources, say=print):
                 f = next(feats[i] for i in owners if norm_name(feats[i]["name"]) == best)
                 name_share = {"name": f["name"], "no": f["no"], "share": c / npts,
                               "dominance": c / max(1, sum(by_name.values()))}
+            # the share on a single official trail: its pieces go by name (unnamed pieces each count alone), so a
+            # road or neighbouring trail that happens to run close can't add up to a match
+            groups = Counter()
+            for i, c in owners.items():
+                groups[norm_name(feats[i]["name"]) or i] += c
+            share = min(share, max(groups.values()) / npts)
+            if share < 0.3:
+                continue
             not_share = sum(c for i, c in owners.items() if feats[i]["use"] == "not") / npts
             hike_share = sum(c for i, c in owners.items() if feats[i]["use"] != "not") / npts
             top_not = feats[max((i for i in owners if feats[i]["use"] == "not"), key=lambda i: owners[i], default=owners.most_common(1)[0][0])]
@@ -544,8 +578,8 @@ def official_name(res):
             continue
         if norm_name(n["name"]) in GENERIC or len(norm_name(n["name"])) < 3:
             continue
-        if src == "Trans Canada Trail" and not TRAIL_WORDS.search(n["name"]):
-            continue      # its section names are often towns ("Township of Langley")
+        if " [" in src:
+            continue      # a list found in the catalogue (its licence unread): it can confirm a trail, not name it
         picks.append((n["share"], src, n))
     if not picks:
         return None, "no list names it clearly"

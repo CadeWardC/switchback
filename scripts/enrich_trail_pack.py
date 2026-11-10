@@ -64,6 +64,12 @@ def main():
               "coverage": info.get("coverage", [])}
     area, outline = official.region_area(region)
     sources = list(official.NATIONAL.get(region["country"], [])) + official.STATE_SOURCES.get(region["name"], [])
+    known = {src[1].rsplit("/", 1)[0] for src in sources} | {src[1] for src in sources}
+    try:
+        # the state's or province's own lists, from vetted government publishers only
+        sources += official.discover(region, area, known, vetted_only=True)
+    except Exception as ex:
+        print(f"  the state's own lists couldn't be looked up ({ex})")
     print(f"{region['name']}: {len(trails)} trails; official lists inside ({outline}):")
     try:
         inside, results, sizes, _ = official.evaluate(trails, area, sources)
@@ -106,7 +112,27 @@ def main():
         if why:
             tags["switchback:informal"] = "yes"
             tags["switchback:informal_reason"] = why
+        elif tags.get("switchback:informal") == "yes" and "official:source" in tags:
+            # OpenStreetMap calls it informal, but an official hiking list has it: the list wins
+            del tags["switchback:informal"]
+            tags.pop("switchback:informal_reason", None)
+        if tags.get("switchback:informal") == "yes":
             counts["informal"] += 1
+        # is it a hike to list? A loop, a trail with a trailhead, a trail an official list has, or part of a trail
+        # system; never a side trail, road walk, unnamed line or informal path, and a short fragment only if official
+        line = official.decode(t["path"]) if "path" in t else t["_lines"][t.get("pathIndex", 0)]
+        loop = t["length"] > 500 and official.dist(line[0], line[-1]) < max(150, t["length"] * 0.03)
+        listed = "official:source" in tags
+        if any(tags.get(k) == "yes" for k in ("switchback:informal", "switchback:side", "switchback:roadwalk", "switchback:unnamed")):
+            hike = False
+        elif tags.get("switchback:fragment") == "yes":
+            hike = listed
+        else:
+            hike = (loop or listed or "switchback:access" in tags or "switchback:system" in tags
+                    or tags.get("switchback:derived_name") == "yes")
+        if not hike:
+            tags["switchback:hike"] = "no"
+        counts["hikes" if hike else "not listed as hikes"] += 1
 
     for k, ts in trails_by_cell.items():
         for t in ts:

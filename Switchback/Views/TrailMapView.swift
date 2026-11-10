@@ -259,7 +259,7 @@ struct TrailMapView: UIViewRepresentable {
                     newOverlays.append(line)
                 }
                 // unnamed paths get no pin, to keep the map calm (except when selected)
-                if !t.isUnnamed || isSelected { newHeads.append(head) }
+                if t.isHike || isSelected { newHeads.append(head) }
             }
             // keep the selected trail on top of anything just added
             if selectedOverlays.isEmpty, !newOverlays.isEmpty, let id = p.selectedId, let s = shown[id] {
