@@ -116,7 +116,7 @@ final class ExploreModel: ObservableObject {
         let words = Self.fold(nameFilter).split(whereSeparator: { $0 == " " || $0 == "'" || $0 == "-" }).map(String.init)
         guard !words.isEmpty else { return true }
         // the trail's own name (not for unnamed paths), or its area: "cedar creek" finds everything in Cedar Creek
-        let name = t.isUnnamed && !t.name.hasPrefix("Connector") && !t.name.hasSuffix("spur") ? "" : Self.fold(t.name)
+        let name = t.name == "Unnamed trail" ? "" : Self.fold(t.name)
         let area = Self.fold(t.area ?? "")
         let system = Self.fold(t.system ?? "")
         return words.allSatisfy { name.contains($0) } || (!area.isEmpty && words.allSatisfy { area.contains($0) })

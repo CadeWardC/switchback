@@ -28,7 +28,7 @@ from shapely.strtree import STRtree
 
 CELL = 0.25
 SIMPLIFY_M = 4.0
-KEEP_TAGS = {"sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
+KEEP_TAGS = {"switchback:multiuse", "sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
              "wikidata", "wikimedia_commons", "dog", "symbol", "description", "description:en", "note", "name:en"}
 SKIP_ROLES = {"alternative", "excursion", "approach", "connection", "link"}
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett", "compacted"}
@@ -398,6 +398,7 @@ class Areas(osmium.SimpleHandler):
         self.polys.append(geom)
 
 NOT_LAKES = {"river", "stream", "canal", "ditch", "drain", "wastewater", "basin", "moat", "fishpass", "lock", "rapids"}
+PARK_MAX = 0.02        # square degrees (about 190 km²): bigger areas (national forests) don't name their paths
 LAKE_NEAR = 0.0009     # degrees: about 80–100 m from the shore
 
 class LakeFinder:
@@ -428,6 +429,11 @@ class AreaFinder:
 
     def find(self, lat, lon):
         """The smallest named area containing the point."""
+        found = self.find_sized(lat, lon)
+        return found[0] if found else None
+
+    def find_sized(self, lat, lon):
+        """(name, size in square degrees) of the smallest named area containing the point."""
         if self.tree is None:
             return None
         p = Point(lon, lat)
@@ -436,7 +442,7 @@ class AreaFinder:
             poly = self.polys[int(i)]
             if poly.contains(p) and (best is None or poly.area < self.polys[best].area):
                 best = int(i)
-        return self.names[best] if best is not None else None
+        return (self.names[best], self.polys[best].area) if best is not None else None
 
 class Ways(osmium.SimpleHandler):
     def __init__(self, member_ways):
@@ -469,6 +475,9 @@ class Ways(osmium.SimpleHandler):
         name = t.get("name")
         if name and hw in ("path", "footway", "bridleway") and t.get("footway") not in ("sidewalk", "crossing"):
             self.named.append((w.id, name, {k: v for k, v in t}, nodes))
+        elif name and hw == "cycleway":
+            # a named greenway or rail trail: open to walkers unless it says otherwise
+            self.named.append((w.id, name, dict({k: v for k, v in t}, **{"switchback:multiuse": "yes"}), nodes))
         elif name and hw == "track" and t.get("tracktype") != "grade1":
             self.tracks.append((w.id, name, {k: v for k, v in t}, nodes))
         elif not name and hw == "path" and t.get("surface") not in PAVED and "segregated" not in t:
@@ -883,12 +892,32 @@ def build(pbf):
     print(f"  dropped {dropped} unnamed paths outside parks that join no trail; named {lake_walks} after the lake they follow")
 
     # every trail's area
+    in_area = defaultdict(list)
     for t, _ in trails:
         lines = [decode(s) for s in t["segments"]]
         main = lines[t.get("pathIndex", 0)] if "pathIndex" in t else decode(t["path"])
-        area = finder.find(*middle(main))
-        if area:
-            t.setdefault("tags", {})["switchback:area"] = area
+        found = finder.find_sized(*middle(main))
+        if found:
+            t.setdefault("tags", {})["switchback:area"] = found[0]
+            in_area[found].append(t)
+    # an unnamed path in a park (not a vast forest) takes the park's name; where the park has no named trail at all,
+    # its longest path is the park's trail ("Clifty Creek Conservation Area Trail") and listed like any other
+    park_named = 0
+    for (area, size), members in in_area.items():
+        plain = sorted((t for t in members if is_unnamed(t) and t["name"] == "Unnamed trail"), key=lambda t: -t["length"])
+        if not plain or size > PARK_MAX:
+            continue
+        base = area if re.search(r"\b(trail|trails|path|greenway)$", area, re.I) else None
+        if all(is_unnamed(t) for t in members):
+            first, plain = plain[0], plain[1:]
+            first["name"] = base or f"{area} Trail"
+            del first["tags"]["switchback:unnamed"]
+            first["tags"]["switchback:derived_name"] = "yes"
+            park_named += 1
+        for t in plain:
+            t["name"] = f"{area} path"
+            park_named += 1
+    print(f"  named {park_named} unnamed paths after the park they're in")
     trails = drop_duplicates(trails)
     trails = hikes(trails, adj, where, node_names, rel.trailheads + [(1, n, c) for n, c in ways.parking])
     for t, _ in trails:

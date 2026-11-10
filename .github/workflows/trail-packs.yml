@@ -114,7 +114,7 @@ jobs:
       - name: Keep only trails, routes, parks, trailheads, parking and trail highlights
         run: |
           osmium tags-filter region.osm.pbf \
-            r/route=hiking,foot,walking w/highway=path,footway,bridleway,track \
+            r/route=hiking,foot,walking w/highway=path,footway,bridleway,track,cycleway \
             nwr/boundary=protected_area,national_park nwr/leisure=park,nature_reserve \
             n/tourism=viewpoint,alpine_hut,wilderness_hut,camp_site,picnic_site \
             n/natural=peak,volcano,spring,cave_entrance n/waterway=waterfall \

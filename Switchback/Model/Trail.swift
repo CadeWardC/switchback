@@ -354,6 +354,7 @@ struct Trail: Codable, Identifiable, Hashable {
             ]
             out.append(TrailFact(title: "SAC scale", value: names[sac] ?? sac))
         }
+        if tags["switchback:multiuse"] == "yes" { out.append(TrailFact(title: "Type", value: "Multi-use path (walking and cycling)")) }
         if let surface = tags["surface"] { out.append(TrailFact(title: "Surface", value: surface.replacingOccurrences(of: "_", with: " ").capitalized)) }
         if let vis = tags["trail_visibility"] { out.append(TrailFact(title: "Trail visibility", value: vis.capitalized)) }
         if let ref = tags["ref"] { out.append(TrailFact(title: "Ref", value: ref)) }
