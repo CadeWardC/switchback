@@ -620,7 +620,7 @@ def hikes(trails, adj, where, node_names, heads):
             continue
         if not name:
             on = sorted(node_names.get(node, ()))
-            name = f"{on[0]} trailhead" if on else "Trailhead"
+            name = f"Parking on {on[0]}" if on else "Parking"
         placed.append((name, node, c, gap))
     access = defaultdict(list)
     for name, node, c, gap in placed:
@@ -645,7 +645,7 @@ def hikes(trails, adj, where, node_names, heads):
     for i, found in access.items():
         found.sort(key=lambda f: f[0])
         out = []
-        for d, name, c, line in found[:4]:
+        for d, name, c, line in found[:6]:
             e = {"n": name, "d": round(d), "p": [round(c[0], 5), round(c[1], 5)]}
             if d >= 30:
                 e["l"] = encode(simplify(line))
@@ -654,7 +654,7 @@ def hikes(trails, adj, where, node_names, heads):
         with_access += 1
     print(f"  trailheads: {len(placed)} next to trails; {with_access} of {len(hikeable)} hikes can be started from one")
 
-    # 4. extensions: a loop that hangs off another loop (shares a junction, little else) can be added to it
+    # 4. extensions: a loop that hangs off another loop (shares a junction and at most a third of its line) can be added to it
     extended = 0
     for i in loops:
         nodes = [n for n in ids(trails[i][0]["_main"]) if n is not None]
@@ -665,7 +665,7 @@ def hikes(trails, adj, where, node_names, heads):
             s = trails[j][0]
             s_nodes = ids(s["_main"])
             shared = [n for n in s_nodes if n in mine]
-            if not shared or len(shared) > 0.2 * len(s_nodes) or s["length"] > trails[i][0]["length"]:
+            if not shared or len(shared) > 0.35 * len(s_nodes) or s["length"] > trails[i][0]["length"]:
                 continue
             at = s_nodes.index(shared[0])
             line = s["_main"][at:] + s["_main"][1:at + 1]          # the side loop, starting at the junction
