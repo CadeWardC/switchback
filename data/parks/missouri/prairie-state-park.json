@@ -1,0 +1,36 @@
+{
+ "park": "Prairie State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/prairie-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Coyote Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Drover's Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Nature Center Interpretive Trail",
+   "miles": 0.4,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Could not open mostateparks.com directly (DNS blocked in this session); facts come from search summaries of the manager's trails page, trail PDFs and accessibility page. Manager's trails page snippet names Coyote Trail and Drover's Trail only; no lengths were in the summaries except Nature Center Interpretive Trail (0.4 mile, accessibility page). Missouri State Parks trail map summary says only hikers are permitted on park trails and pets are banned except on Path of the Earth People. Gayfeather Trail has a manager location page with coordinates but no distance or trail designation confirmed. ",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Sandstone Trail",
+  "Gayfeather Trail",
+  "Path of the Earth People",
+  "Path of the Sky People",
+  "White Connector 4",
+  "Drovers Trail and Coyote Trail"
+ ]
+}

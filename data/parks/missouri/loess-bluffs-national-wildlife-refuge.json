@@ -1,0 +1,26 @@
+{
+ "park": "Loess Bluffs National Wildlife Refuge",
+ "also_known_as": [],
+ "manager": "U.S. Fish and Wildlife Service",
+ "source": "https://www.fws.gov/refuge/loess-bluffs/visit-us/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Loess Bluff Trail",
+   "miles": 0.8,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Direct fetch of fws.gov failed (host not resolvable from this session), so the list comes from search summaries of the FWS trails page. The summary says the Loess Bluff Trail is open year round to hiking, moderately difficult, with a trailhead at the visitor contact station. An older FWS auto tour page mentions 5 trails from the Visitor Center entrance, but no other names or lengths were found, so the official list may be incomplete. The 10-mile auto tour is a one-way gravel drive, not a hiking trail. Third-party sites cite about 4 miles of total trails and an Eagle Overlook Trail of 1.2 miles",
+ "missing_from_app": [
+  "Loess Bluff Trail (official 0.8 mi; app has Loess Bluffs Trail at 0.4 mi)"
+ ],
+ "in_app_not_official": [
+  "Munkres Homestead Trail",
+  "Eagle Overlook Trail",
+  "Turkey Ridge Trail",
+  "Callow Trail"
+ ]
+}

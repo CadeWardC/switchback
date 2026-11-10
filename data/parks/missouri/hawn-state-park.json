@@ -1,0 +1,47 @@
+{
+ "park": "Hawn State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/hawn/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Overlook Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Pickle Creek Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Spanish Land Grant Trail",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "Whispering Pine Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "White Oaks Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Manager page was not fetchable (mostateparks.com did not resolve from this session); list comes from search summaries of the page. Spanish Land Grant 3.8 mi is from a Missouri State Parks First Day Hike flyer and guided-hike listings. One search did not find a White Oaks trail, but a later search of the manager site says the park page lists it; unconfirmed. The page reportedly also lists White Connector trails, names not confirmed. Other sites give Whispering Pine about 10 mi as a loop with Pickle Creek, but these are third-party and not used. No closures, permits or allowed uses were confirme",
+ "missing_from_app": [
+  "Overlook Trail"
+ ],
+ "in_app_not_official": [
+  "Whispering Pine Trail - North Loop",
+  "Whispering Pine Trail - South Loop",
+  "White Connector 1",
+  "White Connector 2",
+  "White Connector 3"
+ ]
+}

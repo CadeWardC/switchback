@@ -1,0 +1,26 @@
+{
+ "park": "Robert E Talbot Conservation Area",
+ "also_known_as": [
+  "Robert E. Talbot Conservation Area",
+  "Talbot Conservation Area"
+ ],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/node/247791",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Spring River Nature Trail",
+   "miles": 1.7,
+   "uses": null
+  }
+ ],
+ "notes": "Page fetch failed (mdc.mo.gov not resolvable from this session), so facts come from search summaries of MDC pages. MDC current area description: 10.5 miles of multiuse trails total, incl. Spring River Nature Trail (heron rookery, SW portion). MDC trail guide summary: two multi-purpose trails and one foot trail totaling 10.5 miles, individual names not given. Older MDC guide: Spring River Nature Trail is a 1.7-mile natural-surface loop with three cut-off trails. Older MDC newsroom notice: a 1.8-mile hiking trail and two trails of 5.4 and 5.8 miles (hiking/biking/horse); unnamed, and sums to abo",
+ "missing_from_app": [
+  "Spring River Nature Trail (1.7 mi per older MDC guide)"
+ ],
+ "in_app_not_official": [
+  "Robert E Talbot Conservation Area Trail 1.5 (no matching name or length in the MDC sources)"
+ ]
+}

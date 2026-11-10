@@ -1,0 +1,47 @@
+{
+ "park": "Weston Bend State Park",
+ "also_known_as": [
+  "West Bend State Park"
+ ],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/west-bend-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Weston Bend Paved Bicycle Trail",
+   "miles": 2.8,
+   "uses": "hiking, biking"
+  },
+  {
+   "name": "Bear Creek Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Harpst Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Missouri River Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "North Ridge Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Manager page could not be opened (host not resolvable from session); list taken from search summary of the manager page, which names five trails. The 2.8-mile figure comes from the state park trail sheet summary (paved trail, hiking and hardened-surface biking). Lengths for the other trails are not stated in the results. West Ridge Trail has its own Missouri State Parks trail sheet (TrailDetails-WestRidgeTrail.pdf) but is not in the five-trail summary; verify. Campground Trail and Weston Bluffs Trail (3.1-3.25 mi, adjacent, managed with City of Weston) are not counted as park trails. Total par",
+ "missing_from_app": [
+  "Bear Creek Trail"
+ ],
+ "in_app_not_official": [
+  "West Ridge Trail",
+  "Barn Trail Connector",
+  "Harpst Trail/West Ridge Trail"
+ ]
+}

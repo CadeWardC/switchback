@@ -1,0 +1,40 @@
+{
+ "park": "Annie and Abel Van Meter State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/node/89851",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Earthworks",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Loess Hills",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Memorial",
+   "miles": 0.4,
+   "uses": null
+  },
+  {
+   "name": "MO River Overlook",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The manager's page could not be opened from this session (mostateparks.com did not resolve), so the list comes from search summaries of the official Missouri State Parks trails page. The summary names four official trails. Memorial Trail is 0.40 mile per the official state park map as summarized (Rugged, about 25 minutes). Lengths for the other three and all allowed uses were not stated in the sources found, so they are null. A stateparks.com page mentions six trails, which conflicts with the official four-trail list. Third-party sources (Hiking Project, Kansas City Hiker) give other lengths, ",
+ "missing_from_app": [
+  "MO River Overlook"
+ ],
+ "in_app_not_official": [
+  "Oumessourit Wetland Boardwalk Trail",
+  "Oumessourit Wetland Bluff Trail",
+  "White Connector 1"
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "park": "Bennett Spring State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/bennett-spring/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Natural Tunnel Trail",
+   "miles": 7.4,
+   "uses": null
+  },
+  {
+   "name": "Savanna Ridge Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Whistle Trail",
+   "miles": 1.0,
+   "uses": null
+  },
+  {
+   "name": "Bridge Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Oak-Hickory Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The official trails page could not be opened (DNS failure for mostateparks.com from this session); the list comes from search summaries. Official summary lists five trails. Natural Tunnel 7.40 mi is from the official trail map as summarized. Whistle 1 mi is from an older official park brochure, so it may be outdated. Savanna Ridge and Bridge and Oak-Hickory lengths and uses were not stated in the summaries. A 'Spring Trail' (about 0.5 mi) appears only on third-party sites and is not on the official list, so it is not recorded. Uses not stated in the sources, so null.",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "White Connector 1"
+ ]
+}

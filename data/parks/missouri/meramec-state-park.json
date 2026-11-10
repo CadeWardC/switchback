@@ -1,0 +1,54 @@
+{
+ "park": "Meramec State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/meramec-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Bluff View",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Deer Hollow",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Hamilton Iron Works",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Natural Wonders",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "River",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Walking Fern",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Wilderness",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Direct fetch of the manager's trails page failed (host mostateparks.com did not resolve from this session); the trail list comes from the search summary of that page. The summary says the park has roughly 13 miles of hiking trails in total, but gives no per-trail miles or uses, so those are null. The summary says only certain activities are permitted on each trail, without listing them. No closures or permits were found in the summary. Third-party AllTrails figures (e.g. Wilderness 8.8 mi, Bluff View 1.4 mi) were not recorded as official.",
+ "missing_from_app": [
+  "Hamilton Iron Works"
+ ],
+ "in_app_not_official": [
+  "White Connector 2",
+  "Not Official Trail"
+ ]
+}

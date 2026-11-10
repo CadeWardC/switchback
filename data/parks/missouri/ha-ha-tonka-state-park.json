@@ -1,0 +1,68 @@
+{
+ "park": "Ha Ha Tonka State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/ha-ha-tonka/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Acorn Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Big Niangua River Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Boulder Ridge Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Castle Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Cedar Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Spring Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lake Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Island Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Turkey Pen Hollow Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "mostateparks.com could not be fetched (DNS failure: host not in the session's allowed network domains), so this list comes only from search result summaries. The official trails page list was cut off after Cedar Trail, so the list is incomplete. Miles are null: the only lengths seen were a Spring Trail paved section of 0.4 mi (not the full trail length) and a Lake Trail figure that was ambiguous, so none were recorded. Uses are null: the Island Trail sheet mentions mountain biking, equestrian and bicycling, but the search result did not confirm it applies to this park, so it was not recorded. ",
+ "missing_from_app": [
+  "Big Niangua River Trail",
+  "Cedar Trail"
+ ],
+ "in_app_not_official": [
+  "Quarry Trail",
+  "Devil's Kitchen Trail",
+  "Colosseum Trail",
+  "Dell Rim Trail",
+  "Backpack Camp Spur"
+ ]
+}

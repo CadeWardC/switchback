@@ -1,0 +1,34 @@
+{
+ "park": "Stockton State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/node/89821",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Sortor's Bluff Trail",
+   "miles": 6.8,
+   "uses": "hiking, mountain biking"
+  },
+  {
+   "name": "Umber Ridge Trail",
+   "miles": 1.6,
+   "uses": null
+  },
+  {
+   "name": "Lakeview Trail",
+   "miles": 8.0,
+   "uses": null
+  }
+ ],
+ "notes": "mostateparks.com could not be opened from this session (DNS failure), so this relies on search summaries of Missouri State Parks trail sheets and park map. Sortor's Bluff 6.8 mi is the system total; the summaries mention a South Loop of 3.5 mi, and the app lists North and South loops at 3.2 and 3.6. Umber Ridge uses are described only as popular with mountain bikers. Nyblad Trail and Stockton Water Trail have manager maps but no length was seen in the summaries; the water trail is a water route, not a land trail. Lakeview length conflicts: 8 mi on the official map summary vs 7.2 mi (MTB Projec",
+ "missing_from_app": [
+  "Umber Ridge and Lakeview lengths differ from app; Nyblad Trail length not stated by manager in summaries"
+ ],
+ "in_app_not_official": [
+  "White Connector 1",
+  "Lakeview Trail & Umber Ridge Trail connector"
+ ]
+}

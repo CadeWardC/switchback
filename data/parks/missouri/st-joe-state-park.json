@@ -1,0 +1,38 @@
+{
+ "park": "St. Joe State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks (Missouri Department of Natural Resources)",
+ "source": "https://mostateparks.com/node/89816",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Hickory Ridge Trail",
+   "miles": 4.0,
+   "uses": null
+  },
+  {
+   "name": "Lakeview Trail",
+   "miles": 1.1,
+   "uses": null
+  },
+  {
+   "name": "Galena Trail",
+   "miles": 7.8,
+   "uses": null
+  },
+  {
+   "name": "Pine Ridge Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Fetch of mostateparks.com failed (host did not resolve in this session), so figures come from search summaries of the official Missouri State Parks trail map. Summaries give Hickory Ridge as a 4-mile loop (moderate), Lakeview as a 1.10-mile loop (easy), Galena as a 7.80-mile loop (rugged). Pine Ridge length not stated in the retrieved map text; it is listed as a park trail in the search results only loosely. Other third-party sources disagree (Lakeview 1.25 mi, Pine Ridge 12.6 mi, Hickory Ridge 2.4 mi in the app), and aggregators give park totals of 25-50+ miles across all trail types, which a",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "White Connector 1",
+  "White Connector 2",
+  "White Connector 4"
+ ]
+}

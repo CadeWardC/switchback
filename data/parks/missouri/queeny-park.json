@@ -1,0 +1,53 @@
+{
+ "park": "Queeny Park",
+ "also_known_as": [],
+ "manager": "St. Louis County Parks (St. Louis County, Missouri)",
+ "source": "https://stlouiscountymo.gov/sites/default/assets/pdfs/department/Parks/Queeny/Queeny%20Park%20Trail%20Map.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Hawk Ridge Trail",
+   "miles": 4.4,
+   "uses": null
+  },
+  {
+   "name": "Owl Creek Trail",
+   "miles": 1.0,
+   "uses": null
+  },
+  {
+   "name": "Fox Run Trail",
+   "miles": 0.6,
+   "uses": null
+  },
+  {
+   "name": "Winding Hill Trail",
+   "miles": 0.3,
+   "uses": null
+  },
+  {
+   "name": "White Oak Trail",
+   "miles": 0.6,
+   "uses": null
+  },
+  {
+   "name": "Dogwood Trail",
+   "miles": 0.4,
+   "uses": null
+  },
+  {
+   "name": "Goose Trail",
+   "miles": 0.2,
+   "uses": null
+  }
+ ],
+ "notes": "Park trail map as summarized by search, not read directly (stlouiscountymo.gov not reachable from this session). Sources conflict: a second county map names the 0.2-mile trail Lake Spur instead of Goose; the county 30-30 Hikes loop is 2.56 miles; Winding Hill is 0.3 on the map but 0.5 in our app. No official total mileage stated (summed ~7.4-7.7 mi, own arithmetic). County bike map says north trails are gravel/crushed limestone and manicured-area trails are paved; park described as very hilly. Allowed uses not stated per trail, so null. Closures and permits not checked.",
+ "missing_from_app": [
+  "Goose Trail (or Lake Spur Trail), 0.2 mi, possibly our Unnamed Trail 2"
+ ],
+ "in_app_not_official": [
+  "Unnamed Trail 2 (0.2 mi, unnamed in our app)"
+ ]
+}

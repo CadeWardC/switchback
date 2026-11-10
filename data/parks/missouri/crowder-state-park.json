@@ -1,0 +1,43 @@
+{
+ "park": "Crowder State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks (Missouri Department of Natural Resources)",
+ "source": "https://mostateparks.com/park/crowder/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Tall Oaks Trail",
+   "miles": 3.2,
+   "uses": null
+  },
+  {
+   "name": "Thompson River Trail - North Loop",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "Thompson River Trail - South Loop",
+   "miles": 7.0,
+   "uses": null
+  },
+  {
+   "name": "River Forks Trail",
+   "miles": 2.0,
+   "uses": "hiking"
+  },
+  {
+   "name": "Redbud Trail",
+   "miles": 2.0,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "The manager's trails page lists four trails (Redbud, River Forks, Tall Oaks, Thompson River), each with a map and info link; the page itself was not opened (mostateparks.com did not resolve from this session), so the list comes from search summaries of the page and of the manager's event listings. Miles for Tall Oaks and Thompson North/South come from 2026-era event listings; an older source gave Tall Oaks as 3.4 miles and the park page says 17+ miles total. Thompson River Trail is listed as one trail on the trails page, with North and South Loop split only in event listings. Uses are null whe",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "White Connector 2",
+  "White Connector 3",
+  "White Connector 4"
+ ]
+}

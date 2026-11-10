@@ -1,0 +1,23 @@
+{
+ "park": "Bushwhacker Lake Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/magazines/conservationist/2017-07/places-go",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Bushwhacker Lake Trail",
+   "miles": 6.6,
+   "uses": "hiking, horseback riding"
+  }
+ ],
+ "notes": "The MDC area page (mdc.mo.gov/conservation-area/a7823) could not be opened (host did not resolve from this session), so the list comes from search summaries only. The 6.6-mile horse/hiking trail figure is from an MDC Conservationist summary; the source URL is inferred and not confirmed. The trail name comes from a Missouri State Parks equestrian brochure summary (listed as '32 Bushwhacker Lake Trail', no length given), so the name is unverified. Horses are closed from the trail during all deer and turkey hunting seasons. Hiking is allowed across the whole area. Bicycles are allowed on roads op",
+ "missing_from_app": [
+  "Bushwhacker Lake Trail (6.6 mi, hiking and horseback, per MDC summary)"
+ ],
+ "in_app_not_official": [
+  "Bushwhacker Lake Conservation Area Trail 1.9"
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "park": "Fellows Lake Recreation Area",
+ "also_known_as": [
+  "Dirt 66 Fellows Lake Trails",
+  "Fellows Lake Trails"
+ ],
+ "manager": "City Utilities of Springfield (land owner); trails promoted and built with Ozark Greenways",
+ "source": "https://ozarkgreenways.org/explore/greenway-trails/dirt-66-fellows-lake-trails/",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Uncle Frank's Trail",
+   "miles": 1.7,
+   "uses": "hiking, biking"
+  },
+  {
+   "name": "Liberty Loop",
+   "miles": 4.5,
+   "uses": "hiking, biking"
+  },
+  {
+   "name": "Little Bit Loop",
+   "miles": 1.5,
+   "uses": "hiking, biking"
+  },
+  {
+   "name": "Fellows Lake Nature Trail",
+   "miles": null,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Ozark Greenways page could not be opened (host not resolvable from this session). Figures come from search-result summaries of its listing. The same summaries say the network is 25+ miles now (Adopt-A-Trail cites 29) with a planned 33 miles, so no official total is recorded. Trails are open sunrise to sunset. Nature Trail is hiking only. Trailforks and Komoot use different lengths (Liberty Loop about 5 mi, Jerry's Progress about 4 mi), and those are third-party, not recorded. No permit or entrance fee for trail use noted; events need a fee and license agreement with City Utilities.",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Jerry's Progress",
+  "The Hoff",
+  "Stick Dance",
+  "Valhalla",
+  "Chandler Way Loop",
+  "Local Lore",
+  "Bullwinkle Loop",
+  "Vera's Holdout",
+  "Putman's Loop",
+  "Chandler Way",
+  "Diversion",
+  "Mjollnir",
+  "That Dam Return"
+ ]
+}

@@ -1,0 +1,49 @@
+{
+ "park": "Thousand Hills State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks (Missouri Department of Natural Resources)",
+ "source": "https://mostateparks.com/sites/mostateparks/files/4THO_ColorMap.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Thousand Hills Trail",
+   "miles": 10.5,
+   "uses": "hiking, mountain biking"
+  },
+  {
+   "name": "Red Bud Trail",
+   "miles": 1.25,
+   "uses": "hiking"
+  },
+  {
+   "name": "White Connector 1",
+   "miles": 0.7,
+   "uses": null
+  },
+  {
+   "name": "White Connector 2",
+   "miles": 1.0,
+   "uses": null
+  },
+  {
+   "name": "Carolyn Bagley Harding Trail",
+   "miles": 1.4,
+   "uses": "hiking"
+  },
+  {
+   "name": "Oak Trail",
+   "miles": 0.3,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Official map lists Thousand Hills Trail at 10.5 miles, rated rugged, open to hikers and mountain bikers; park materials mention water crossings that may be impassable at high water between miles 10 and 14.5. A DNR news release describes a trail extension giving a 16-mile loop (date not confirmed). Third-party sites give 12 to 15 miles for the main loop. Equestrian use is not stated by the manager; one third-party source says foot and bicycle only. Carolyn Bagley Harding and Oak trail lengths come from search summaries of official materials and were not confirmed on the page itself. The officia",
+ "missing_from_app": [
+  "Oak Trail (0.3 mi, hiking)"
+ ],
+ "in_app_not_official": [
+  "Thousand Hills Trail - Full Route 15.9",
+  "Thousand Hills Trail - South Route 10.9"
+ ]
+}

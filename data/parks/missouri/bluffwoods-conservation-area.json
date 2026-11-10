@@ -1,0 +1,60 @@
+{
+ "park": "Bluffwoods Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/node/249248",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's pages",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Forest Nature Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Prairie",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Meadow",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Bluff",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Loess Hills",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Lone Pine",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Maple Falls",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Turkey Ridge",
+   "miles": null,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Per-trail miles not stated by the manager. MDC 2020 Conservationist summary: 2 primitive hiking trails totaling 3 miles, 3 asphalt hiking trails (2 ADA accessible) totaling 1.1 miles, interior service roads for hiking totaling 1.7 miles. A 2008 MDC trail guide lists Prairie, Meadow, Bluff, Loess Hills, Lone Pine, Maple Falls and Turkey Ridge totaling 6.7 miles (may be outdated). A third-party listing gives the paved Forest Nature Trail as 1.2 miles (not manager-stated). Bicycles allowed on roads open to vehicles and designated service roads only. Hunting seasons apply. Could not open mdc.mo.go",
+ "missing_from_app": [
+  "Forest Nature Trail",
+  "Loess Hills",
+  "Turkey Ridge"
+ ],
+ "in_app_not_official": [
+  "Lone Pine Spur"
+ ]
+}

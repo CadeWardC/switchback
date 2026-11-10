@@ -1,0 +1,32 @@
+{
+ "park": "Piney Creek Wilderness",
+ "also_known_as": [],
+ "manager": "USDA Forest Service, Mark Twain National Forest (Ava/Cassville Ranger District)",
+ "source": "https://www.fs.usda.gov/media/244706",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Piney Creek Wilderness Trail",
+   "miles": 4.6,
+   "uses": null
+  },
+  {
+   "name": "Tower Loop Trail",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "South Loop Trail",
+   "miles": 3.7,
+   "uses": null
+  }
+ ],
+ "notes": "Forest Service trail map (2021, per search summary) lists three official trails totaling 12.1 miles. The Forest Service wilderness and trailhead pages also state 12.1 miles of wilderness trail. The fs.usda.gov site could not be opened from this session (DNS failure), so the list comes from search summaries only. Allowed uses not stated in the summaries. Horse riders should picket stock at least 200 feet from waterways, trails and camps. Other sources cite 13.1 miles (older total) and an older five-trail count of 12.4 miles, which are not used here. Our app lengths differ from the manager's: Pi",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Piney Creek Wilderness Area Loop",
+  "Tower Loop (Hollow) Trail"
+ ]
+}

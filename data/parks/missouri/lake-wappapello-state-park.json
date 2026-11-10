@@ -1,0 +1,39 @@
+{
+ "park": "Lake Wappapello State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/lake-wappapello/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Allison Cemetery Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Asher Creek Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lake View Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lake Wappapello Trail",
+   "miles": 12.75,
+   "uses": "hiking, biking, equestrian"
+  }
+ ],
+ "notes": "The manager's page could not be opened (host not resolvable from this session); facts come from search summaries of mostateparks.com and related pages. Lake Wappapello Trail is described as a 12.75-mile loop plus about 10 miles of connector trails to the Ozark Trail; overnight equestrian use is not allowed and some portions are closed to overnight camping; hikers should register at the trailhead or park office. Allison Cemetery Trail is described as about half a mile (approximate, not recorded as a figure). Lengths and uses for Asher Creek and Lake View were not stated in the sources found.",
+ "missing_from_app": [
+  "Lake Wappapello Trail"
+ ],
+ "in_app_not_official": [
+  "Allison Cemetery Trail and Lake View Trail",
+  "Lake Wappapello Trail and Asher Creek Trail"
+ ]
+}

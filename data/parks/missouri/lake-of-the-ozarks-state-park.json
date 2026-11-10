@@ -1,0 +1,74 @@
+{
+ "park": "Lake of the Ozarks State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/sites/mostateparks/files/4LAO_ColorMap.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Trail of Four Winds",
+   "miles": 14.1,
+   "uses": null
+  },
+  {
+   "name": "Trail of Four Winds - North Loop",
+   "miles": 5.75,
+   "uses": null
+  },
+  {
+   "name": "Trail of Four Winds - South Loop",
+   "miles": 13.1,
+   "uses": null
+  },
+  {
+   "name": "Honey Run Trail - North Loop",
+   "miles": 4.25,
+   "uses": null
+  },
+  {
+   "name": "Honey Run Trail - South Loop",
+   "miles": 2.5,
+   "uses": null
+  },
+  {
+   "name": "Rocky Top Trail",
+   "miles": 2.0,
+   "uses": null
+  },
+  {
+   "name": "Aquatic Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Bluestem Knoll Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Coakley Hollow Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Fawns Ridge Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Official map figures came only from search-result summaries; mostateparks.com could not be fetched (DNS failed), so the official trails page was not read directly. The map summary is internally inconsistent: Trail of Four Winds is given as a 14.10-mile loop, but its north (5.75) and south (13.1) loops do not add to it; Honey Run is given as 12.75 total, which does not match 4.25 + 2.50. Lengths are recorded as stated by the map summary. Trail names for Aquatic, Bluestem Knoll, Coakley Hollow and Fawns Ridge come from the state trails page summary, which gave no lengths. Coakley Hollow (about 1",
+ "missing_from_app": [
+  "Aquatic Trail"
+ ],
+ "in_app_not_official": [
+  "Lake View Bend Trail",
+  "Hidden Springs Trail",
+  "Shady Ridge Trail",
+  "Woodland Trail",
+  "Lake Trail",
+  "Honey Run Trail - Upland Flatwoods Section",
+  "Trail of Four Winds North Loop / South Loop"
+ ]
+}

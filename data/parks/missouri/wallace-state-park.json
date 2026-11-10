@@ -1,0 +1,37 @@
+{
+ "park": "Wallace State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/wallace-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Deer Run Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Skunk Hollow Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Old Quarry Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Rocky Ford Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The manager's trails page could not be opened (host did not resolve from this session); the four trail names come from search summaries of mostateparks.com. Per-trail miles and allowed uses were not stated in the summaries, so they are null. A park general-information summary says Deer Run offers length options up to 3.5 miles; this is not recorded as a trail length. Third-party sources give total park mileage of roughly 5 to 8 miles, not recorded. Verify on the manager's trails page.",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Deer Creek Trail - Blue Loop",
+  "White Connector 4"
+ ]
+}

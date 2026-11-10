@@ -1,0 +1,49 @@
+{
+ "park": "Dr. Edmund A. Babler Memorial State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/babler/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Equestrian Trail",
+   "miles": 6.1,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Dogwood Trail",
+   "miles": 2.0,
+   "uses": null
+  },
+  {
+   "name": "Woodbine Trail",
+   "miles": 2.0,
+   "uses": null
+  },
+  {
+   "name": "Hawthorn Trail",
+   "miles": 1.25,
+   "uses": null
+  },
+  {
+   "name": "Virginia Day Memorial Trail",
+   "miles": 1.25,
+   "uses": null
+  },
+  {
+   "name": "Paved Bicycle Path",
+   "miles": 1.75,
+   "uses": "biking"
+  }
+ ],
+ "notes": "Page could not be opened (mostateparks.com did not resolve from this session); figures come from search summaries of the manager's trail pages, including an older listing that may be outdated. Equestrian Trail length conflicts across sources: 6.1 mi official trail sheet, 6.8 mi Hiking Project, 8.9 mi in our app. Dogs on leash allowed on hiking trails but not the equestrian trail, per a guide site (unverified against the park). Verify current rules and trail map before a visit.",
+ "missing_from_app": [
+  "Dogwood Trail",
+  "Paved Bicycle Path"
+ ],
+ "in_app_not_official": [
+  "White Connector 1"
+ ]
+}

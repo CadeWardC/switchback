@@ -1,0 +1,46 @@
+{
+ "park": "Castlewood State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/sites/mostateparks/files/4CST_ColorMap.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Grotpeter Trail",
+   "miles": 4.4,
+   "uses": null
+  },
+  {
+   "name": "Stinging Nettle Trail",
+   "miles": 2.5,
+   "uses": null
+  },
+  {
+   "name": "Cedar Bluff Loop",
+   "miles": 2.3,
+   "uses": null
+  },
+  {
+   "name": "Riverscene Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Manager trail sheets were seen only through search summaries; mostateparks.com could not be opened from this session (DNS failure), so the list is unverified against the live page. Lengths are from the state color map and trail sheets as summarized by search. Other sites give different lengths (Grotpeter 4.2 to 3.75 mi, Stinging Nettle 4.7 mi, Cedar Bluff 2.5 mi); the state figures were used. Riverscene Trail is included only because a state TrailDetails PDF exists for it; its length and uses were not seen. The state map legend lists white connector trails totaling 2.6 miles, but no individual",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Castlewood Loop",
+  "Cedar Bluff Trail",
+  "Lone Wolf Trail",
+  "Overlook Spur",
+  "White Connector 2",
+  "White Connector 7",
+  "White Connector 4",
+  "White Connector 3",
+  "WC9 Old Nettle Loop Connector",
+  "WC10 Gravel Plant Connector",
+  "WC8 Rockaway Connector"
+ ]
+}

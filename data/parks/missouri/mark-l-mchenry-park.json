@@ -1,0 +1,33 @@
+{
+ "park": "Mark L. McHenry Park",
+ "also_known_as": [
+  "Tiffany Springs Park"
+ ],
+ "manager": "Platte County Parks and Recreation (per platteparks.com listing); Kansas City Parks and Recreation is also referenced fo",
+ "source": "https://platteparks.com/trail/mark-l-mchenry-park-trail/",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Mark L. McHenry Park Trail",
+   "miles": 3.4,
+   "uses": null
+  }
+ ],
+ "notes": "Manager page could not be opened (platteparks.com does not resolve from this session), so facts come from search summaries. The listing gives one 3.4-mile loop trail, not individual named trails; allowed uses are not stated in the summaries. Third-party sources give about 15 miles of trails (kansascityhiker.com) and a 5.1 km loop (hiiker.app). Bikes are allowed on designated trails marked by signs. Sources conflict on acreage and on the manager. Closure reported in a February 2026 Reddit post; current status unverified. Park is in Kansas City, MO (NW 88th St and N. Hampton Rd), not Independenc",
+ "missing_from_app": [
+  "Mark L. McHenry Park Trail (3.4 mi loop, per platteparks.com)"
+ ],
+ "in_app_not_official": [
+  "Brush Creek Loop",
+  "Legends Loop",
+  "Matt Quary Trail",
+  "Connector",
+  "Ridge Ride Trail",
+  "The Glades",
+  "Donkey Conk",
+  "The Lowdown",
+  "Matt Quary & Ridge Ride Trail"
+ ]
+}

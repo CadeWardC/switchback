@@ -1,0 +1,31 @@
+{
+ "park": "Kessler Park",
+ "also_known_as": [],
+ "manager": "Kansas City Parks and Recreation (KC Parks), Kansas City, Missouri",
+ "source": "https://kcparks.org/places/kessler-park-trail",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Kessler Park Trail",
+   "miles": 8.0,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Only one official trail found: KC Parks lists the Kessler Park Trail at about 8 miles (approximate, per search summary). The KC Parks page could not be opened (host kcparks.org did not resolve from this session), so the summary was not verified on the page itself. The manager's list may contain more trails than this one. Cliff Drive is a closed-to-vehicles scenic byway road open to walkers and bikers, not a listed trail in the summaries. MTB Project and Trailforks show mountain bike trails (e.g. Wright Way, Racecar) but these are third-party and not in the manager list found. Uses for the Kess",
+ "missing_from_app": [
+  "Kessler Park Trail (about 8 miles, per KC Parks summary)"
+ ],
+ "in_app_not_official": [
+  "Indian Mound Trail",
+  "Cliff Drive",
+  "Spirit of KC Scenic Byways Trail",
+  "Cliff Top Trail",
+  "Cliff Drive Access Road",
+  "The Wilderness",
+  "Lozier's Lane",
+  "Foam Pit",
+  "East Lookout Point Drive"
+ ]
+}

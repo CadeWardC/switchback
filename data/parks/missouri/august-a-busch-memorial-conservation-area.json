@@ -1,0 +1,28 @@
+{
+ "park": "August A Busch Memorial Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/august-busch-memorial-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Busch Hiking and Biking Trail",
+   "miles": 3.2,
+   "uses": "hiking, biking"
+  },
+  {
+   "name": "Fallen Oak Nature Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Page could not be opened (DNS failure for mdc.mo.gov); facts come from search result summaries that cite MDC pages, a 2008 Conservation Atlas piece and AllTrails, so trail-level figures are not fully verified against the MDC page. Busch trail length 3.2 mi conflicts with our 2.1 mi entry. Area is 6,987 acres in St. Charles County; the auto tour has five short nature trails (not individually named in the results). Per MDC listing: open Mon-Fri 8am-5pm, closed Sat-Sun; (636) 441-4554. Bicycles including e-bikes allowed year-round on multi-use trails and service roads designated open to bicycles.",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Old Hamburg Trail",
+  "Woodland Trail",
+  "Dardenne Creek Trail"
+ ]
+}

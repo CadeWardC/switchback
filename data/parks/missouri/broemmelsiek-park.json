@@ -1,0 +1,57 @@
+{
+ "park": "Broemmelsiek Park",
+ "also_known_as": [],
+ "manager": "St. Charles County Parks Department (St. Charles County, MO)",
+ "source": "https://www.sccmo.org/617/Broemmelsiek-Park",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Schwede Loop",
+   "miles": 1.5,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Hayride Loop",
+   "miles": 1.5,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Betty's Lake Loop",
+   "miles": 0.78,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Cattle Ridge Trail",
+   "miles": null,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Dog Park Lake Loop",
+   "miles": null,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "North Loop",
+   "miles": null,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "South Loop",
+   "miles": null,
+   "uses": "hiking, biking, equestrian"
+  }
+ ],
+ "notes": "County page summary: park has about 9.5 miles of natural-surface trail and 1.2 miles of paved trail (Parks Dept. trails page summary). Miles for Schwede and Hayride loops are given as about 1.5; Betty's Lake paved loop about 0.78 (from the county's Quick Hike Challenge brochure, via search summary). Uses are stated at park level (hiking, biking, horseback riding). Trails close to equestrian and bicycle use in wet or inclement weather. Hours: opens 7 a.m., closes 30 minutes after sunset. Addresses conflict between sources (1795 Highway DD, Defiance on park page; 2679 Dietrich Road, Foristell in",
+ "missing_from_app": [
+  "Betty's Lake Loop",
+  "Dog Park Lake Loop",
+  "North Loop"
+ ],
+ "in_app_not_official": [
+  "Jack's Loop Trail",
+  "Wilson's Lake Walk",
+  "Broemmelsiek Trail"
+ ]
+}

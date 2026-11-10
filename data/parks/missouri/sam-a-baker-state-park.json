@@ -1,0 +1,44 @@
+{
+ "park": "Sam A. Baker State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/sam-a-baker-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Fire Tower Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Mudlick Equestrian Hike Trail",
+   "miles": 10.8,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Mudlick Hike Only Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Paved Bicycle Trail",
+   "miles": null,
+   "uses": "biking"
+  },
+  {
+   "name": "Shut-Ins Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The official trail sheet gives the Mudlick Equestrian Hike Trail as a 10.8 mile loop from Trailhead 1; the park map gives 16.30 miles from the Equestrian Campground and 10.80 from the Day-Use Area, so length depends on the start point. Lengths for the other official trails were not stated in the sources found. Official trail list taken from search summary of the Missouri State Parks trails page (fetch failed: mostateparks.com did not resolve from this session). Backpackers must register at the trailhead or online at mostateparks.com. One official page carried an old closure notice; verify curr",
+ "missing_from_app": [
+  "Paved Bicycle Trail"
+ ],
+ "in_app_not_official": [
+  "White Connector 1",
+  "White Connector 2"
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "park": "Rudolf Bennitt Conservation Area",
+ "also_known_as": [
+  "Rudolph Bennitt Conservation Area",
+  "Rudolph Bennitt Trail (third-party name)"
+ ],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/rudolf-bennitt-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Moniteau Wilderness Trail",
+   "miles": 10.0,
+   "uses": "multi-use: equestrian; bicycles allowed on open and service roads, closed on multi-use trails during firearms deer season and spring turkey shooting hours"
+  }
+ ],
+ "notes": "mdc.mo.gov could not be fetched (DNS failure in session), so facts come from search summaries of MDC pages. The 10-mile length is from an older MDC trail guide per the search summary, not the current page. Third-party 2016 Missouri Trailblazing page calls it a 12-mile loop under the name Rudolph Bennitt Trail; not used as official. Acreage per MDC: 3,575. Equestrian camping only in designated campsites near parking lots. Our app trail Moniteau Trail 4.0 does not match the official name Moniteau Wilderness Trail; may be the same trail under a different name, unverified.",
+ "missing_from_app": [
+  "Moniteau Wilderness Trail"
+ ],
+ "in_app_not_official": [
+  "Moniteau Trail"
+ ]
+}

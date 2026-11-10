@@ -1,0 +1,31 @@
+{
+ "park": "Daniel Boone Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/daniel-boone-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Daniel Boone Multi-Use Trail",
+   "miles": 6.8,
+   "uses": "hiking, biking, equestrian"
+  }
+ ],
+ "notes": "Manager's area page (read via search summary only; mdc.mo.gov could not be fetched from this session). MDC's older area brochure gives 7 miles; AllTrails gives 6.7 miles (third-party, cross-check only). Bikes and horses limited to roads open to vehicles and trails posted open to them; both barred during firearms deer season and spring turkey shooting hours; field trials not allowed. Route was reworked for biking and horseback use after a renovation. Current closures should be checked with the Warrenton MDC office, (636) 456-3368. An 'Adventures' site claiming 39 miles and St. Louis County loca",
+ "missing_from_app": [
+  "Daniel Boone Multi-Use Trail (6.8 mi per MDC)"
+ ],
+ "in_app_not_official": [
+  "Trail 1220",
+  "Trail 1213",
+  "Trail 1215",
+  "1223",
+  "Trail 1221",
+  "Trail 1223",
+  "Trail 1216",
+  "1218",
+  "1222"
+ ]
+}

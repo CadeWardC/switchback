@@ -1,0 +1,48 @@
+{
+ "park": "Greensfelder County Park",
+ "also_known_as": [
+  "Rockwood Park (original name, renamed 1965)"
+ ],
+ "manager": "St. Louis County Parks (St. Louis County, Missouri)",
+ "source": "https://stlouiscountymo.gov/sites/default/assets/pdfs/department/Parks/Greensfelder/Greensfelder%20Trail%20Map.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Declue",
+   "miles": 8.2,
+   "uses": null
+  },
+  {
+   "name": "Deer Run",
+   "miles": 2.8,
+   "uses": null
+  },
+  {
+   "name": "Dogwood",
+   "miles": 2.6,
+   "uses": null
+  },
+  {
+   "name": "Mustang",
+   "miles": 1.7,
+   "uses": null
+  }
+ ],
+ "notes": "Source is the county trail map PDF as seen in search results; the county park page could not be opened (host not resolvable from this session). The map labels the park's own trails at 7.8 miles total, which conflicts with Declue alone at 8.2 mi; a 2021 county press release gives 32 miles of trails for the whole park including connectors such as Green Rock (14.5 mi per map). The map shows an Equestrian Area but does not list per-trail uses in the summary. The county history page says the former equestrian trail is now called Beulah Trail, so Beulah is likely an equestrian trail, but this is not",
+ "missing_from_app": [
+  "Dogwood Trail (2.6 mi)",
+  "Deer Run Trail (2.8 mi); app has only 'Declue-Deer Run Trails' at 0.7"
+ ],
+ "in_app_not_official": [
+  "Beulah Trail",
+  "Eagle Valley Trail",
+  "Fossil Ridge Trail",
+  "Dark Trail",
+  "Overlook Trail",
+  "Pawnee Trail",
+  "DeClue Connector",
+  "Mustang Trail length differs (app 1.5, official 1.7)"
+ ]
+}

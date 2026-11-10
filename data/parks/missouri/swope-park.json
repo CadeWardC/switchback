@@ -1,0 +1,44 @@
+{
+ "park": "Swope Park",
+ "also_known_as": [],
+ "manager": "Kansas City Parks & Recreation (Kansas City, Missouri)",
+ "source": "https://kcparks.org/places/swope-utc-trail/",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Swope Park Trails",
+   "miles": 20.0,
+   "uses": "hiking, single-track mountain biking"
+  },
+  {
+   "name": "Swope Park Entrance Trail",
+   "miles": 1.5,
+   "uses": null
+  },
+  {
+   "name": "Swope Park: Fox Hollow Trail",
+   "miles": 2.0,
+   "uses": null
+  }
+ ],
+ "notes": "The manager's page was not opened directly (fetch failed: kcparks.org did not resolve from this session). Facts come from search-result summaries of kcparks.org pages. The 20-mile figure is the manager's system total, not split by named trail. Entrance Trail is described as a 1.5-mile concrete trail; Fox Hollow as a 2.0-mile natural trail behind Lakeside Nature Center. Uses are not stated for the individual segments. No closures or permit requirements were found in the summaries. Third-party sites (Hiking Project, MTB Project, Trailforks, Komoot) give varying totals (18 to 20 miles) and per-tr",
+ "missing_from_app": [
+  "Swope Park Trails (about 20 miles, hiking and single-track mountain biking; the app has only individual named segments)",
+  "Swope Park Entrance Trail (1.5 miles)"
+ ],
+ "in_app_not_official": [
+  "Wudchuk Run",
+  "Rancho D-Lux",
+  "Connector",
+  "Wudchuk Run Phase 7",
+  "A2B Connection",
+  "Misty Valley Offshoot Loop",
+  "Kids Loop",
+  "Sweet Luv",
+  "Wudchuk Alternate",
+  "Sunrise",
+  "Wudchuk Phase 7"
+ ]
+}

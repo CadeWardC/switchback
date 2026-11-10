@@ -1,0 +1,45 @@
+{
+ "park": "Cliff Cave Park",
+ "also_known_as": [
+  "Cliff Cave County Park"
+ ],
+ "manager": "St. Louis County Parks (St. Louis County, Missouri)",
+ "source": "https://stlouiscountymo.gov/sites/default/assets/pdfs/department/Parks/Cliff%20Cave/Cliff%20Cave%20Trail%20Map.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Spring Valley Trail",
+   "miles": 1.8,
+   "uses": null
+  },
+  {
+   "name": "Mississippi Greenway Trail",
+   "miles": 7.1,
+   "uses": null
+  },
+  {
+   "name": "Spring Valley Trail Inner Loop",
+   "miles": 1.2,
+   "uses": null
+  },
+  {
+   "name": "River Bluff Trail",
+   "miles": 1.0,
+   "uses": null
+  }
+ ],
+ "notes": "County trail map was not opened directly (site did not resolve from this session); the four trails and lengths come from a search summary of the county map. The summary says some trails are approved for biking and others are not, and that biking is approved on Spring Valley and River Bluff Trails only or on all trails; the exact per-trail allowed uses could not be confirmed, so uses are null. Other sources conflict: Great Rivers Greenway gives the paved Mississippi Trail as 6.7 miles and the Spring Valley Trail as 3 miles; Hiking Project gives Spring Valley as 2.1 miles; Wikipedia and Terrain ",
+ "missing_from_app": [
+  "Mississippi Greenway Trail (7.1 mi per county map; the app has Mississippi River Trail 4.9 and Mississippi Greenway 2.3, which may be parts of it)",
+  "River Bluff Trail (1.0 mi; the app has River Bluff Trail South Loop 0.9 and Bluff View Trail North 0.9, which may be parts of it)"
+ ],
+ "in_app_not_official": [
+  "Mississippi River Trail (4.9 mi)",
+  "Mississippi Greenway (2.3 mi)",
+  "Bluff View Trail North (0.9 mi)",
+  "River Bluff Trail South Loop (0.9 mi)",
+  "Cliff Cave County Park Trail (0.6 mi)"
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "park": "Longview Lake Park",
+ "also_known_as": [],
+ "manager": "Jackson County Parks + Recreation (Jackson County, Missouri)",
+ "source": "https://www.jacksongov.org/files/sharedassets/public/v/1/news/documents/parks-guide-right-reading.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Longview Trail",
+   "miles": 6.5,
+   "uses": null
+  }
+ ],
+ "notes": "Manager's parks guide (undated) lists Longview Trail at 6.5 miles, Shelter 14 to Shelter 9 (O'Donnell Park). Guide also lists 30+ miles of equestrian trails across Monkey Mountain, Longview, Blue & Gray Park and Blue River Parkway, not broken down per park or per trail name. Longview Horse Park listed at 535 acres. Trail-by-trail names for the horse trails were not found. Figures come from search summaries only; the page could not be opened (host not resolvable from this session). Guide and Walktober pages are roughly 2022-2025, so mileage may be out of date. Uses not explicitly stated per tra",
+ "missing_from_app": [
+  "Longview Trail (6.5 mi official; app has Longview Lake Trail at 7.0 mi)",
+  "Equestrian trails, 30+ mi network across several parks (no per-trail official names found)"
+ ],
+ "in_app_not_official": [
+  "Longview Lake Horse Trail 4.6",
+  "Longview Equestrian Trail 2.7",
+  "Shin-Ga-Wa-Sa Nature Trail 1.5",
+  "Longview Lake Horse Trail - Diva Drive 1.0",
+  "Longview Lake Horse Trail - Horse Lovers Lane 0.8",
+  "Longview Lake Horse Trail - Lasso Loop 0.7"
+ ]
+}

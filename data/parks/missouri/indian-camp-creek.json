@@ -1,0 +1,43 @@
+{
+ "park": "Indian Camp Creek",
+ "also_known_as": [
+  "Indian Camp Creek Park"
+ ],
+ "manager": "St. Charles County Department of Parks and Recreation (Missouri)",
+ "source": "https://www.sccmo.org/665/Indian-Camp-Creek-Park",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Cannon Trail",
+   "miles": 5.91,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Big Creek Trail",
+   "miles": 0.93,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Flint Ridge Trail",
+   "miles": 0.88,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Great Plains Trail",
+   "miles": 0.46,
+   "uses": "hiking, biking, equestrian"
+  },
+  {
+   "name": "Toth Trail",
+   "miles": 0.44,
+   "uses": "hiking, biking, equestrian"
+  }
+ ],
+ "notes": "Official park page (via search summary) says the park has more than 10 miles of multi-use trails; the named-trail map totals about 7.7 miles. County Quick Hike brochure lists 4 natural surface trails totaling 8.6 miles and 1 paved trail of 0.63 miles, which does not match the map. Indian Camp Creek Trail (1.0 mi in our app) does not appear in the map summary. Park open 7am to 30 minutes after sunset; no ATVs. Fetch of sccmo.org failed (host not resolvable from this session), so the page was not read directly. Map and brochure may be out of date; verify with the Parks Department (636-949-7535).",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Indian Camp Creek Trail 1.0 (not in the county map summary)"
+ ]
+}

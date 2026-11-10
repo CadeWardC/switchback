@@ -1,0 +1,40 @@
+{
+ "park": "Devils Backbone Wilderness",
+ "also_known_as": [],
+ "manager": "U.S. Forest Service, Mark Twain National Forest (Willow Springs Ranger District)",
+ "source": "https://www.fs.usda.gov/r09/marktwain/recreation/trails/devils-backbone-wilderness-trail",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Devils Backbone Wilderness Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Blue Spring Trail",
+   "miles": 0.7,
+   "uses": null
+  },
+  {
+   "name": "Backbone Trail",
+   "miles": 1.4,
+   "uses": null
+  },
+  {
+   "name": "Collins Ridge Trail",
+   "miles": 2.7,
+   "uses": null
+  }
+ ],
+ "notes": "The manager's trail page could not be opened (DNS failure for www.fs.usda.gov). Trail lengths come from a 2023 Mark Twain National Forest map shown in search results (media/244698), which lists Backbone 1.4, Blue Spring 0.7 and Collins Ridge 2.7 miles; the map snippet was cut off, so the list may be incomplete. Forest Service text says about 13 miles of maintained foot and horse trails in total; a third-party source gives Devils Backbone Wilderness Trail as 12.5 miles, which is not from the manager and is not recorded. Blue Spring Trail is given as 0.6 miles in one third-party source, conflict",
+ "missing_from_app": [
+  "Devils Backbone Wilderness Trail",
+  "Blue Spring Trail"
+ ],
+ "in_app_not_official": [
+  "Mary Hollow Trail",
+  "Racoon Hollow"
+ ]
+}

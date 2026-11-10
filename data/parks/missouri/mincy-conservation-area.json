@@ -1,0 +1,31 @@
+{
+ "park": "Mincy Conservation Area",
+ "also_known_as": [
+  "Drury-Mincy Conservation Area"
+ ],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://missouriconservation.com/sites/default/files/2020-12/2017%20Drury%20Mincy%20Conservation%20Area%20Plan.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Bear Cave Trail",
+   "miles": 1.5,
+   "uses": "hiking"
+  },
+  {
+   "name": "Thurman's Sink Trail",
+   "miles": 0.3,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "No search result named 'Mincy Conservation Area' alone; MDC pages cover Drury-Mincy Conservation Area (southern Taney County, southeast of Branson, off Route J), which is assumed to be the same property. Trail list comes from the 2017 MDC management plan as summarized in search results (2014 MDC article lists the same two hiking trails). The January 2026 MDC article says nearly 20 miles of roads and trails, which includes service roads, not only hiking trails. Hiking Project lists about 4 miles of trail and a 6.9-mile northern loop, which are third-party and not used for the trails list. The M",
+ "missing_from_app": [
+  "Bear Cave Trail",
+  "Thurman's Sink Trail"
+ ],
+ "in_app_not_official": [
+  "Mincy Conservation Area Trail 2.6"
+ ]
+}

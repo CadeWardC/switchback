@@ -1,0 +1,30 @@
+{
+ "park": "Bicentennial Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation (MDC)",
+ "source": "https://mdc.mo.gov/discover-nature/places/bicentennial-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Bicentennial Trail",
+   "miles": null,
+   "uses": "equestrian"
+  },
+  {
+   "name": "ADA accessible hiking trail with observation deck",
+   "miles": 0.8,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "Fetch of the MDC page failed (host not resolvable from this session), so this is from search summaries only. The 7 miles is a combined total for multiuse trails, not one trail. The Bicentennial Trail is listed as equestrian and its length is not stated. Trailforks lists a Bicentennial Conservation Loop (about 5.6 mi singletrack) marked closed; treated as unreliable. Trail closed during firearms deer and spring turkey seasons (equestrian note). Verify current status with MDC before visiting.",
+ "missing_from_app": [
+  "Bicentennial Trail",
+  "ADA accessible hiking trail (0.8 mi)",
+  "Multiuse trails (about 7 mi total)"
+ ],
+ "in_app_not_official": [
+  "Roark 0.3"
+ ]
+}

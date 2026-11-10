@@ -1,0 +1,33 @@
+{
+ "park": "Current River State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/current-river/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Ozark Trail - Upper Current Section",
+   "miles": 5.25,
+   "uses": "hiking"
+  },
+  {
+   "name": "Centennial Bluff Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Jones Hollow Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Fetch of mostateparks.com failed (host not resolvable from this session), so the list comes from search summaries of the state's trails page. Upper Current 5.25 mi is the state map's one-way figure for the segment from the Echo Bluff trailhead to the Current River; the section inside Echo Bluff is 1.30 mi. Uses 'hiking' come from the state trail-details sheet; the state color map shows a mountain bike symbol but this is unconfirmed, and a USFS page for a different Ozark Trail segment bans biking. Third-party sites give other lengths (Jones Hollow 3.9 mi, Centennial Bluff 1.4 mi, Current River ",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Ninebark Trail",
+  "White Connector 1",
+  "White Connector 2"
+ ]
+}

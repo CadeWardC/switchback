@@ -1,0 +1,33 @@
+{
+ "park": "Smithville Lake Recreation Area",
+ "also_known_as": [],
+ "manager": "U.S. Army Corps of Engineers, Kansas City District (Smithville Lake); Clay County Parks, Recreation and Historic Sites a",
+ "source": "https://www.nwk.usace.army.mil/Locations/District-Lakes/Smithville-Lake/Trails/",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Shoreline Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Boundary Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Litton Center Trail",
+   "miles": 3.6,
+   "uses": null
+  }
+ ],
+ "notes": "Trails page could not be opened; facts come from search summaries of the Corps trails page and a Corps news story. The Corps trails page gives system totals only: 24 miles of 10-ft asphalt walking/biking trail, 11 miles of single-track mountain bike trail, 26 miles of equestrian trail (a Corps photo caption says over 25 miles). Equestrian trails are on the southeast side with trailheads at Crows Nest and Jack Rabbit Bend; trails east of Collins Road lie in Public Hunting Areas, so use caution in hunting seasons. Shoreline trail is marked with orange indicators and boundary trail with white. Th",
+ "missing_from_app": [
+  "Boundary Trail"
+ ],
+ "in_app_not_official": [
+  "5 Corners Connector"
+ ]
+}

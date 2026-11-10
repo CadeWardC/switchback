@@ -1,0 +1,36 @@
+{
+ "park": "Table Rock State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/table-rock-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "White River Valley Trail System",
+   "miles": 11.3,
+   "uses": "hiking, mountain biking"
+  },
+  {
+   "name": "Table Rock Lakeshore Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Chinquapin Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The manager page could not be opened (host not resolvable from this session), so this is from search summaries only. Official summary gives White River Valley Trail System loops as red 3.10, blue 3.30, orange 0.70, green 1.30 miles plus connectors; 11.3 is the stated system total. Chinquapin Trail is stated as 1.20 (moderate) and 2.50 (easy) miles one way on the map, so the length is ambiguous and recorded as null. Lakeshore Trail length (about 2.2 mi) and paved surface come from TrailLink, a third-party source, so recorded as null. Trails close after rain. Hunting season may close some Corps ",
+ "missing_from_app": [
+  "White River Valley Trail System - Blue Loop",
+  "White River Valley Trail System - Orange Loop",
+  "White River Valley Trail System - Green Loop"
+ ],
+ "in_app_not_official": [
+  "White Connector 2",
+  "Feature Spur"
+ ]
+}

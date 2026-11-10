@@ -1,0 +1,21 @@
+{
+ "park": "Fleming Park",
+ "also_known_as": [
+  "Lake Jacomo"
+ ],
+ "manager": "Jackson County Parks + Recreation (Missouri)",
+ "source": "https://www.jacksongov.org/files/sharedassets/public/v/1/departments/parks-rec/parks-guide-right-reading.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's pages",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Lake Vista Trail",
+   "miles": 5.0,
+   "uses": null
+  }
+ ],
+ "notes": "Only one official trail was found in the county's 2023 parks guide, seen through a search summary: Lake Vista Trail, 5 miles, described as a loop in Fleming Park. The guide's stated uses are hiking and biking for the park as a whole, not per trail, so uses is null. Our app lists Lake Vista Trail at 4.6 miles, which differs from the county's 5 miles. The county list is not a full trail list for the park, so in_app_not_official is left empty rather than marking all other app trails as unofficial. The jacksongov.org site could not be opened (DNS failure in this session), and no official Fleming-o",
+ "missing_from_app": [],
+ "in_app_not_official": []
+}

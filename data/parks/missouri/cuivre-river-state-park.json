@@ -1,0 +1,86 @@
+{
+ "park": "Cuivre River State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks (Missouri Department of Natural Resources)",
+ "source": "https://mostateparks.com/sites/mostateparks/files/TrailMap-cuivreriver.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's pages",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Cuivre River Trail",
+   "miles": 13.4,
+   "uses": null
+  },
+  {
+   "name": "Old Schoolhouse Trail",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "Blackhawk Point Mountain Bike Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lakeside Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Frenchman's Bluff Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Hamilton Hollow Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Big Sugar Creek Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Blazing Star Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lone Spring Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Mossy Hill Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Prairie Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Turkey Hollow Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "The manager's trail map PDF could not be opened (host not resolvable from this session), so this list comes only from search-result summaries of Missouri State Parks pages. Cuivre River Trail 13.40 miles is a multi-loop figure from the trail map summary; Old Schoolhouse 3.80 miles is a loop length from the map summary. Other lengths found online (Blackhawk Point 5.75, Lakeside 3.5, Frenchman's Bluff 1.5, Big Sugar Creek 3.75) are from Wikipedia or Hiking Project, not the manager, so they are left null. Horse use: a TrailMeister third-party page says two main loops are open to horses and mules;",
+ "missing_from_app": [
+  "Big Sugar Creek Trail",
+  "Blazing Star Trail",
+  "Lone Spring Trail",
+  "Mossy Hill Trail",
+  "Prairie Trail",
+  "Turkey Hollow Trail"
+ ],
+ "in_app_not_official": [
+  "Lakeside Trail and Old Schoolhouse Trail (joined segment)",
+  "Hamilton Hollow Trail and Blackhawk Point Mountain Bike Trail (joined segment)",
+  "White Connector 1 and Blackhawk Point Mountain Bike Trail (joined segment)",
+  "Cuivre River Trail - South Loop and Blackhawk Point Mountain Bike Trail (joined segment; the South Loop is part of the official Cuivre River Trail)"
+ ]
+}

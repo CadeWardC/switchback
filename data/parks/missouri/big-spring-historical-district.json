@@ -1,0 +1,64 @@
+{
+ "park": "Big Spring Historical District",
+ "also_known_as": [
+  "Big Spring",
+  "Big Spring Trail System"
+ ],
+ "manager": "National Park Service, Ozark National Scenic Riverways (near Van Buren, Missouri)",
+ "source": "https://www.nps.gov/ozar/planyourvisit/hiking-in-the-ozarks.htm",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Chubb Hollow Trail",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "Partney Ridge Trail",
+   "miles": 3.3,
+   "uses": null
+  },
+  {
+   "name": "Kinnard Hollow Trail",
+   "miles": 3.5,
+   "uses": null
+  },
+  {
+   "name": "Spring Valley Trail",
+   "miles": 2.1,
+   "uses": null
+  },
+  {
+   "name": "Stone Ridge Trail",
+   "miles": 1.2,
+   "uses": null
+  },
+  {
+   "name": "Slough Trail",
+   "miles": 1.2,
+   "uses": null
+  },
+  {
+   "name": "River's Edge Trail",
+   "miles": 1.8,
+   "uses": null
+  },
+  {
+   "name": "Spring Branch Trail",
+   "miles": 1.0,
+   "uses": null
+  }
+ ],
+ "notes": "NPS fetch failed (www.nps.gov did not resolve from this session), so figures come from search-result summaries of NPS pages. Slough, River's Edge and Spring Branch are stated by NPS as round trip distances; Chubb Hollow 3.8 is from an NPS listing summary and is a loop. Other sources (Hiking Project, Pacer) give Chubb Hollow 3.5 to 3.6 miles. NPS gives no total for the whole system. No closures, permits or allowed uses were found. Trail pages were last updated long ago per the search tool, so verify current data on nps.gov.",
+ "missing_from_app": [
+  "Partney Ridge Trail",
+  "River's Edge Trail"
+ ],
+ "in_app_not_official": [
+  "Big Spring - Chilton Creek Trail",
+  "Big Spring Chilton Connector",
+  "Connector Trail"
+ ]
+}

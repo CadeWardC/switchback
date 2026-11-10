@@ -1,0 +1,24 @@
+{
+ "park": "Big Creek Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/big-creek-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Thousand Hills multiuse trail",
+   "miles": null,
+   "uses": "hiking, biking"
+  }
+ ],
+ "notes": "MDC page could not be opened (host did not resolve from this session). Facts come from search summaries only. Summary says the area has a multiuse hiking and biking trail that traverses the area and links the city to the east with Thousand Hills State Park to the west, and that a trailhead for the Thousand Hills multiuse trail is on the area. No trail length is stated in the summary. Bicycles including e-bikes allowed on multiuse trails and service roads designated open to bicycles. A Singletracks listing mentions marked mountain bike trails around Forest Lake. Third-party sources give conflic",
+ "missing_from_app": [
+  "Thousand Hills multiuse trail (on the area, per manager summary; length not stated)"
+ ],
+ "in_app_not_official": [
+  "Big Creek Conservation Area Trail 3.2",
+  "Thousand Hills Trail 0.6"
+ ]
+}

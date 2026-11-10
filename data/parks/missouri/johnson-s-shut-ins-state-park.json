@@ -1,0 +1,49 @@
+{
+ "park": "Johnson's Shut-Ins State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/johnsons-shut-ins/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Black River Trail System",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Campground Trail System",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Goggins Mountain Equestrian Trail",
+   "miles": 10.0,
+   "uses": "equestrian"
+  },
+  {
+   "name": "Horseshoe Glade Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Ozark Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Scour Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Shut-Ins Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Manager's trails page was listed in search results but could not be fetched (mostateparks.com did not resolve from this session). Trail names come from the search summary of that page; per-trail mileage table was not in the summary, so miles are null except Goggins Mountain (10 miles, from the manager's equestrian page summary). The 12.8-mile figure for the Ozark Trail refers to the whole trail, not this park, so it is not recorded. Park-wide total of about 37 miles of trails is from third-party sources and not recorded. Check the Park and Site Status Map for closures.",
+ "missing_from_app": [],
+ "in_app_not_official": []
+}

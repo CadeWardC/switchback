@@ -1,0 +1,37 @@
+{
+ "park": "Angeline Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation (MDC), Shannon County",
+ "source": "https://mdc.mo.gov/discover-nature/places/angeline-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Lick Log Hollow Nature Trail",
+   "miles": 1.0,
+   "uses": "hiking"
+  },
+  {
+   "name": "Equestrian multi-use trail system",
+   "miles": null,
+   "uses": "equestrian"
+  }
+ ],
+ "notes": "Page could not be opened (mdc.mo.gov does not resolve from this session); facts come from search result summaries of MDC pages. MDC describes the Lick Log Hollow Nature Trail as an approximately 1-mile loop; the 1-mile figure is an approximation. A 9.50-mile equestrian system figure appears only in third-party listings, so miles is null. Sources disagree on horse road mileage (25 miles cited in an older listing) and acreage (about 37,000 to 39,590), so those were not recorded. Horses must stay on roads open to vehicles or trails posted open to horses; groups of 10 or more riders need a special",
+ "missing_from_app": [
+  "Lick Log Hollow Nature Trail (about 1 mile; app lists 'Licklog Hollow Trail' at 0.7, probably the same trail)",
+  "Equestrian multi-use trail system (no app entry)"
+ ],
+ "in_app_not_official": [
+  "Porphry Trail",
+  "Granny Smith",
+  "Foxpen Spur Trail",
+  "Granny Smith Hollow Trail",
+  "Granny Ridge Trail",
+  "Prophry Trail South",
+  "HWY 19 Access Trail",
+  "Scenic Overlook Trail",
+  "Waterfall Hill Trail"
+ ]
+}

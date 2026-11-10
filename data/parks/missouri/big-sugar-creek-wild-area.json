@@ -1,0 +1,63 @@
+{
+ "park": "Big Sugar Creek Wild Area",
+ "also_known_as": [],
+ "manager": "Missouri State Parks (within Cuivre River State Park, Lincoln County)",
+ "source": "https://mostateparks.com/park/cuivre-river/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Big Sugar Creek Trail",
+   "miles": 3.7,
+   "uses": "hiking"
+  },
+  {
+   "name": "Cuivre River Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Lone Spring Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Prairie Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Blazing Star Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Turkey Hollow Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Mossy Hill Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Blackhawk Point Mountain Bike Trail",
+   "miles": null,
+   "uses": "biking"
+  }
+ ],
+ "notes": "Manager's trails page could not be opened (mostateparks.com does not resolve from this session); list taken from search summaries. Big Sugar Creek Trail 3.70 miles is a loop rated rugged, from a Missouri State Parks trail map; app has 2.9. The official list names Cuivre River Trail without loop detail; app has North Loop 3.1 and South Loop 5.1 (a State Parks event page gives North Loop as about 4 miles, not a trail map, so not recorded). Blackhawk Point and Lone Spring/Prairie/Blazing Star/Mossy Hill are park trails, not confirmed inside the wild area. White Connector 4 and 5 do not appear in ",
+ "missing_from_app": [
+  "Lone Spring Trail",
+  "Prairie Trail",
+  "Blazing Star Trail",
+  "Mossy Hill Trail",
+  "Blackhawk Point Mountain Bike Trail"
+ ],
+ "in_app_not_official": [
+  "White Connector 4",
+  "White Connector 5"
+ ]
+}

@@ -1,0 +1,73 @@
+{
+ "park": "Ozark National Scenic Riverways",
+ "also_known_as": [],
+ "manager": "National Park Service (U.S. National Park Service, Ozark National Scenic Riverways)",
+ "source": "https://www.nps.gov/ozar/planyourvisit/hiking-in-the-ozarks.htm",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Cave Spring Trail",
+   "miles": 4.6,
+   "uses": null
+  },
+  {
+   "name": "Partney Ridge Trail",
+   "miles": 3.3,
+   "uses": null
+  },
+  {
+   "name": "Chubb Hollow Trail",
+   "miles": 3.8,
+   "uses": null
+  },
+  {
+   "name": "Kinnard Hollow Trail",
+   "miles": 3.5,
+   "uses": null
+  },
+  {
+   "name": "Chilton Creek Trail",
+   "miles": 3.4,
+   "uses": null
+  },
+  {
+   "name": "Spring Valley Trail",
+   "miles": 2.1,
+   "uses": null
+  },
+  {
+   "name": "Stone Ridge Trail",
+   "miles": 1.2,
+   "uses": null
+  },
+  {
+   "name": "Slough Trail",
+   "miles": 1.2,
+   "uses": null
+  },
+  {
+   "name": "Spring Branch Trail",
+   "miles": 1.0,
+   "uses": null
+  },
+  {
+   "name": "Cave Spring River Trail",
+   "miles": 0.8,
+   "uses": null
+  }
+ ],
+ "notes": "Mileage is from search-result summaries of the NPS hiking page; the page itself could not be opened (DNS failure for www.nps.gov). Summary describes Cave Spring Trail as a 4.6 mile loop (app has 5.7). Spring Branch Trail is stated as 1 mile round trip and Slough Trail 1.2 miles round trip; Cave Spring River Trail 0.8 miles round trip; Chubb Hollow, Chilton Creek are stated as loop trails. Allowed uses were not stated in the summaries, so uses is null throughout. The NPS summary is undated and the park-wide totals in it (14 miles horse trails, 48 miles foot trails) are described as approximate ",
+ "missing_from_app": [
+  "Chubb Hollow Trail",
+  "Kinnard Hollow Trail",
+  "Chilton Creek Trail",
+  "Spring Valley Trail",
+  "Stone Ridge Trail",
+  "Slough Trail",
+  "Spring Branch Trail",
+  "Cave Spring River Trail"
+ ],
+ "in_app_not_official": []
+}

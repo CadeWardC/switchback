@@ -1,0 +1,73 @@
+{
+ "park": "Creve Coeur Lake Memorial Park",
+ "also_known_as": [
+  "Creve Coeur Park",
+  "Creve Coeur Lake Park"
+ ],
+ "manager": "St. Louis County Parks Department",
+ "source": "https://stlouiscountymo.gov/st-louis-county-departments/parks/find-a-park/creve-coeur-lake-park/",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Bootleggers Run Trail",
+   "miles": 4.2,
+   "uses": ""
+  },
+  {
+   "name": "Meadows Loop Trail",
+   "miles": 3.0,
+   "uses": ""
+  },
+  {
+   "name": "Lakeview Loop Trail",
+   "miles": 3.8,
+   "uses": ""
+  },
+  {
+   "name": "Creve Coeur Connector",
+   "miles": 3.8,
+   "uses": ""
+  },
+  {
+   "name": "Mallard Lake Loop Trail",
+   "miles": 1.7,
+   "uses": ""
+  },
+  {
+   "name": "Out n Back Trail",
+   "miles": 1.0,
+   "uses": ""
+  },
+  {
+   "name": "Skunk Prairie Trail",
+   "miles": 0.6,
+   "uses": ""
+  },
+  {
+   "name": "Beaver Bayou Trail",
+   "miles": 0.3,
+   "uses": ""
+  },
+  {
+   "name": "McKelvey Woods Trail",
+   "miles": 2.0,
+   "uses": ""
+  }
+ ],
+ "notes": "Official trail map (county PDF, https://stlouiscountymo.gov/sites/default/assets/pdfs/department/Parks/Creve%20Coeur/Creve%20Coeur%20Trail%20Map.pdf) lists surfaces paved, gravel and dirt, but the summary did not state allowed uses per trail, so uses left empty. Official page not fetchable (host not resolvable from this session); figures come from search summaries of the county pages and map. Third-party sites (TrailLink, Hiking Project, Komoot) give different lengths, e.g. Lakeview 3.7-3.9 and Bootlegger 4.2-4.4; not used. Park history says four miles of paved bike path were built. Hours dawn",
+ "missing_from_app": [
+  "Creve Coeur Connector (3.8 mi)",
+  "McKelvey Woods Trail (2 mi)"
+ ],
+ "in_app_not_official": [
+  "Audubon Trace Trail 1.7",
+  "Connector Path 0.7",
+  "Lakeview Loop Trail / Meadows Loop Trail 3.7",
+  "Lakeview Loop Trail / Mallard Lake Loop Trail 0.4",
+  "Meadows Loop Trail Spur 0.5",
+  "Loop Trail 0.5",
+  "Mallard Lake Loop Trail Spur 0.3"
+ ]
+}

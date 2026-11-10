@@ -1,0 +1,66 @@
+{
+ "park": "Forest 44 Conservation Area",
+ "also_known_as": [],
+ "manager": "Missouri Department of Conservation (MDC)",
+ "source": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9023map.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Yellow Trail",
+   "miles": 3.4,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "White Trail",
+   "miles": 0.7,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Gray Trail",
+   "miles": 1.2,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Blue Trail",
+   "miles": 2.4,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Red Trail",
+   "miles": 1.2,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Purple Trail",
+   "miles": 1.4,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Brown Trail",
+   "miles": 1.2,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Green Trail",
+   "miles": 0.3,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Dogwood Ridge Trail",
+   "miles": null,
+   "uses": "hiking"
+  },
+  {
+   "name": "Losing Stream Trail",
+   "miles": null,
+   "uses": "hiking"
+  }
+ ],
+ "notes": "The MDC page could not be opened (host not resolvable from this session), so this list comes from search summaries of the MDC area map PDF. The eight colored multi-use trail lengths are as summarized from the map; one summary says the PDF text does not cleanly pair each length with its trail, so verify pairings on the map. Dogwood Ridge and Losing Stream are listed in the map legend as hiking-only; no length was found for them. Third-party sources give a 2.2-mile hiking-only total and a 0.4-mile paved accessible trail; these were not recorded as named trails. Acreage conflicts (958 vs 998), an",
+ "missing_from_app": [
+  "Green Trail"
+ ],
+ "in_app_not_official": []
+}

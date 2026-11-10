@@ -1,0 +1,52 @@
+{
+ "park": "Knob Noster State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/knob-noster/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Buteo Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Clearfork Woodland Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Discovery Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "Hawk Nest Trail",
+   "miles": null,
+   "uses": null
+  },
+  {
+   "name": "McAdoo Trail",
+   "miles": null,
+   "uses": null
+  }
+ ],
+ "notes": "Official trail page could not be opened (mostateparks.com did not resolve from this session); list taken from search summaries only. Mileage and allowed uses not stated in the summaries, so null. Summaries say closures can apply for construction, weather, prescribed burns or managed deer hunts; check the Park and Site Status Map. Third-party sources list 18 to 20 total miles, not official. Official trail names may differ slightly from these short names.",
+ "missing_from_app": [
+  "Buteo Trail",
+  "Discovery Trail",
+  "Hawk Nest Trail",
+  "Clearfork Woodland Trail"
+ ],
+ "in_app_not_official": [
+  "Opossum Hollow trails (Red Trail North Loop, Back End, South, Main Hill)",
+  "North Loop Trail",
+  "White Connector 1/2/3",
+  "Spirit Trail",
+  "Spirit Trail and McAdoo Trail",
+  "Clearfork Trail",
+  "McAdoo Trail - Yellow Loop"
+ ]
+}

@@ -1,0 +1,44 @@
+{
+ "park": "St. Francois State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/st-francois-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Pike Run Trail",
+   "miles": 10.7,
+   "uses": "not stated"
+  },
+  {
+   "name": "Pike Run Trail - North Loop",
+   "miles": 4.2,
+   "uses": "not stated"
+  },
+  {
+   "name": "Pike Run Trail - South Loop",
+   "miles": 6.3,
+   "uses": "not stated"
+  },
+  {
+   "name": "Mooner's Hollow Trail",
+   "miles": 2.9,
+   "uses": "not stated"
+  },
+  {
+   "name": "Swimming Deer Trail",
+   "miles": null,
+   "uses": "not stated"
+  }
+ ],
+ "notes": "Trail list and Pike Run/Mooner's Hollow mileages come from search summaries of the official Missouri State Parks trails page and trail map (4STF_ColorMap.pdf); the page itself could not be fetched (mostateparks.com did not resolve from this session). Pike Run North and South loops are connected by White Connector 1, which is not listed as a separate official trail. Swimming Deer mileage was not found in official sources; third-party figures (2.7, 3.1, 3.6 mi) are unverified and not recorded. One source mentions equestrian access on one trail, unverified. Third-party sites give conflicting trai",
+ "missing_from_app": [
+  "White Connector 1 (connects Pike Run loops per official map summary; not confirmed as a separately listed trail)"
+ ],
+ "in_app_not_official": [
+  "Pike Run Trail - Access Spur 1.2",
+  "Pike Run Trail 0.3"
+ ]
+}

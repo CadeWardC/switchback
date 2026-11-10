@@ -1,0 +1,26 @@
+{
+ "park": "Wakonda State Park",
+ "also_known_as": [],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/sites/mostateparks/files/4WAK_ColorMap.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Agate Lake Trail",
+   "miles": 3.5,
+   "uses": "biking"
+  },
+  {
+   "name": "Sand Prairie Trail",
+   "miles": 1.0,
+   "uses": null
+  }
+ ],
+ "notes": "Source is the official park map (4WAK_ColorMap.pdf), read through a search summary; the official trails page (mostateparks.com/park/wakonda-state-park/trails) could not be opened because the host does not resolve from this session. Official map also lists two short spur trails near Agate Lake: 0.4 mi (moderate) and 0.3 mi (easy), names not given in the summary. Jasper Lake and Quartz Lake trail lengths not found. Agate Lake Trail is described as a natural-surface trail suitable for mountain biking; bikers should stay on designated trails when conditions allow. Wakonda Water Trail (east loop 2.",
+ "missing_from_app": [
+  "Wakonda Water Trail (paddling, east loop 2.6 mi; not a hiking trail)"
+ ],
+ "in_app_not_official": []
+}

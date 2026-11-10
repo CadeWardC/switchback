@@ -1,0 +1,38 @@
+{
+ "park": "Wilson's Creek National Battlefield",
+ "also_known_as": [],
+ "manager": "National Park Service",
+ "source": "https://www.nps.gov/wicr/planyourvisit/horseback-riding.htm",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "researched_by": "automated search (Haiku), not yet reviewed",
+ "trails": [
+  {
+   "name": "Manley Uplands Trail",
+   "miles": 2.5,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Southwest Boundary Trail",
+   "miles": 1.7,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Wire Road",
+   "miles": 1.7,
+   "uses": "hiking, equestrian"
+  },
+  {
+   "name": "Ray Cornfield Trail",
+   "miles": 1.0,
+   "uses": "hiking, equestrian"
+  }
+ ],
+ "notes": "Mileages come from a search summary of an NPS trail guide that the summary says is about four years old; the page itself could not be opened (home.nps.gov did not resolve). Our app lists Southwest Boundary at 2.2 mi, Ray Cornfield at 1.3 mi and Wire Road at 1.2 mi, which differ from the manager figures. Horse use is stated only for Ray Cornfield, Wire Road, Southwest Boundary and Manley Uplands; riding on the tour road or other walking trails is prohibited. Hiking is listed as allowed in park recreation summaries but not per trail. A recent prescribed-burn notice says some trails and trailhead",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Gibson's Mill Trail",
+  "Gibson's Mill Trail Extension",
+  "Gibson Oatfield Trail"
+ ]
+}
