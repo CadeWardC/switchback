@@ -84,6 +84,17 @@ final class ExploreModel: ObservableObject {
         Profiles.shared.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+        // the Informal trails switch in Settings shows or hides them at once
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .map { _ in Trail.showsInformal }
+            .prepend(Trail.showsInformal)
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.refreshResults() }
+            }
+            .store(in: &cancellables)
     }
 
     var origin: Coord? {
@@ -326,7 +337,8 @@ final class ExploreModel: ObservableObject {
         guard let r = visibleRegion else { return }
         let view = BBox(region: r).expanded(byDegrees: 0.005)
         let c = view.center
-        var list = known.values.filter { knownBoxes[$0.id]?.intersects(view) ?? false }
+        let informal = Trail.showsInformal
+        var list = known.values.filter { (informal || !$0.isInformal) && (knownBoxes[$0.id]?.intersects(view) ?? false) }
         // add the quick versions read from the map, unless the exact version of that trail is already here
         if !previews.isEmpty {
             var exact: [String: [BBox]] = [:]

@@ -11,7 +11,7 @@ catalogue. Each trail in the pack is matched by shape (the share of its
 line within 25 m of the official lines); the report says, for named and unnamed trails, which lists confirm them and
 under what name, and lists the official trails in the state that the pack is missing.
 """
-import json, math, os, sys, time, urllib.parse, urllib.request, zlib
+import json, math, os, re, sys, time, urllib.parse, urllib.request, zlib
 from collections import Counter, defaultdict
 
 from shapely.geometry import Point, box, shape
@@ -43,7 +43,7 @@ NCC = ("National Capital Commission", "https://services2.arcgis.com/WLyMuW006nKO
 STATE_SOURCES = {
     # Canada: the official provincial lists, picked by hand (the catalogue search finds too little there)
     "British Columbia, Canada": [
-        ("Recreation Sites and Trails BC", "https://openmaps.gov.bc.ca/geo/pub/wfs|pub:WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW",
+        ("Recreation Sites and Trails BC", "https://openmaps.gov.bc.ca/geo/pub/WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW/ows|WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW",
          ["project_name", "map_label"], ["forest_file_id"], ["project_type"]),
     ],
     "Alberta, Canada": [
@@ -210,6 +210,8 @@ def fetch_wfs(source, area):
             feats = data.get("features", [])
             for f in feats:
                 a = {k.lower(): v for k, v in (f.get("properties") or {}).items()}
+                if a.get("retirement_date") or str(a.get("life_cycle_status_code") or "").upper() == "RETIRED":
+                    continue
                 g = f.get("geometry") or {}
                 paths = [g["coordinates"]] if g.get("type") == "LineString" else g.get("coordinates", []) if g.get("type") == "MultiLineString" else []
                 lines = [[(p[1], p[0]) for p in path] for path in paths if len(path) >= 2]
@@ -279,6 +281,10 @@ def yes(v):
 
 def trail_use(a):
     """'hike', 'not' (water, snow, motorized…) or '?' from an official feature's own fields."""
+    names = " ".join(str(v).lower() for k, v in a.items() if v and ("name" in k or k in ("label", "maplabel")))
+    if any(w in names for w in ("marine trail", "water trail", "paddling", "canoe route", "cycling route", "bike route",
+                                "highway", "snowmobile", "motoneige")):
+        return "not"
     if "hikerpedestrian" in a and a["hikerpedestrian"] not in (None, ""):          # USGS National Digital Trails
         tt = str(a.get("trailtype") or "").lower()
         if "water" in tt or "snow" in tt:
@@ -365,7 +371,7 @@ class Grid:
         return found
 
 def match(lines, grid):
-    """(share of the lines on any of the grid's owners, the owner most of it lies on)"""
+    """(share of the lines on any of the grid's owners, Counter of how many sample points lie on each owner)"""
     pts = [p for l in lines for p in densify(l, 20)]
     hits, by_owner = 0, Counter()
     for p in pts:
@@ -373,7 +379,7 @@ def match(lines, grid):
         if owners:
             hits += 1
             by_owner.update(owners)
-    return (hits / len(pts) if pts else 0), (by_owner.most_common(1)[0][0] if by_owner else None)
+    return (hits / len(pts) if pts else 0), by_owner, len(pts)
 
 def read_pack(path):
     b = open(path, "rb").read()
@@ -383,6 +389,7 @@ def read_pack(path):
     for k, (o, l) in h["cells"].items():
         if not k.startswith("p:"):
             for t in json.loads(zlib.decompress(body[o:o + l], -15)):
+                t["_cell"] = k
                 t["_lines"] = [decode(s) for s in t["segments"]]
                 trails.append(t)
     return h, trails
@@ -393,9 +400,179 @@ def label(o):
 def link(p):
     return f"https://www.openstreetmap.org/?mlat={p[0]:.5f}&mlon={p[1]:.5f}#map=16/{p[0]:.5f}/{p[1]:.5f}"
 
+def norm_name(n):
+    n = re.sub(r"#\S+", "", n.lower())
+    return re.sub(r"[^a-z0-9à-ÿ]+", " ", n).strip()
+
 def same_name(a, b):
-    a, b = a.lower(), b.lower()
-    return a in b or b in a
+    a, b = norm_name(a), norm_name(b)
+    return bool(a) and bool(b) and (a in b or b in a)
+
+def tidy_name(n):
+    """Official names are often in capitals ("GREER MILL TRAIL"): write those like a name."""
+    n = re.sub(r"\s+", " ", n).strip()
+    if n.isupper():
+        n = " ".join(w if len(w) <= 3 and w.isalpha() and w in ("ATV", "ORV", "OHV", "KVR", "NF", "II", "III") else w.capitalize()
+                     for w in n.split(" "))
+    return n
+
+GENERIC = {"trail", "trails", "path", "paths", "informal trail", "unnamed", "unnamed trail", "unknown", "no name", "none",
+           "connector", "connector trail", "spur", "spur trail", "access", "access trail", "multi use trail", "multi use path",
+           "hiking trail", "foot path", "footpath", "walking trail", "social trail", "orv trail system", "atv trail",
+           "existing trail", "proposed trail", "sidewalk", "walkway", "service road", "road", "track", "null"}
+TRAIL_WORDS = re.compile(r"\b(trail|trails|path|loop|greenway|way|route|rail|traverse|trace|walk|promenade|sentier|piste|"
+                         r"boardwalk|circuit|ridge|portage)\b", re.I)
+STREETY = re.compile(r"\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|boulevard|blvd|court|ct|place|pl|highway|hwy|"
+                     r"sidewalk|alley|parking|driveway|crosswalk|overpass|underpass|bridge|plaza|mall)\.?$|sidewalk|crosswalk", re.I)
+PAVED = {"asphalt", "concrete", "paving_stones", "paved", "sett", "concrete:plates", "bricks"}
+NATURAL = {"ground", "dirt", "earth", "grass", "gravel", "fine_gravel", "rock", "pebblestone", "mud", "sand", "unpaved",
+           "wood", "woodchips", "compacted"}
+REAL_TAGS = ("sac_scale", "trail_visibility", "operator", "network", "website", "wikidata", "wikimedia_commons", "ref", "symbol")
+
+def evidence(t):
+    """How our own map data reads a trail: 'real', 'junk' or 'uncertain', and why."""
+    tags = t.get("tags", {})
+    surface = tags.get("surface", "")
+    name = "" if tags.get("switchback:unnamed") else t["name"]
+    real = []
+    if t.get("source") == "osmRelation":
+        real.append("a mapped hiking route")
+    real += [k for k in REAL_TAGS if k in tags]
+    if surface in NATURAL:
+        real.append(f"{surface} surface")
+    if name and TRAIL_WORDS.search(name) and t["length"] >= 805:
+        real.append("a trail name, ½ mi or more")
+    junk = []
+    if name and STREETY.search(name) and not TRAIL_WORDS.search(name):
+        junk.append("a street-style name")
+    if surface in PAVED and not (name and TRAIL_WORDS.search(name)):
+        junk.append("paved")
+    if t["length"] < 400:
+        junk.append("under ¼ mi")
+    if real and not ("a street-style name" in junk):
+        return "real", real
+    if junk and not real:
+        return "junk", junk
+    return "uncertain", real + junk
+
+def evaluate(trails, area, sources, say=print):
+    """Matches every trail in the area against each official list, one list at a time (so memory stays small).
+    Returns per trail {source: info}, the lists' sizes, and per list the official hiking trails the pack misses."""
+    inside = []
+    for t in trails:
+        mid = t["_lines"][0][len(t["_lines"][0]) // 2]
+        if area.intersects(Point(mid[1], mid[0])):
+            inside.append(t)
+    pg = Grid()
+    for i, t in enumerate(trails):
+        for l in t["_lines"]:
+            pg.add(l, i)
+    results = {id(t): {} for t in inside}
+    sizes, missing = {}, {}
+    for src in sources:
+        try:
+            feats = fetch(src, area)
+        except Exception as ex:
+            say(f"- **{src[0]}**: couldn't fetch ({str(ex)[:200]})")
+            continue
+        feats = [f for f in feats if area.intersects(Point(f["lines"][0][len(f["lines"][0]) // 2][1], f["lines"][0][len(f["lines"][0]) // 2][0]))]
+        miles = sum(length(l) for f in feats for l in f["lines"]) / 1609.34
+        sizes[src[0]] = {"pieces": len(feats), "miles": round(miles)}
+        say(f"- **{src[0]}**: {len(feats)} pieces, {miles:.0f} mi")
+        if not feats:
+            continue
+        g = Grid()
+        for i, f in enumerate(feats):
+            for l in f["lines"]:
+                g.add(l, i)
+        for t in inside:
+            share, owners, npts = match(t["_lines"], g)
+            if share < 0.3:
+                continue
+            top = feats[owners.most_common(1)[0][0]]
+            by_name = Counter()
+            for i, c in owners.items():
+                f = feats[i]
+                if f["name"] and f["use"] != "not":
+                    by_name[norm_name(f["name"])] += c
+            name_share = {}
+            if by_name:
+                best, c = by_name.most_common(1)[0]
+                f = next(feats[i] for i in owners if norm_name(feats[i]["name"]) == best)
+                name_share = {"name": f["name"], "no": f["no"], "share": c / npts,
+                              "dominance": c / max(1, sum(by_name.values()))}
+            not_share = sum(c for i, c in owners.items() if feats[i]["use"] == "not") / npts
+            hike_share = sum(c for i, c in owners.items() if feats[i]["use"] != "not") / npts
+            top_not = feats[max((i for i in owners if feats[i]["use"] == "not"), key=lambda i: owners[i], default=owners.most_common(1)[0][0])]
+            results[id(t)][src[0]] = {"share": share, "top": top_not if not_share >= hike_share else top,
+                                      "not_share": not_share, "hike_share": hike_share, "named": name_share}
+        missed = []
+        for group in join_pieces(feats):
+            use = group_use(group)
+            lines = [l for f in group for l in f["lines"]]
+            total = sum(length(l) for l in lines)
+            if total < 400 or use == "not":
+                continue
+            share, _, _ = match(lines, pg)
+            if share < 0.3:
+                f = max(group, key=lambda f: sum(length(l) for l in f["lines"]))
+                missed.append({"name": f["name"], "no": f["no"], "detail": f["detail"], "start": f["lines"][0][0],
+                               "miles": total / 1609.34, "use": use})
+        missing[src[0]] = missed
+        del feats, g
+    return inside, results, sizes, missing
+
+def confirmed(res):
+    return {k: v for k, v in res.items() if v["share"] >= CONFIRM}
+
+def not_for_hikers(res):
+    """Most of the line lies on official lines that aren't for hikers, and hardly any on ones that are."""
+    return (any(v["not_share"] >= CONFIRM for v in res.values()) and
+            all(v["hike_share"] < 0.3 for v in res.values()))
+
+NAME_SHARE = 0.85      # an unnamed line takes an official name only if this much of it lies on that one named trail
+NAME_DOMINANCE = 0.85  # …and that name has this much of the named official lines it touches
+
+def official_name(res):
+    """The official name an unnamed line can take, checked hard: most of the line lies on one named official trail
+    that's open to hikers, that name dominates, it isn't a generic word, and no other list names it differently.
+    Returns (name, ref, source) or None, with the reason when it's refused."""
+    picks = []
+    for src, v in res.items():
+        n = v["named"]
+        if not n or n["share"] < NAME_SHARE or n["dominance"] < NAME_DOMINANCE:
+            continue
+        if norm_name(n["name"]) in GENERIC or len(norm_name(n["name"])) < 3:
+            continue
+        if src == "Trans Canada Trail" and not TRAIL_WORDS.search(n["name"]):
+            continue      # its section names are often towns ("Township of Langley")
+        picks.append((n["share"], src, n))
+    if not picks:
+        return None, "no list names it clearly"
+    picks.sort(key=lambda p: -p[0])
+    names = {norm_name(p[2]["name"]) for p in picks}
+    if len(names) > 1 and not all(same_name(picks[0][2]["name"], p[2]["name"]) for p in picks[1:]):
+        return None, "lists disagree: " + " / ".join(sorted({p[2]["name"] for p in picks}))
+    share, src, n = picks[0]
+    return (tidy_name(n["name"]), n["no"], src), f"{share:.0%} on it" + (f", agreed by {len(picks)} lists" if len(picks) > 1 else "")
+
+def informal_reason(t, res):
+    """Why a trail counts as informal (hidden unless switched on), or None."""
+    tags = t.get("tags", {})
+    if not_for_hikers(res):
+        src, v = max(res.items(), key=lambda kv: kv[1]["not_share"])
+        what = v["top"]["detail"] or v["top"]["name"] or "not for hikers"
+        return f"Official trail lists say it isn't for hikers ({what}; {src})."
+    if res:
+        return None
+    if tags.get("switchback:area"):
+        return None
+    kind, why = evidence(t)
+    if tags.get("switchback:unnamed") == "yes" and kind != "real":
+        return "On no official trail list, outside parks, and nothing in the map marks it as a hiking trail."
+    if kind == "junk":
+        return "On no official trail list, outside parks, and it looks like a street path (" + ", ".join(why) + ")."
+    return None
 
 def main():
     pack, region_file = sys.argv[1], sys.argv[2]
@@ -415,126 +592,82 @@ def main():
         md.append(line)
     summary = {"region": region["region"], "name": state, "country": country, "lists": {}}
 
-    official, grids = {}, {}
     say(f"Pack: {len(trails)} trails. Inside {state} ({outline}), official lists:")
     say()
-    for src in sources:
-        try:
-            feats = fetch(src, area)
-        except Exception as ex:
-            say(f"- **{src[0]}**: couldn't fetch ({ex})")
-            continue
-        feats = [f for f in feats if area.intersects(Point(f["lines"][0][len(f["lines"][0]) // 2][1], f["lines"][0][len(f["lines"][0]) // 2][0]))]
-        official[src[0]] = feats
-        g = Grid()
-        for i, f in enumerate(feats):
-            for l in f["lines"]:
-                g.add(l, i)
-        grids[src[0]] = g
-        miles = sum(length(l) for f in feats for l in f["lines"]) / 1609.34
-        say(f"- **{src[0]}**: {len(feats)} pieces, {miles:.0f} mi")
-        summary["lists"][src[0]] = {"pieces": len(feats), "miles": round(miles)}
+    inside, results, sizes, missing = evaluate(trails, area, sources, say)
+    summary["lists"] = {k: dict(v) for k, v in sizes.items()}
     say()
 
-    # every trail in the pack against every list
-    rows = []
-    for t in trails:
-        unnamed = t.get("tags", {}).get("switchback:unnamed") == "yes"
-        mid = t["_lines"][0][len(t["_lines"][0]) // 2]
-        if not area.intersects(Point(mid[1], mid[0])):
-            continue
-        hits = {}
-        for name, g in grids.items():
-            share, owner = match(t["_lines"], g)
-            if share >= 0.3:
-                hits[name] = (share, official[name][owner])
-        rows.append((t, unnamed, hits))
-
-    def confirmed(hits):
-        return {k: v for k, v in hits.items() if v[0] >= CONFIRM}
-
     for kind, want in (("Named trails", False), ("Unnamed lines", True)):
-        group = [r for r in rows if r[1] == want]
-        conf = [r for r in group if confirmed(r[2])]
-        part = [r for r in group if not confirmed(r[2]) and r[2]]
-        none = [r for r in group if not r[2]]
-        summary[kind] = {"total": len(group), "confirmed": len(conf), "partly": len(part), "none": len(none)}
+        group = [t for t in inside if (t.get("tags", {}).get("switchback:unnamed") == "yes") == want]
+        res = lambda t: results[id(t)]
+        conf = [t for t in group if confirmed(res(t))]
+        part = [t for t in group if res(t) and not confirmed(res(t))]
+        none = [t for t in group if not res(t)]
+        nfh = [t for t in group if res(t) and not_for_hikers(res(t))]
+        s = summary[kind] = {"total": len(group), "confirmed": len(conf), "partly": len(part), "none": len(none),
+                             "not_for_hikers": len(nfh)}
         say(f"## {kind}: {len(group)}")
         say(f"- confirmed by at least one official list (≥{CONFIRM:.0%} of the line): **{len(conf)}**")
         say(f"- partly on official trails (30–70%): {len(part)}")
         say(f"- on no official list: **{len(none)}**")
-        by = Counter(k for r in conf for k in confirmed(r[2]))
-        say("- confirmed by: " + ", ".join(f"{k} {v}" for k, v in by.most_common()))
-        # trails the official lists say aren't for hikers (every list that confirms them says 'not')
-        not_hike = [r for r in conf if all(v[1]["use"] == "not" for v in confirmed(r[2]).values())]
-        summary[kind]["not_for_hikers"] = len(not_hike)
-        say(f"- official lists say **not for hikers** (water, snow, ORV, motorized…): {len(not_hike)}")
-        for t, _, hits in sorted(not_hike, key=lambda r: -r[0]["length"])[:8]:
-            k, v = next(iter(confirmed(hits).items()))
-            say(f"  - {t['name']} ({t['length'] / 1609.34:.1f} mi) = {label(v[1])} ({k}{', ' + v[1]['detail'] if v[1]['detail'] else ''})")
-        def place(t):
-            short = t["length"] < 805
-            park = bool(t.get("tags", {}).get("switchback:area"))
-            return ("in a park" if park else "outside parks") + (", under ½ mi" if short else "")
-        kinds = Counter(place(r[0]) for r in none)
-        summary[kind]["none_by_place"] = dict(kinds)
-        say("- on no list, by place: " + ", ".join(f"{k} {v}" for k, v in kinds.most_common()))
+        say("- confirmed by: " + ", ".join(f"{k} {v}" for k, v in Counter(k for t in conf for k in confirmed(res(t))).most_common()))
+        say(f"- official lists say **not for hikers** (water, snow, ORV, motorized…): {len(nfh)}")
+        for t in sorted(nfh, key=lambda t: -t["length"])[:8]:
+            k, v = max(res(t).items(), key=lambda kv: kv[1]["not_share"])
+            say(f"  - {t['name']} ({t['length'] / 1609.34:.1f} mi) = {label(v['top'])} ({k}{', ' + v['top']['detail'] if v['top']['detail'] else ''})")
+        places = Counter(("in a park" if t.get("tags", {}).get("switchback:area") else "outside parks") +
+                         (", under ½ mi" if t["length"] < 805 else "") for t in none)
+        s["none_by_place"] = dict(places)
+        say("- on no list, by place: " + ", ".join(f"{k} {v}" for k, v in places.most_common()))
+        outside = [t for t in none if not t.get("tags", {}).get("switchback:area")]
+        ev = Counter(evidence(t)[0] for t in outside)
+        s["outside_evidence"] = dict(ev)
+        say(f"- on no list and outside parks, by our own map data: likely real {ev['real']}, likely junk {ev['junk']}, uncertain {ev['uncertain']}")
+        why = Counter(w for t in outside for w in evidence(t)[1])
+        say("  - reasons: " + ", ".join(f"{k} {v}" for k, v in why.most_common(10)))
+        for k in ("junk", "uncertain", "real"):
+            ex = [t for t in outside if evidence(t)[0] == k]
+            say(f"  - {k}, e.g.: " + "; ".join(f"{t['name']} ({t['length'] / 1609.34:.2f} mi) {link(t['_lines'][0][0])}"
+                                                 for t in sorted(ex, key=lambda t: -t["length"])[:6]))
+        informal = [t for t in group if informal_reason(t, res(t))]
+        s["informal"] = len(informal)
+        say(f"- **would be informal** (hidden unless switched on): {len(informal)}")
         if want:
-            nameable = [r for r in conf if any(v[1]["name"] and v[1]["use"] != "not" for v in confirmed(r[2]).values())]
-            say(f"- **can take an official name: {len(nameable)}**")
-            summary[kind]["nameable"] = len(nameable)
-            say()
-            for t, _, hits in sorted(nameable, key=lambda r: -r[0]["length"])[:40]:
-                best = max(confirmed(hits).items(), key=lambda kv: (bool(kv[1][1]["name"]) and kv[1][1]["use"] != "not", kv[1][0]))
-                say(f"  - {t['name']} ({t['length'] / 1609.34:.1f} mi) → **{label(best[1][1])}** "
-                    f"({best[0]}, {best[1][0]:.0%}) {link(t['_lines'][0][0])}")
-        else:
-            differ = [(t, k, v) for t, _, hits in conf for k, v in confirmed(hits).items()
-                      if v[1]["name"] and not same_name(t["name"], v[1]["name"])]
-            say(f"- official name differs (per list): {len(differ)}")
-            summary[kind]["name_differs"] = len(differ)
-            say()
-            for t, k, v in sorted(differ, key=lambda x: -x[0]["length"])[:25]:
-                say(f"  - {t['name']} → {label(v[1])} ({k})")
-            say()
-            say(f"- on no list (longest first):")
-            for t, _, _ in sorted(none, key=lambda r: -r[0]["length"])[:15]:
-                say(f"  - {t['name']} ({t['length'] / 1609.34:.1f} mi, {t.get('tags', {}).get('switchback:area') or 'no park'}) "
+            named, refused = [], Counter()
+            for t in conf:
+                got, why_not = official_name(res(t))
+                if got:
+                    named.append((t, got, why_not))
+                else:
+                    refused[why_not.split(":")[0]] += 1
+            s["nameable"] = len(named)
+            s["name_refused"] = dict(refused)
+            say(f"- **can take an official name (strict check): {len(named)}**; refused: " +
+                ", ".join(f"{k} {v}" for k, v in refused.most_common()))
+            for t, (name, ref, src), how in sorted(named, key=lambda x: -x[0]["length"])[:40]:
+                say(f"  - {t['name']} ({t['length'] / 1609.34:.1f} mi) → **{name}{' #' + ref if ref else ''}** ({src}, {how}) "
                     f"{link(t['_lines'][0][0])}")
+        else:
+            differ = [(t, k, v) for t in conf for k, v in confirmed(res(t)).items()
+                      if v["named"] and not same_name(t["name"], v["named"]["name"])]
+            s["name_differs"] = len(differ)
+            say(f"- official name differs (per list): {len(differ)}")
+            for t, k, v in sorted(differ, key=lambda x: -x[0]["length"])[:15]:
+                say(f"  - {t['name']} → {tidy_name(v['named']['name'])} ({k})")
         say()
 
-    # official trails the pack is missing
-    pg = Grid()
-    for i, t in enumerate(trails):
-        for l in t["_lines"]:
-            pg.add(l, i)
-    say("## Official trails missing from the pack (joined into whole trails, hiking only)")
-    for name, feats in official.items():
-        missing, skipped = [], Counter()
-        for group in join_pieces(feats):
-            use = group_use(group)
-            lines = [l for f in group for l in f["lines"]]
-            total = sum(length(l) for l in lines)
-            if total < 400:
-                continue
-            if use == "not":
-                skipped["not for hikers"] += 1
-                continue
-            share, _ = match(lines, pg)
-            if share < 0.3:
-                missing.append((group, total, use))
-        hike = [m for m in missing if m[2] == "hike"]
-        unknown = [m for m in missing if m[2] == "?"]
-        mi = lambda ms: round(sum(m[1] for m in ms) / 1609.34)
-        say(f"- **{name}**: {len(hike)} hiking trails ({mi(hike)} mi) + {len(unknown)} of unknown use ({mi(unknown)} mi); "
-            f"left out {skipped['not for hikers']} not for hikers")
+    say("## Official trails missing from the pack (joined into whole trails, open to hikers)")
+    for name, missed in missing.items():
+        hike = [m for m in missed if m["use"] == "hike"]
+        unknown = [m for m in missed if m["use"] == "?"]
+        mi = lambda ms: round(sum(m["miles"] for m in ms))
+        say(f"- **{name}**: {len(hike)} hiking trails ({mi(hike)} mi) + {len(unknown)} of unknown use ({mi(unknown)} mi)")
         summary["lists"].setdefault(name, {}).update({"missing": len(hike), "missing_miles": mi(hike),
-                                                      "missing_unknown_use": len(unknown), "missing_unknown_miles": mi(unknown),
-                                                      "not_for_hikers": skipped["not for hikers"]})
-        for group, total, use in sorted(missing, key=lambda m: -m[1])[:10]:
-            f = max(group, key=lambda f: sum(length(l) for l in f["lines"]))
-            say(f"  - {label(f)} ({total / 1609.34:.1f} mi{', ' + f['detail'] if f['detail'] else ''}"
-                f"{', use unknown' if use == '?' else ''}) {link(f['lines'][0][0])}")
+                                                      "missing_unknown_use": len(unknown), "missing_unknown_miles": mi(unknown)})
+        for m in sorted(missed, key=lambda m: -m["miles"])[:8]:
+            say(f"  - {m['name'] or '(no name)'}{' #' + m['no'] if m['no'] else ''} ({m['miles']:.1f} mi"
+                f"{', ' + m['detail'] if m['detail'] else ''}{', use unknown' if m['use'] == '?' else ''}) {link(m['start'])}")
     open(report, "w").write("\n".join(md) + "\n")
     json.dump(summary, open(summary_file, "w"), indent=1)
 

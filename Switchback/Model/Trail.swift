@@ -109,6 +109,13 @@ struct Trail: Codable, Identifiable, Hashable {
     /// A path mapped in OpenStreetMap without a name.
     var isUnnamed: Bool { tags["switchback:unnamed"] == "yes" }
 
+    /// Not a hiking trail as far as we can tell: official lists say it isn't for hikers (ORV, snowmobile, water…), or
+    /// it's on no official list and nothing in the map says people hike it. Hidden unless "Informal trails" is on.
+    var isInformal: Bool { tags["switchback:informal"] == "yes" }
+
+    static let informalKey = "informalTrails"
+    static var showsInformal: Bool { UserDefaults.standard.bool(forKey: informalKey) }
+
     var difficulty: Difficulty {
         let km = length / 1000
         let effort = km + (profile?.gain ?? 0) / 100
@@ -176,6 +183,14 @@ struct Trail: Codable, Identifiable, Hashable {
         if let grade = tags["usfs:grade"] { out.append(TrailFact(title: "Typical grade", value: grade)) }
         if let nat = tags["usfs:national"] { out.append(TrailFact(title: "National designation", value: nat.capitalized)) }
         if let dogs = tags["dog"] { out.append(TrailFact(title: "Dogs", value: dogs.capitalized)) }
+        if let source = tags["official:source"] {
+            let ref = tags["official:ref"].map { " #\($0)" } ?? ""
+            let name = tags["official:name"].map { "\($0)\(ref) · " } ?? (ref.isEmpty ? "" : "\(ref.dropFirst()) · ")
+            out.append(TrailFact(title: "Official record", value: "\(name)\(source)"))
+        }
+        if isInformal, let why = tags["switchback:informal_reason"] {
+            out.append(TrailFact(title: "Informal", value: why))
+        }
         return out
     }
 

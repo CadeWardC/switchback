@@ -12,6 +12,7 @@ on:
     branches: ["**"]
     paths:
       - "scripts/build_trail_pack.py"
+      - "scripts/enrich_trail_pack.py"
 
 permissions:
   contents: write
@@ -126,6 +127,12 @@ jobs:
           export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
           PACK_VERSION=$(date -u +%Y%m%d%H%M) python3 scripts/build_trail_pack.py trails.osm.pbf "${{ matrix.region.id }}" out "${{ matrix.region.country }}" "${{ matrix.region.name }}"
           du -sh out
+
+      - name: Add what official trail lists know (names, informal trails)
+        # never blocks publishing: if the official lists can't be reached the pack goes out as built
+        continue-on-error: true
+        timeout-minutes: 60
+        run: python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
 
       - name: Publish
         env:
