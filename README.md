@@ -47,6 +47,13 @@ subscription and no API keys.
   its area (the smallest named park, nature reserve or protected area it lies in); names unnamed paths from the map
   where it's certain ("Connector: A – B", "A spur"); and drops unnamed paths outside parks that join no trail and
   aren't tagged for hiking. No live search is needed inside covered states. The list groups trails by area, and search matches area names.
+- **Hikes, not just lines:** the pack builder also (1) drops a trail that is the same line as another (a route and
+  the path it runs on under two names: each must cover 95% of the other, so a section of a longer trail is never
+  dropped); (2) closes named loops that don't return to their start along the trails that complete them; (3) finds
+  trailheads and car parks within 100 m of a trail and the walk from each to the trails within 3 km, so a trail page
+  can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
+  off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
+  trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
 - **Regions:** the pack job's matrix in `trail-packs.yml` lists the areas (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map

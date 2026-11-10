@@ -33,6 +33,9 @@ KEEP_TAGS = {"sac_scale", "surface", "trail_visibility", "operator", "network", 
 SKIP_ROLES = {"alternative", "excursion", "approach", "connection", "link"}
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett", "compacted"}
 NO_ACCESS = {"private", "no"}
+NO_PARKING = {"private", "no", "customers", "permit", "delivery", "employees"}
+TRAILHEAD_M = 100    # a trailhead or car park this close to a trail is a place to start from
+ACCESS_M = 3000      # …and trails within this walk of it (along trails) can be started from there
 LINK_M = 1000   # pieces of one named trail this close along other trails are one trail (a loop mapped in halves)
 GAP_M = 30      # a straight jump allowed between pieces where the map has a small gap
 
@@ -311,10 +314,15 @@ class Relations(osmium.SimpleHandler):
         self.routes = {}          # id -> (tags, [(way_id, role)])
         self.member_ways = set()
         self.pois = []            # (lat, lon, kind, name, ele, id)
+        self.trailheads = []      # (rank, name, (lat, lon)): 0 = mapped trailhead, 1 = parking
 
     def node(self, n):
         if not n.tags or not n.location.valid():
             return
+        if n.tags.get("highway") == "trailhead" or n.tags.get("information") == "trailhead":
+            self.trailheads.append((0, n.tags.get("name", ""), (n.location.lat, n.location.lon)))
+        elif n.tags.get("amenity") == "parking" and n.tags.get("access") not in NO_PARKING:
+            self.trailheads.append((1, n.tags.get("name", ""), (n.location.lat, n.location.lon)))
         kind = poi_kind(n.tags)
         if kind:
             ele = n.tags.get("ele")
@@ -390,6 +398,7 @@ class Ways(osmium.SimpleHandler):
         self.named = []           # (way id, name, tags, nodes)
         self.tracks = []          # named dirt tracks: kept only where they're part of the trail network
         self.unnamed = []         # (way id, tags, nodes)
+        self.parking = []         # (name, (lat, lon)): car parks drawn as areas
 
     def way(self, w):
         try:
@@ -402,6 +411,11 @@ class Ways(osmium.SimpleHandler):
             self.geom[w.id] = nodes
         t = w.tags
         hw = t.get("highway")
+        if t.get("amenity") == "parking":
+            if t.get("access") not in NO_PARKING:
+                self.parking.append((t.get("name", ""), (sum(c[0] for _, c in nodes) / len(nodes),
+                                                         sum(c[1] for _, c in nodes) / len(nodes))))
+            return
         if t.get("access") in NO_ACCESS or t.get("foot") in NO_ACCESS:
             return   # private, or closed to people on foot (bike-only and similar)
         name = t.get("name")
@@ -432,7 +446,258 @@ def make_trail(tid, osm_id, source, name, lines, tags, min_len, main=None):
         t["path"] = encode(path)
     if kept:
         t["tags"] = kept
+    t["_main"] = list(main)
     return t, path[0]
+
+# ---------------------------------------------------------------- hikes: duplicates, loops, trailheads, systems
+
+SIDE_WORDS = re.compile(r"\b(access|spur|connector|cutoff|cut-off|link|connection)\b", re.I)
+SYSTEM_SPLIT = re.compile(r"^(.{4,}?)\s+[-–—:]\s+(.+)$")
+NOT_SYSTEMS = {"connector", "trail", "trails", "loop", "path", "unnamed trail"}
+
+def is_unnamed(t):
+    return t.get("tags", {}).get("switchback:unnamed") == "yes"
+
+def lines_of(t):
+    return [decode(s) for s in t["segments"]]
+
+def densify(line, step):
+    out = [line[0]]
+    for a, b in zip(line, line[1:]):
+        k = max(1, int(dist(a, b) // step))
+        out += [(a[0] + (b[0] - a[0]) * i / k, a[1] + (b[1] - a[1]) * i / k) for i in range(1, k + 1)]
+    return out
+
+def coverage(a_lines, b_lines, near=15):
+    """The share of a's lines that lie within `near` metres of b's."""
+    cells = defaultdict(list)
+    for l in b_lines:
+        for p in densify(l, 8):
+            cells[(round(p[0] * 5000), round(p[1] * 5000))].append(p)
+    pts = [p for l in a_lines for p in densify(l, 15)]
+    hit = 0
+    for p in pts:
+        k = (round(p[0] * 5000), round(p[1] * 5000))
+        if any(dist(p, q) <= near for dy in (-1, 0, 1) for dx in (-1, 0, 1) for q in cells.get((k[0] + dy, k[1] + dx), ())):
+            hit += 1
+    return hit / len(pts) if pts else 0
+
+def drop_duplicates(trails):
+    """Two named trails that are the same line (each covers 95% of the other) are one hike: a route and the path it
+    runs on, mapped under two names. The route stays (it takes the other's details and name as alt_name); a trail that
+    is only PART of another is never dropped."""
+    named = [i for i, (t, _) in enumerate(trails) if not is_unnamed(t)]
+    geo, buckets = {}, defaultdict(list)
+    for i in named:
+        ls = lines_of(trails[i][0])
+        pts = [p for l in ls for p in l]
+        c = ((min(p[0] for p in pts) + max(p[0] for p in pts)) / 2, (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2)
+        geo[i] = (ls, sum(length(l) for l in ls))
+        buckets[(round(c[0] * 100), round(c[1] * 100))].append(i)
+    dropped = set()
+    for (ky, kx), items in buckets.items():
+        for i in items:
+            for j in [x for dy in (-1, 0, 1) for dx in (-1, 0, 1) for x in buckets.get((ky + dy, kx + dx), ())]:
+                if j <= i or i in dropped or j in dropped:
+                    continue
+                (la, na), (lb, nb) = geo[i], geo[j]
+                if not 0.85 <= na / max(nb, 1) <= 1.18:
+                    continue
+                if coverage(la, lb) < 0.95 or coverage(lb, la) < 0.95:
+                    continue
+                a, b = trails[i][0], trails[j][0]
+                keep, drop, gone = (a, b, j) if (a["source"] == "osmRelation" or b["source"] != "osmRelation") else (b, a, i)
+                tags = keep.setdefault("tags", {})
+                for k, v in drop.get("tags", {}).items():
+                    tags.setdefault(k, v)
+                if drop["name"].lower() != keep["name"].lower():
+                    tags.setdefault("alt_name", drop["name"])
+                    keep.setdefault("_names", []).append(drop["name"])
+                dropped.add(gone)
+    print(f"  duplicates: {len(dropped)} trails that were the same line as another")
+    return [tr for i, tr in enumerate(trails) if i not in dropped]
+
+def set_main(t, main, extra):
+    """Gives a trail a new line to follow (and more lines to draw)."""
+    segs = lines_of(t) + [simplify(l) for l in extra if len(l) >= 2]
+    path = simplify(main)
+    t["segments"] = [encode(x) for x in segs]
+    t.pop("pathIndex", None)
+    t["path"] = encode(path)
+    t["length"] = round(length(main), 1)
+    t["_main"] = list(main)
+    return path[0]
+
+def closed(main):
+    return len(main) > 2 and length(main) > 500 and dist(main[0], main[-1]) < max(150, length(main) * 0.03)
+
+def shortest(adj, src, dst, limit, banned=()):
+    """(metres, node ids) of the shortest walk from src to dst within limit, not using the banned edges."""
+    best, prev, heap = {src: 0.0}, {}, [(0.0, src)]
+    while heap:
+        d, n = heapq.heappop(heap)
+        if n == dst:
+            path = [n]
+            while path[-1] != src:
+                path.append(prev[path[-1]])
+            return d, path[::-1]
+        if d > best.get(n, math.inf):
+            continue
+        for m, w in adj.get(n, ()):
+            if (n, m) in banned:
+                continue
+            nd = d + w
+            if nd <= limit and nd < best.get(m, math.inf):
+                best[m], prev[m] = nd, n
+                heapq.heappush(heap, (nd, m))
+    return None
+
+def hikes(trails, adj, where, node_names, heads):
+    """Turns trails into hikes: closes named loops along the trails that complete them, finds the trailheads each
+    trail can be started from (with the walk in), offers loops that hang off a loop as extensions, marks access trails
+    and connectors as side trails, and groups trail systems."""
+    node_of = {c: n for n, c in where.items()}
+    ids = lambda main: [node_of.get(c) for c in main]
+
+    # 1. named loops that don't come back to their start: close them along other trails
+    closed_now = 0
+    for k, (t, _) in enumerate(trails):
+        main = t["_main"]
+        names = [t["name"]] + t.get("_names", [])
+        if is_unnamed(t) or closed(main) or not any(re.search(r"\bloop\b", n, re.I) for n in names):
+            continue
+        nodes = ids(main)
+        a, z = nodes[0], nodes[-1]
+        if a is None or z is None or a == z:
+            continue
+        own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
+        found = shortest(adj, z, a, min(2 * length(main), 15000), own)
+        if not found:
+            continue
+        back = [where[n] for n in found[1]]
+        start = set_main(t, main + back[1:], [back])
+        t.setdefault("tags", {})["switchback:closed"] = "yes"
+        trails[k] = (t, start)
+        closed_now += 1
+    print(f"  loops: closed {closed_now} named loops along the trails that complete them")
+
+    # 2. side trails: access trails, spurs, connectors and cutoffs aren't hikes of their own
+    sides = 0
+    for t, _ in trails:
+        name = t["name"]
+        generated = is_unnamed(t) and (name.startswith("Connector") or name.endswith(" spur"))
+        if generated or (not is_unnamed(t) and SIDE_WORDS.search(name) and t["length"] < 3220 and not closed(t["_main"])):
+            t.setdefault("tags", {})["switchback:side"] = "yes"
+            sides += 1
+    print(f"  side trails: {sides} access trails, spurs and connectors")
+
+    hikeable = [i for i, (t, _) in enumerate(trails) if not is_unnamed(t) and t.get("tags", {}).get("switchback:side") != "yes"]
+    loops = {i for i in hikeable if closed(trails[i][0]["_main"])}
+    targets = defaultdict(list)       # node -> hikes that can be joined there (a loop anywhere, a line at its ends)
+    loop_nodes = defaultdict(list)    # node -> loops through it
+    for i in hikeable:
+        nodes = ids(trails[i][0]["_main"])
+        if i in loops:
+            for n in set(nodes) - {None}:
+                targets[n].append(i)
+                loop_nodes[n].append(i)
+        else:
+            for n in {nodes[0], nodes[-1]} - {None}:
+                targets[n].append(i)
+
+    # 3. trailheads: mapped trailheads and car parks next to a trail, and the walk from each to the trails near it
+    grid = defaultdict(list)
+    for n, c in where.items():
+        grid[(round(c[0] * 500), round(c[1] * 500))].append(n)       # ~220 m cells
+    placed = []
+    for rank, name, c in sorted(heads, key=lambda h: (h[0], not h[1])):
+        k = (round(c[0] * 500), round(c[1] * 500))
+        near = [(dist(c, where[n]), n) for dy in (-1, 0, 1) for dx in (-1, 0, 1) for n in grid.get((k[0] + dy, k[1] + dx), ())]
+        if not near:
+            continue
+        gap, node = min(near)
+        if gap > TRAILHEAD_M or any(dist(c, q[2]) < 150 for q in placed if abs(q[2][0] - c[0]) < 0.01):
+            continue
+        if not name:
+            on = sorted(node_names.get(node, ()))
+            name = f"{on[0]} trailhead" if on else "Trailhead"
+        placed.append((name, node, c, gap))
+    access = defaultdict(list)
+    for name, node, c, gap in placed:
+        best, prev, heap, seen = {node: 0.0}, {}, [(0.0, node)], set()
+        while heap:
+            d, n = heapq.heappop(heap)
+            if d > best.get(n, math.inf):
+                continue
+            for i in targets.get(n, ()):
+                if i not in seen:
+                    seen.add(i)
+                    path = [n]
+                    while path[-1] != node:
+                        path.append(prev[path[-1]])
+                    access[i].append((gap + d, name, c, [c] + [where[x] for x in reversed(path)]))
+            for m, w in adj.get(n, ()):
+                nd = d + w
+                if nd <= ACCESS_M and nd < best.get(m, math.inf):
+                    best[m], prev[m] = nd, n
+                    heapq.heappush(heap, (nd, m))
+    with_access = 0
+    for i, found in access.items():
+        found.sort(key=lambda f: f[0])
+        out = []
+        for d, name, c, line in found[:4]:
+            e = {"n": name, "d": round(d), "p": [round(c[0], 5), round(c[1], 5)]}
+            if d >= 30:
+                e["l"] = encode(simplify(line))
+            out.append(e)
+        trails[i][0].setdefault("tags", {})["switchback:access"] = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
+        with_access += 1
+    print(f"  trailheads: {len(placed)} next to trails; {with_access} of {len(hikeable)} hikes can be started from one")
+
+    # 4. extensions: a loop that hangs off another loop (shares a junction, little else) can be added to it
+    extended = 0
+    for i in loops:
+        nodes = [n for n in ids(trails[i][0]["_main"]) if n is not None]
+        mine = set(nodes)
+        others = {j for n in mine for j in loop_nodes.get(n, ()) if j != i}
+        ext = []
+        for j in others:
+            s = trails[j][0]
+            s_nodes = ids(s["_main"])
+            shared = [n for n in s_nodes if n in mine]
+            if not shared or len(shared) > 0.2 * len(s_nodes) or s["length"] > trails[i][0]["length"]:
+                continue
+            at = s_nodes.index(shared[0])
+            line = s["_main"][at:] + s["_main"][1:at + 1]          # the side loop, starting at the junction
+            ext.append({"id": s["id"], "n": s["name"], "m": round(s["length"]), "l": encode(simplify(line))})
+        if ext:
+            ext.sort(key=lambda e: e["m"])
+            trails[i][0].setdefault("tags", {})["switchback:ext"] = json.dumps(ext[:3], ensure_ascii=False, separators=(",", ":"))
+            extended += 1
+    print(f"  extensions: {extended} loops have a side loop that can be added")
+
+    # 5. trail systems: "Cedar Creek Trail - Moon Loop", "- Pine Ridge", … and the trail they're named after
+    groups = defaultdict(set)
+    for i, (t, _) in enumerate(trails):
+        if is_unnamed(t):
+            continue
+        for name in [t["name"]] + t.get("_names", []):
+            m = SYSTEM_SPLIT.match(name)
+            if m and m.group(1).strip().lower() not in NOT_SYSTEMS:
+                groups[m.group(1).strip()].add(i)
+    systems = {name: members for name, members in groups.items() if len(members) >= 3}
+    by_lower = {name.lower(): name for name in systems}
+    tagged = 0
+    for i, (t, _) in enumerate(trails):
+        name = next((n for n, members in systems.items() if i in members), None)
+        if not name and not is_unnamed(t):
+            name = by_lower.get(t["name"].lower())
+        if name:
+            t.setdefault("tags", {})["switchback:system"] = name
+            tagged += 1
+    print(f"  systems: {len(systems)} trail systems with {tagged} trails")
+    return trails
+
 
 HIKING_HINTS = {"sac_scale", "trail_visibility", "mtb:scale"}
 TRAIL_WORDS = re.compile(r"\b(trail|trl|path|loop|trace|greenway)\b", re.I)
@@ -567,6 +832,11 @@ def build(pbf):
         area = finder.find(*middle(main))
         if area:
             t.setdefault("tags", {})["switchback:area"] = area
+    trails = drop_duplicates(trails)
+    trails = hikes(trails, adj, where, node_names, rel.trailheads + [(1, n, c) for n, c in ways.parking])
+    for t, _ in trails:
+        for k in [k for k in t if k.startswith("_")]:
+            del t[k]
     pois = pois_near(trails, rel.pois)
     return trails, pois
 

@@ -53,6 +53,7 @@ struct ExploreView: View {
                 }
             }
             .navigationDestination(for: Trail.self) { TrailDetailView(trail: $0) }
+            .navigationDestination(for: TrailSystem.self) { TrailSystemView(system: $0) }
             .sheet(isPresented: $showFilters) {
                 FiltersView(filters: $model.filters, sort: $model.sort)
             }
@@ -201,9 +202,16 @@ struct ExploreView: View {
             }
             ForEach(groups, id: \.area) { group in
                 Section {
-                    ForEach(group.trails) { t in
-                        NavigationLink(value: t) {
-                            TrailRow(trail: t, distanceAway: model.distanceFromUser(t))
+                    ForEach(listRows(group.trails)) { row in
+                        if let name = row.system {
+                            // a trail system is one entry; its loops, sections and side trails are inside
+                            NavigationLink(value: TrailSystem(name: name, trails: model.systemMembers(name))) {
+                                TrailSystemRow(name: name, trails: row.trails)
+                            }
+                        } else if let t = row.trails.first {
+                            NavigationLink(value: t) {
+                                TrailRow(trail: t, distanceAway: model.distanceFromUser(t))
+                            }
                         }
                     }
                 } header: {
@@ -243,6 +251,33 @@ struct ExploreView: View {
             }
         }
     }
+}
+
+/// A row of the trail list: one trail, or a trail system standing for its trails.
+private struct ListRow: Identifiable {
+    let id: String
+    let system: String?
+    let trails: [Trail]
+}
+
+private func listRows(_ trails: [Trail]) -> [ListRow] {
+    var counts: [String: Int] = [:]
+    for t in trails { if let s = t.system { counts[s, default: 0] += 1 } }
+    var rows: [ListRow] = []
+    var placed: [String: Int] = [:]
+    for t in trails {
+        if let s = t.system, counts[s, default: 0] > 1 {
+            if let i = placed[s] {
+                rows[i] = ListRow(id: rows[i].id, system: s, trails: rows[i].trails + [t])
+            } else {
+                placed[s] = rows.count
+                rows.append(ListRow(id: "system:" + s, system: s, trails: [t]))
+            }
+        } else {
+            rows.append(ListRow(id: t.id, system: nil, trails: [t]))
+        }
+    }
+    return rows
 }
 
 private extension View {

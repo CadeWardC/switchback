@@ -113,6 +113,73 @@ struct Trail: Codable, Identifiable, Hashable {
     /// it's on no official list and nothing in the map says people hike it. Hidden unless "Informal trails" is on.
     var isInformal: Bool { tags["switchback:informal"] == "yes" }
 
+    /// An access trail, spur or connector: not a hike of its own. Hidden unless "Side trails" is on (it still
+    /// appears in its trail system, and as the walk in to the hikes it leads to).
+    var isSide: Bool { tags["switchback:side"] == "yes" }
+
+    static let sideKey = "sideTrails"
+    static var showsSide: Bool { UserDefaults.standard.bool(forKey: sideKey) }
+
+    /// The trail system this belongs to ("Cedar Creek Trail").
+    var system: String? { tags["switchback:system"] }
+
+    /// Trailheads and car parks this trail can be started from, nearest first, with the walk in.
+    var accessPoints: [TrailAccess] {
+        guard let rows = Self.json(tags["switchback:access"]) else { return [] }
+        return rows.compactMap { r in
+            guard let name = r["n"] as? String, let d = (r["d"] as? NSNumber)?.doubleValue,
+                  let p = r["p"] as? [NSNumber], p.count == 2 else { return nil }
+            let point = Coord(lat: p[0].doubleValue, lon: p[1].doubleValue)
+            return TrailAccess(name: name, distance: d, point: point, line: (r["l"] as? String).map(Polyline.decode) ?? [])
+        }
+    }
+
+    /// Loops that hang off this loop and can be added to the hike.
+    var extensions: [TrailExtension] {
+        guard let rows = Self.json(tags["switchback:ext"]) else { return [] }
+        return rows.compactMap { r in
+            guard let id = r["id"] as? String, let name = r["n"] as? String, let m = (r["m"] as? NSNumber)?.doubleValue,
+                  let line = r["l"] as? String else { return nil }
+            return TrailExtension(id: id, name: name, length: m, line: Polyline.decode(line))
+        }
+    }
+
+    private static func json(_ text: String?) -> [[String: Any]]? {
+        guard let data = text?.data(using: .utf8) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+    }
+
+    /// This trail as the hike you'd actually walk: in from a trailhead (and back out, for a loop), with any side
+    /// loops added. The map, the length and navigation all follow it.
+    func hike(from access: TrailAccess?, adding added: [TrailExtension]) -> Trail {
+        var t = self
+        var route = path
+        func nearest(_ c: Coord) -> Int {
+            route.indices.min { Geo.distance(route[$0], c) < Geo.distance(route[$1], c) } ?? 0
+        }
+        for e in added where e.line.count > 1 {
+            let at = nearest(e.line[0])
+            route.insert(contentsOf: e.line, at: at + 1)
+            t.segments.append(e.line)
+            t.length += e.length
+        }
+        if let a = access, a.line.count > 1, let join = a.line.last, route.count > 1 {
+            if isLoop {
+                let i = nearest(join)
+                if i > 0 { route = Array(route[i...]) + Array(route[1...i]) }
+                route = a.line + route + a.line.reversed()
+                t.length += 2 * a.distance
+            } else {
+                if Geo.distance(route[route.count - 1], join) < Geo.distance(route[0], join) { route.reverse() }
+                route = a.line + route
+                t.length += a.distance
+            }
+            t.segments.append(a.line)
+        }
+        t.path = route
+        return t
+    }
+
     static let informalKey = "informalTrails"
     static var showsInformal: Bool { UserDefaults.standard.bool(forKey: informalKey) }
 
@@ -197,4 +264,35 @@ struct Trail: Codable, Identifiable, Hashable {
     var website: URL? {
         (tags["website"] ?? tags["url"]).flatMap { URL(string: $0) }
     }
+}
+
+/// A trailhead or car park a trail can be started from.
+struct TrailAccess: Hashable, Identifiable {
+    let name: String
+    /// The walk from here to the trail, one way, in metres.
+    let distance: Double
+    let point: Coord
+    /// The way in, from the trailhead to the trail (empty when the trailhead is on the trail).
+    let line: [Coord]
+
+    var id: String { "\(name)|\(point.lat)|\(point.lon)" }
+}
+
+/// A loop that hangs off another loop and can be added to it.
+struct TrailExtension: Hashable, Identifiable {
+    let id: String
+    let name: String
+    let length: Double
+    /// The side loop, starting and ending at the junction.
+    let line: [Coord]
+}
+
+/// A trail system: a named trail with its loops, sections and side trails ("Cedar Creek Trail").
+struct TrailSystem: Hashable, Identifiable {
+    let name: String
+    let trails: [Trail]
+
+    var id: String { name }
+    static func == (a: TrailSystem, b: TrailSystem) -> Bool { a.name == b.name && a.trails.map(\.id) == b.trails.map(\.id) }
+    func hash(into hasher: inout Hasher) { hasher.combine(name) }
 }

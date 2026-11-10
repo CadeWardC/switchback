@@ -199,3 +199,80 @@ struct ElevationChart: View {
         .frame(height: height)
     }
 }
+
+/// A trail system in the list ("Cedar Creek Trail · 8 trails").
+struct TrailSystemRow: View {
+    let name: String
+    let trails: [Trail]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "point.3.connected.trianglepath.dotted")
+                .font(.title2)
+                .foregroundStyle(Color.trailGreen)
+                .frame(width: 64, height: 64)
+                .background(Color.trailGreen.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.headline)
+                    .lineLimit(2)
+                Text("Trail system · \(trails.count) trails here")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(summary)
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+    }
+
+    private var summary: String {
+        let lengths = trails.map(\.length)
+        guard let lo = lengths.min(), let hi = lengths.max() else { return "" }
+        return lo == hi ? Fmt.distance(lo) : "\(Fmt.distance(lo)) – \(Fmt.distance(hi))"
+    }
+}
+
+/// A trail system's page: the whole network on the map, then its hikes and its side trails.
+struct TrailSystemView: View {
+    let system: TrailSystem
+    @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
+    @State private var selectedId: String?
+
+    var body: some View {
+        let hikes = system.trails.filter { !$0.isSide }
+        let sides = system.trails.filter(\.isSide)
+        List {
+            Section {
+                ZStack(alignment: .bottomLeading) {
+                    AppMap(baseMap: baseMap, trails: system.trails, selectedId: selectedId,
+                           initialBox: BBox(coords: system.trails.flatMap { $0.segments.flatMap { $0 } }),
+                           showsUserButton: false, onSelect: { selectedId = $0 })
+                    MapAttribution(baseMap: baseMap)
+                }
+                .frame(height: 320)
+                .listRowInsets(EdgeInsets())
+            }
+            Section("\(hikes.count) trails") {
+                ForEach(hikes) { t in
+                    NavigationLink(value: t) { TrailRow(trail: t) }
+                        .listRowBackground(t.id == selectedId ? Color.trailGreen.opacity(0.12) : nil)
+                }
+            }
+            if !sides.isEmpty {
+                Section("Access trails and connectors") {
+                    ForEach(sides) { t in
+                        NavigationLink(value: t) { TrailRow(trail: t) }
+                            .listRowBackground(t.id == selectedId ? Color.trailGreen.opacity(0.12) : nil)
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .navigationTitle(system.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

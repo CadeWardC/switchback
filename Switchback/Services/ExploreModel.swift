@@ -84,10 +84,10 @@ final class ExploreModel: ObservableObject {
         Profiles.shared.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
-        // the Informal trails switch in Settings shows or hides them at once
+        // the Informal trails and Side trails switches in Settings show or hide them at once
         NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .map { _ in Trail.showsInformal }
-            .prepend(Trail.showsInformal)
+            .map { _ in "\(Trail.showsInformal)\(Trail.showsSide)" }
+            .prepend("\(Trail.showsInformal)\(Trail.showsSide)")
             .removeDuplicates()
             .dropFirst()
             .receive(on: RunLoop.main)
@@ -118,7 +118,17 @@ final class ExploreModel: ObservableObject {
         // the trail's own name (not for unnamed paths), or its area: "cedar creek" finds everything in Cedar Creek
         let name = t.isUnnamed && !t.name.hasPrefix("Connector") && !t.name.hasSuffix("spur") ? "" : Self.fold(t.name)
         let area = Self.fold(t.area ?? "")
+        let system = Self.fold(t.system ?? "")
         return words.allSatisfy { name.contains($0) } || (!area.isEmpty && words.allSatisfy { area.contains($0) })
+            || (!system.isEmpty && words.allSatisfy { system.contains($0) })
+    }
+
+    /// Every loaded trail of a trail system (side trails included), longest first.
+    func systemMembers(_ name: String) -> [Trail] {
+        let informal = Trail.showsInformal
+        return known.values.filter { $0.system == name && (informal || !$0.isInformal) }
+            .map { Profiles.shared.withProfile($0) }
+            .sorted { $0.length > $1.length }
     }
 
     /// The trails grouped by area, nearest area first (trails outside any area come last, as "Other trails").
@@ -337,8 +347,10 @@ final class ExploreModel: ObservableObject {
         guard let r = visibleRegion else { return }
         let view = BBox(region: r).expanded(byDegrees: 0.005)
         let c = view.center
-        let informal = Trail.showsInformal
-        var list = known.values.filter { (informal || !$0.isInformal) && (knownBoxes[$0.id]?.intersects(view) ?? false) }
+        let informal = Trail.showsInformal, side = Trail.showsSide
+        var list = known.values.filter {
+            (informal || !$0.isInformal) && (side || !$0.isSide) && (knownBoxes[$0.id]?.intersects(view) ?? false)
+        }
         // add the quick versions read from the map, unless the exact version of that trail is already here
         if !previews.isEmpty {
             var exact: [String: [BBox]] = [:]

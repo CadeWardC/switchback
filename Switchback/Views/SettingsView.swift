@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage(USFS.enabledKey) private var usfsTrails = true
     @AppStorage(Overpass.unnamedKey) private var unnamedTrails = true
     @AppStorage(Trail.informalKey) private var informalTrails = false
+    @AppStorage(Trail.sideKey) private var sideTrails = false
 
     var body: some View {
         NavigationStack {
@@ -32,9 +33,10 @@ struct SettingsView: View {
                     Toggle("Waymarked hiking routes", isOn: $showRoutes)
                     Toggle("U.S. Forest Service trails", isOn: $usfsTrails)
                     Toggle("Unnamed trails", isOn: $unnamedTrails)
+                    Toggle("Side trails", isOn: $sideTrails)
                     Toggle("Informal trails", isOn: $informalTrails)
                 } footer: {
-                    Text("The Switchback map (our own, in light and dark), Topo and USGS Satellite can be downloaded for offline use (Saved › Offline maps); the Switchback map is the smallest and stays sharp at every zoom. USGS covers the United States only. Waymarked routes draws every signposted hiking route in the world on top of the map. Forest Service trails add official national forest trails in the US. Unnamed trails are paths mapped without a name, drawn dashed. Informal trails are hidden unless switched on: lines official trail lists say aren't for hikers (ORV, snowmobile, water routes), and paths no official list knows that nothing marks as a hiking trail. Clear the cache for these switches to apply to places you've already seen.")
+                    Text("The Switchback map (our own, in light and dark), Topo and USGS Satellite can be downloaded for offline use (Saved › Offline maps); the Switchback map is the smallest and stays sharp at every zoom. USGS covers the United States only. Waymarked routes draws every signposted hiking route in the world on top of the map. Forest Service trails add official national forest trails in the US. Unnamed trails are paths mapped without a name, drawn dashed. Side trails (access trails, spurs and connectors) aren't listed as hikes unless switched on; they still show in their trail system and as the walk in from a trailhead. Informal trails are hidden unless switched on: lines official trail lists say aren't for hikers (ORV, snowmobile, water routes), and paths no official list knows that nothing marks as a hiking trail. Clear the cache for these switches to apply to places you've already seen.")
                 }
                 Section("Storage") {
                     LabeledContent("Map cache", value: ByteCountFormatter.string(fromByteCount: cacheSize, countStyle: .file))

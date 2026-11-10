@@ -15,6 +15,9 @@ struct TrailDetailView: View {
     @State private var gpxURL: URL?
     @State private var renaming = false
     @State private var newName = ""
+    /// The trailhead to start from: nil = the nearest one, "" = the trail on its own.
+    @State private var startId: String?
+    @State private var addedIds: Set<String> = []
 
     init(trail: Trail) {
         _trail = State(initialValue: trail)
@@ -25,8 +28,18 @@ struct TrailDetailView: View {
         return profiles.withProfile(saved ?? trail)
     }
 
+    /// The trailhead the hike starts from: the one picked, else the one nearest you (or nearest the trail).
+    private func start(_ base: Trail) -> TrailAccess? {
+        let points = base.accessPoints
+        if let startId { return points.first { $0.id == startId } }
+        guard let here = recorder.lastLocation else { return points.first }
+        return points.min { Geo.distance(Coord(here.coordinate), $0.point) < Geo.distance(Coord(here.coordinate), $1.point) }
+    }
+
     var body: some View {
-        let t = shown
+        let base = shown
+        let from = start(base)
+        let t = base.hike(from: from, adding: base.extensions.filter { addedIds.contains($0.id) })
         let pois = highlights.pois(for: t.id) ?? []
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -74,6 +87,8 @@ struct TrailDetailView: View {
                         StatTile(title: "Out & back", value: Fmt.distance(t.length * 2))
                     }
                 }
+
+                hikeOptions(base, from: from)
 
                 actions(t)
                 offlineButton(t)
@@ -134,7 +149,7 @@ struct TrailDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    library.toggleSaved(t)
+                    library.toggleSaved(base)
                 } label: {
                     Image(systemName: library.isSaved(t.id) ? "bookmark.fill" : "bookmark")
                 }
@@ -158,10 +173,61 @@ struct TrailDetailView: View {
         }
         .task(id: t.id) {
             gpxURL = try? GPX.file(named: t.name, contents: GPX.document(for: shown))
-            async let profile = profiles.ensureProfile(for: t)
-            let found = await highlights.ensure(for: t)
-            await trailPhotos.ensure(for: t, pois: found)
+            async let profile = profiles.ensureProfile(for: base)
+            let found = await highlights.ensure(for: base)
+            await trailPhotos.ensure(for: base, pois: found)
             _ = await profile
+        }
+    }
+
+    /// Where to start from (trailheads and car parks, with the walk in) and side loops to add.
+    @ViewBuilder
+    private func hikeOptions(_ base: Trail, from: TrailAccess?) -> some View {
+        let points = base.accessPoints
+        let extras = base.extensions
+        if !points.isEmpty || !extras.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                if !points.isEmpty {
+                    Menu {
+                        Picker("Start from", selection: Binding(get: { from?.id ?? "" }, set: { startId = $0 })) {
+                            ForEach(points) { p in
+                                Text("\(p.name) · \(Fmt.distance(base.hike(from: p, adding: []).length))").tag(p.id)
+                            }
+                            Text("The trail on its own · \(Fmt.distance(base.length))").tag("")
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "parkingsign.circle.fill").foregroundStyle(Color.trailGreen)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Start from").font(.caption).foregroundStyle(.secondary)
+                                Text(from?.name ?? "The trail on its own").font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if let from, from.distance >= 30 {
+                        Text(base.isLoop
+                             ? "\(Fmt.distance(base.length)) loop + \(Fmt.distance(from.distance)) each way from the trailhead. Elevation is for the trail itself."
+                             : "\(Fmt.distance(base.length)) trail + \(Fmt.distance(from.distance)) from the trailhead. Elevation is for the trail itself.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                ForEach(extras) { e in
+                    Toggle(isOn: Binding(get: { addedIds.contains(e.id) },
+                                         set: { on in if on { addedIds.insert(e.id) } else { addedIds.remove(e.id) } })) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Add \(e.name)").font(.subheadline.weight(.semibold))
+                            Text("+ \(Fmt.distance(e.length))").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .tint(Color.trailGreen)
+                }
+            }
+            .padding(12)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
         }
     }
 
