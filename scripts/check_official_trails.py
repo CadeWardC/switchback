@@ -4,9 +4,10 @@
     check_official_trails.py <region.trails> <region.json> [report.md] [summary.json]
 
 Official lists (public ArcGIS services): in the US the USGS National Digital Trails, the Forest Service and the
-National Park Service; in Canada Parks Canada and the Trans Canada Trail; plus, for every state or province, the trail
-lists its agencies publish (state parks, conservation, provincial parks, cities), found in ArcGIS Online's public
-catalogue, and the hand-picked ones in STATE_SOURCES. Each trail in the pack is matched by shape (the share of its
+National Park Service; in Canada the Trans Canada Trail; for each province the official lists picked by hand in STATE_SOURCES (BC Recreation
+Sites and Trails, the Ontario Trail Network, the Governments of PEI, Manitoba and Yukon, …); plus, for every state or
+province, the trail lists its agencies publish (state parks, conservation, cities), found in ArcGIS Online's public
+catalogue. Each trail in the pack is matched by shape (the share of its
 line within 25 m of the official lines); the report says, for named and unnamed trails, which lists confirm them and
 under what name, and lists the official trails in the state that the pack is missing.
 """
@@ -32,9 +33,53 @@ NATIONAL_US = [
     ("National Park Service", "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer/0",
      ["trlname", "maplabel"], [], ["unitname", "trltype"]),
 ]
-NATIONAL = {"US": NATIONAL_US, "CA": []}   # Canada's national lists are found in the catalogue (CANADA_WORDS)
-CANADA_WORDS = ["Parks Canada trails", "Trans Canada Trail"]
+NATIONAL_CA = [
+    ("Trans Canada Trail", "https://services2.arcgis.com/rDdKyyk7uludsLpI/arcgis/rest/services/ExploreTheMap_EN_2026/FeatureServer/15",
+     ["name_trail"], [], ["category"]),
+]
+NATIONAL = {"US": NATIONAL_US, "CA": NATIONAL_CA}
+NCC = ("National Capital Commission", "https://services2.arcgis.com/WLyMuW006nKOfa5Z/arcgis/rest/services/NCC_Paths_and_Trails/FeatureServer/1",
+       ["trail_name"], ["trail_numb"], ["trail_type"])
 STATE_SOURCES = {
+    # Canada: the official provincial lists, picked by hand (the catalogue search finds too little there)
+    "British Columbia, Canada": [
+        ("Recreation Sites and Trails BC", "https://openmaps.gov.bc.ca/geo/pub/wfs|pub:WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW",
+         ["project_name", "map_label"], ["forest_file_id"], ["project_type"]),
+    ],
+    "Alberta, Canada": [
+        ("Alberta Designated and Provincial Trails", "https://services8.arcgis.com/6kIlVR1bamkFDOCe/arcgis/rest/services/Alberta_Designated_and_Provincial_Trails/FeatureServer/0",
+         ["name"], [], ["designatio"]),
+    ],
+    "Manitoba, Canada": [
+        ("Manitoba WMA Official Trails", "https://services.arcgis.com/mMUesHYPkXjaFGfS/arcgis/rest/services/Manitoba_Wildlife_Management_Areas_Official_Trails_and_Points_of_Interest/FeatureServer/0",
+         ["trail_name"], [], ["wma_name"]),
+    ],
+    "Ontario, Canada": [
+        ("Ontario Trail Network", "https://ws.lioservices.lrc.gov.on.ca/arcgis2/rest/services/LIO_OPEN_DATA/LIO_Open04/MapServer/19",
+         ["trail_name"], [], ["trail_association"]),
+        NCC,
+    ],
+    "Quebec, Canada": [NCC],
+    "New Brunswick, Canada": [
+        ("New Brunswick trails (NBSE)", "https://services2.arcgis.com/EFg39h3DBNzpxORa/arcgis/rest/services/Trails_NBSE/FeatureServer/3",
+         ["name"], [], ["owner"]),
+        ("NB Parks trail centrelines", "https://services3.arcgis.com/cad8jHNOhWwbUlHP/arcgis/rest/services/Fundy_Interpretive_Map_3_WFL1/FeatureServer/86",
+         ["name"], [], ["facility_type"]),
+    ],
+    "Nova Scotia, Canada": [
+        ("Kings County trails", "https://services8.arcgis.com/EKgs6jOgtqEQoqHR/arcgis/rest/services/Trails_Public_View/FeatureServer/12",
+         ["name"], [], ["owner"]),
+    ],
+    "Prince Edward Island, Canada": [
+        ("Government of PEI trails", "https://services9.arcgis.com/zow9Ot3ujGSyJI3C/arcgis/rest/services/Rec_PEI_Trail_Data_online/FeatureServer/0",
+         ["t_name", "trail"], [], ["manager"]),
+    ],
+    "Yukon, Canada": [
+        ("Yukon government trails 1:50k", "https://mapservices.gov.yk.ca/arcgis/rest/services/GeoYukon/GY_Transportation/MapServer/25",
+         [], [], ["feature_description"]),
+        ("Yukon government Whitehorse trails", "https://mapservices.gov.yk.ca/arcgis/rest/services/GeoYukon/GY_Transportation/MapServer/26",
+         [], [], ["feature"]),
+    ],
     "Missouri": [
         ("Missouri State Parks", "https://services1.arcgis.com/g2TonOxuRkIqSOFx/arcgis/rest/services/MissouriStateParkTrailGuide/FeatureServer/2",
          ["trail_name"], [], ["park_name"]),
@@ -46,7 +91,7 @@ STATE_SOURCES = {
 }
 STATES = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer"
 CATALOGUE = "https://www.arcgis.com/sharing/rest/search"
-NAME_FIELDS = ["trail_name", "trailname", "trlname", "trl_name", "trail_nm", "name", "trail", "maplabel", "label",
+NAME_FIELDS = ["trail_name", "trailname", "trlname", "trl_name", "trail_nm", "name_trail", "t_name", "name", "trail", "maplabel", "label",
                "name_en", "nom", "name1", "full_name"]
 DETAIL_FIELDS = ["park_name", "area_name", "unitname", "parkname", "park", "site_name", "property", "managing_agency",
                  "agency", "owner", "jurisdiction"]
@@ -225,9 +270,9 @@ def fetch(source, area):
     return out
 
 NOT_FOR_HIKERS = ("water", "paddl", "canoe", "kayak", "float", "snowmob", "snow trail", "ski", "ohv", "orv", "atv",
-                  "motor", "jeep", "4wd", "4x4", "road", "railway", "rail line")
+                  "motor", "jeep", "4wd", "4x4", "road", "railway", "rail line", "motoneige", "quad", "vtt")
 FOR_HIKERS = ("hik", "foot", "pedestrian", "walk", "multi", "nature", "interpret", "pied", "randonn")
-USE_FIELDS = ("type", "use", "class", "activit", "designat", "mode", "category", "categor", "surface")
+USE_FIELDS = ("type", "use", "class", "activit", "designat", "mode", "category", "categor", "surface", "desc_entit")
 
 def yes(v):
     return str(v).strip().lower() in ("y", "yes", "true", "1", "open", "allowed")
@@ -252,6 +297,9 @@ def trail_use(a):
             return "not"
         use = str(a.get("trluse") or "").lower()
         return "hike" if (not use or any(w in use for w in FOR_HIKERS)) else "not"
+    for k in ("actwalking", "hiking", "hike", "use_hike", "pedestrian", "walking"):        # yes/no activity columns
+        if k in a and a[k] not in (None, ""):
+            return "hike" if yes(a[k]) else "?"
     text = " ".join(str(v).lower() for k, v in a.items() if v and any(f in k for f in USE_FIELDS))
     if any(w in text for w in FOR_HIKERS):
         return "hike"
@@ -360,9 +408,6 @@ def main():
     country = region.get("country", "US")
     sources = list(NATIONAL.get(country, [])) + STATE_SOURCES.get(state, [])
     known = {src[1].rsplit("/", 1)[0] for src in sources} | {src[1] for src in sources}
-    if country != "US":
-        for q in CANADA_WORDS:
-            sources += discover({"name": q, "country": "CA-national"}, area, known)
     sources += discover(region, area, known)
     md = [f"# {state}: trail pack vs official trail lists", ""]
     def say(line=""):
