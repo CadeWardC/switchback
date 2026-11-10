@@ -203,39 +203,27 @@ struct ElevationChart: View {
     }
 }
 
-/// A trail system in the list ("Cedar Creek Trail · 8 trails").
+/// A trail system's header in the list; its trails are listed right below it.
 struct TrailSystemRow: View {
     let name: String
     let trails: [Trail]
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.title2)
                 .foregroundStyle(Color.trailGreen)
-                .frame(width: 64, height: 64)
-                .background(Color.trailGreen.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                    .font(.headline)
-                    .lineLimit(2)
-                Text("Trail system · \(trails.count) trails here")
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Text("Trail system · \(trails.count) trails below · map")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(summary)
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
+        .padding(.vertical, 2)
         .contentShape(Rectangle())
-    }
-
-    private var summary: String {
-        let lengths = trails.map(\.length)
-        guard let lo = lengths.min(), let hi = lengths.max() else { return "" }
-        return lo == hi ? Fmt.distance(lo) : "\(Fmt.distance(lo)) – \(Fmt.distance(hi))"
     }
 }
 

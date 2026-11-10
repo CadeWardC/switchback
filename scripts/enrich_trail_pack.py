@@ -78,12 +78,13 @@ def main():
     for t in inside:
         res = results[id(t)]
         tags = t.setdefault("tags", {})
-        if tags.get("switchback:unnamed") == "yes":
+        if tags.get("switchback:unnamed") == "yes" or tags.get("switchback:derived_name") == "yes":
             got, _ = official.official_name(res)
             if got:
                 name, ref, src = got
                 t["name"] = name
-                del tags["switchback:unnamed"]
+                tags.pop("switchback:unnamed", None)
+                tags.pop("switchback:derived_name", None)
                 tags.update({"official:name": name, "official:source": src})
                 if ref:
                     tags["official:ref"] = ref

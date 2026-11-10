@@ -204,7 +204,7 @@ struct ExploreView: View {
                 Section {
                     ForEach(listRows(group.trails)) { row in
                         if let name = row.system {
-                            // a trail system is one entry; its loops, sections and side trails are inside
+                            // a trail system's header (tap for its map and side trails); its trails follow right below
                             NavigationLink(value: TrailSystem(name: name, trails: model.systemMembers(name))) {
                                 TrailSystemRow(name: name, trails: row.trails)
                             }
@@ -261,18 +261,16 @@ private struct ListRow: Identifiable {
 }
 
 private func listRows(_ trails: [Trail]) -> [ListRow] {
-    var counts: [String: Int] = [:]
-    for t in trails { if let s = t.system { counts[s, default: 0] += 1 } }
+    var members: [String: [Trail]] = [:]
+    for t in trails { if let s = t.system { members[s, default: []].append(t) } }
     var rows: [ListRow] = []
-    var placed: [String: Int] = [:]
+    var placed = Set<String>()
     for t in trails {
-        if let s = t.system, counts[s, default: 0] > 1 {
-            if let i = placed[s] {
-                rows[i] = ListRow(id: rows[i].id, system: s, trails: rows[i].trails + [t])
-            } else {
-                placed[s] = rows.count
-                rows.append(ListRow(id: "system:" + s, system: s, trails: [t]))
-            }
+        if let s = t.system, let all = members[s], all.count > 1 {
+            // the system's header, then its trails together, where its nearest trail falls in the list
+            guard placed.insert(s).inserted else { continue }
+            rows.append(ListRow(id: "system:" + s, system: s, trails: all))
+            rows += all.map { ListRow(id: $0.id, system: nil, trails: [$0]) }
         } else {
             rows.append(ListRow(id: t.id, system: nil, trails: [t]))
         }

@@ -366,11 +366,13 @@ class Areas(osmium.SimpleHandler):
     def __init__(self):
         super().__init__()
         self.names, self.polys = [], []
+        self.lake_names, self.lake_polys = [], []     # named lakes, ponds and reservoirs
 
     def area(self, a):
         t = a.tags
         name = t.get("name")
-        if not name or not any(t.get(k) == v for k, v in AREA_TAGS):
+        lake = t.get("natural") == "water" and t.get("water") not in NOT_LAKES
+        if not name or not (lake or any(t.get(k) == v for k, v in AREA_TAGS)):
             return
         try:
             parts = []
@@ -388,8 +390,35 @@ class Areas(osmium.SimpleHandler):
                 return
         except Exception:
             return
+        if lake:
+            self.lake_names.append(name)
+            self.lake_polys.append(geom)
+            return
         self.names.append(name)
         self.polys.append(geom)
+
+NOT_LAKES = {"river", "stream", "canal", "ditch", "drain", "wastewater", "basin", "moat", "fishpass", "lock", "rapids"}
+LAKE_NEAR = 0.0009     # degrees: about 80–100 m from the shore
+
+class LakeFinder:
+    """Names a path after the lake it runs along."""
+    def __init__(self, areas):
+        self.names, self.polys = areas.lake_names, areas.lake_polys
+        self.tree = STRtree(self.polys) if self.polys else None
+
+    def beside(self, line):
+        """The named lake that at least 60% of the line follows the shore of, or None."""
+        if self.tree is None or len(line) < 2:
+            return None
+        pts = [Point(lon, lat) for lat, lon in densify(line, 40)]
+        shape = LineString([(lon, lat) for lat, lon in line])
+        best = None
+        for i in self.tree.query(shape.buffer(LAKE_NEAR)):
+            shore = self.polys[int(i)].boundary
+            share = sum(1 for p in pts if shore.distance(p) <= LAKE_NEAR) / len(pts)
+            if share >= 0.6 and (best is None or share > best[0]):
+                best = (share, self.names[int(i)])
+        return best[1] if best else None
 
 class AreaFinder:
     def __init__(self, areas):
@@ -718,6 +747,7 @@ def hikes(trails, adj, where, node_names, heads):
     return trails
 
 
+ROAD_NAME = re.compile(r"\b(road|rd|street|avenue|ave|highway|hwy|lane|drive|route|fsr)\b|\b(fr|cr|fs|nf)[ -]?\d", re.I)
 HIKING_HINTS = {"sac_scale", "trail_visibility", "mtb:scale"}
 TRAIL_WORDS = re.compile(r"\b(trail|trl|path|loop|trace|greenway)\b", re.I)
 NATURAL_SURFACE = {"ground", "dirt", "earth", "grass", "gravel", "fine_gravel", "rock", "pebblestone", "mud", "sand",
@@ -739,6 +769,7 @@ def build(pbf):
     areas = Areas()
     areas.apply_file(pbf, locations=True, idx="flex_mem")
     finder = AreaFinder(areas)
+    lakes = LakeFinder(areas)
     print(f"  {len(areas.names)} named parks and protected areas")
     rel = Relations()
     rel.apply_file(pbf)
@@ -783,7 +814,9 @@ def build(pbf):
             tags = group[0][1]
             hiking = any(k in tags for k in HIKING_HINTS) or tags.get("foot") == "designated"
             if trailish or touches or hiking or finder.find(*middle(pts)):
-                ways.named.append((group[0][0], name, tags, line))
+                # a dirt road you can walk is a road walk, not a trail ("Road walk: County Road 356")
+                shown = f"Road walk: {name}" if ROAD_NAME.search(name) and not trailish else name
+                ways.named.append((group[0][0], shown, tags, line))
                 kept_tracks += 1
             else:
                 dropped_tracks += 1
@@ -816,7 +849,7 @@ def build(pbf):
             continue
         pieces.append(nodes)
         tags_by_end[nodes[0][0]] = tags_by_end[nodes[-1][0]] = tags
-    dropped = 0
+    dropped = lake_walks = 0
     for chain in chains(pieces, with_nodes=True):
         line = [c for _, c in chain]
         # what the ends (and the line) touch
@@ -837,12 +870,17 @@ def build(pbf):
             name = f"{sorted(touch_a or touch_z or touched)[0]} spur"
         else:
             name = "Unnamed trail"
+        # a path along a named lake's shore is that lake's walk ("Little Dixie Lake Walk")
+        lake = lakes.beside(line) if name == "Unnamed trail" else None
+        if lake:
+            name = lake if re.search(r"\b(walk|trail|path|loop)$", lake, re.I) else f"{lake} Walk"
+            lake_walks += 1
         ka, kz = "%.5f,%.5f" % line[0], "%.5f,%.5f" % line[-1]
         made = make_trail("u" + min(ka, kz) + "|" + max(ka, kz), 0, "osmWay", name, [line], tags, 800)
         if made:
-            made[0].setdefault("tags", {})["switchback:unnamed"] = "yes"
+            made[0].setdefault("tags", {})["switchback:derived_name" if lake else "switchback:unnamed"] = "yes"
             trails.append(made)
-    print(f"  dropped {dropped} unnamed paths outside parks that join no trail")
+    print(f"  dropped {dropped} unnamed paths outside parks that join no trail; named {lake_walks} after the lake they follow")
 
     # every trail's area
     for t, _ in trails:

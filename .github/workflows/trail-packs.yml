@@ -119,7 +119,7 @@ jobs:
             n/tourism=viewpoint,alpine_hut,wilderness_hut,camp_site,picnic_site \
             n/natural=peak,volcano,spring,cave_entrance n/waterway=waterfall \
             n/amenity=drinking_water,water_point,toilets,shelter nw/amenity=parking \
-            n/highway=trailhead n/information=trailhead \
+            n/highway=trailhead n/information=trailhead nwr/natural=water \
             -o trails.osm.pbf --overwrite
           ls -lh trails.osm.pbf
 
