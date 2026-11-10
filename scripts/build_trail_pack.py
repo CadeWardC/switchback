@@ -283,6 +283,8 @@ def link_pieces(pieces, adj, where, parks=None):
     for d, a, b, coords in links:
         if a[0] == b[0] or a in linked or b in linked:
             continue
+        if d > 0 and (pieces[a[0]][0][0] == pieces[a[0]][-1][0] or pieces[b[0]][0][0] == pieces[b[0]][-1][0]):
+            continue      # a piece that is already a closed loop is complete: nothing is hung on it across a gap
         if d > LINK_M:
             # a longer gap is joined only inside one park, and only when the trail's own pieces are most of the
             # result (the stretch between them is at most 40% of the two pieces it joins)
