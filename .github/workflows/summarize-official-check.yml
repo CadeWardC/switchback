@@ -1,0 +1,68 @@
+name: Summarize an official trails check (Switchback)
+
+# Read-only: reads the per-area summaries of a finished "Check trails against official lists" run and prints the
+# breakdowns the combined table doesn't show: how unlisted trails outside parks sort (likely real / junk / uncertain),
+# what would be informal, why names were refused, and which list the "missing" miles come from.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run id of the check"
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: all-reports
+          path: out
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Summarize
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          from collections import Counter
+          rows = [json.load(open(f)) for f in sorted(glob.glob("out/*.json"))]
+          print("# Unlisted trails outside parks, by our own map data")
+          print("| Area | Named: real | junk | uncertain | Unnamed: real | junk | uncertain | Informal (named + unnamed) |")
+          print("|---|---|---|---|---|---|---|---|")
+          tot = Counter()
+          for r in rows:
+              n, u = r.get("Named trails", {}), r.get("Unnamed lines", {})
+              ne, ue = n.get("outside_evidence", {}), u.get("outside_evidence", {})
+              inf = n.get("informal", 0) + u.get("informal", 0)
+              print(f"| {r['name']} | {ne.get('real', 0)} | {ne.get('junk', 0)} | {ne.get('uncertain', 0)} | "
+                    f"{ue.get('real', 0)} | {ue.get('junk', 0)} | {ue.get('uncertain', 0)} | {inf} |")
+              for k in ("real", "junk", "uncertain"):
+                  tot["n_" + k] += ne.get(k, 0)
+                  tot["u_" + k] += ue.get(k, 0)
+              tot["inf"] += inf
+              tot["inf_named"] += n.get("informal", 0)
+              tot["inf_unnamed"] += u.get("informal", 0)
+          print(f"| **All** | {tot['n_real']} | {tot['n_junk']} | {tot['n_uncertain']} | {tot['u_real']} | {tot['u_junk']} | "
+                f"{tot['u_uncertain']} | {tot['inf']} ({tot['inf_named']} named, {tot['inf_unnamed']} unnamed) |")
+          print()
+          refused = Counter()
+          named = 0
+          for r in rows:
+              u = r.get("Unnamed lines", {})
+              named += u.get("nameable", 0)
+              refused.update(u.get("name_refused", {}))
+          print(f"# Strict naming: {named} unnamed lines can take an official name; refused: {dict(refused)}")
+          print()
+          print("# Where the 'missing' miles come from (top 3 lists per area, hiking + unknown use)")
+          for r in rows:
+              ls = sorted(r["lists"].items(), key=lambda kv: -(kv[1].get("missing_miles", 0) + kv[1].get("missing_unknown_miles", 0)))
+              top = [f"{k}: {v.get('missing_miles', 0)} + {v.get('missing_unknown_miles', 0)} mi" for k, v in ls[:3]
+                     if v.get("missing_miles", 0) + v.get("missing_unknown_miles", 0) > 0]
+              if top:
+                  print(f"- {r['name']}: " + "; ".join(top))
+          PY
