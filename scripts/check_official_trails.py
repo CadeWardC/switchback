@@ -11,7 +11,7 @@ catalogue. Each trail in the pack is matched by shape (the share of its
 line within 25 m of the official lines); the report says, for named and unnamed trails, which lists confirm them and
 under what name, and lists the official trails in the state that the pack is missing.
 """
-import json, math, os, re, sys, time, urllib.parse, urllib.request, zlib
+import difflib, json, math, os, re, sys, time, urllib.parse, urllib.request, zlib
 from collections import Counter, defaultdict
 
 from shapely.geometry import Point, box, shape
@@ -375,6 +375,21 @@ def densify(line, step):
         out += [(a[0] + (b[0] - a[0]) * i / k, a[1] + (b[1] - a[1]) * i / k) for i in range(1, k + 1)]
     return out
 
+ANGLE = 35     # degrees: two lines this far apart in direction aren't the same trail, however close
+
+def with_bearings(line, step):
+    """Points along a line, each with the line's direction there (degrees, 0–180: either way along it)."""
+    out = []
+    for a, b in zip(line, line[1:]):
+        d = dist(a, b)
+        if d == 0:
+            continue
+        k = math.cos(math.radians((a[0] + b[0]) / 2))
+        bearing = math.degrees(math.atan2((b[1] - a[1]) * k, b[0] - a[0])) % 180
+        n = max(1, int(d // step))
+        out += [((a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n), bearing) for i in range(n + 1)]
+    return out
+
 class Grid:
     def __init__(self):
         self.cells = defaultdict(list)
@@ -384,28 +399,38 @@ class Grid:
         return (round(p[0] * 3000), round(p[1] * 3000))
 
     def add(self, line, owner):
-        for p in densify(line, 10):
-            self.cells[self.key(p)].append((p, owner))
+        for p, bearing in with_bearings(line, 10):
+            self.cells[self.key(p)].append((p, owner, bearing))
 
-    def near(self, p):
+    def near(self, p, bearing):
+        """Owners with a point within NEAR_M that runs the same way (a line that crosses or only touches doesn't
+        count)."""
         k, found = self.key(p), set()
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
-                for q, owner in self.cells.get((k[0] + dx, k[1] + dy), ()):
-                    if owner not in found and dist(p, q) <= NEAR_M:
+                for q, owner, b in self.cells.get((k[0] + dx, k[1] + dy), ()):
+                    if owner in found:
+                        continue
+                    turn = abs(bearing - b)
+                    if min(turn, 180 - turn) <= ANGLE and dist(p, q) <= NEAR_M:
                         found.add(owner)
         return found
 
 def match(lines, grid):
     """(share of the lines on any of the grid's owners, Counter of how many sample points lie on each owner)"""
-    pts = [p for l in lines for p in densify(l, 20)]
+    pts = [pb for l in lines for pb in with_bearings(l, 20)]
     hits, by_owner = 0, Counter()
-    for p in pts:
-        owners = grid.near(p)
+    for p, bearing in pts:
+        owners = grid.near(p, bearing)
         if owners:
             hits += 1
             by_owner.update(owners)
     return (hits / len(pts) if pts else 0), by_owner, len(pts)
+
+def ref_key(r):
+    """A trail number for comparing: 'TR 03-015B', '03-015b' and '#03-015B' are the same."""
+    r = re.sub(r"^(tr|trail|fst|fs|nfst|no)\b", "", str(r or "").strip().lower())
+    return re.sub(r"[^a-z0-9]", "", r)
 
 def read_pack(path):
     b = open(path, "rb").read()
@@ -538,7 +563,12 @@ def evaluate(trails, area, sources, say=print):
             not_share = sum(c for i, c in owners.items() if feats[i]["use"] == "not") / npts
             hike_share = sum(c for i, c in owners.items() if feats[i]["use"] != "not") / npts
             top_not = feats[max((i for i in owners if feats[i]["use"] == "not"), key=lambda i: owners[i], default=owners.most_common(1)[0][0])]
-            results[id(t)][src[0]] = {"share": share, "top": top_not if not_share >= hike_share else top,
+            mine = {ref_key(t.get("tags", {}).get(k)) for k in ("ref", "ref:usfs")} - {""}
+            ref_match = bool(mine) and any(ref_key(feats[i]["no"]) in mine for i in owners if feats[i]["no"])
+            alike = max((difflib.SequenceMatcher(None, norm_name(t["name"]), norm_name(feats[i]["name"])).ratio()
+                         for i in owners if feats[i]["name"]), default=0.0)
+            results[id(t)][src[0]] = {"share": share, "ref": ref_match, "alike": round(alike, 2),
+                                      "top": top_not if not_share >= hike_share else top,
                                       "not_share": not_share, "hike_share": hike_share, "named": name_share}
         missed = []
         for group in join_pieces(feats):
@@ -557,7 +587,9 @@ def evaluate(trails, area, sources, say=print):
     return inside, results, sizes, missing
 
 def confirmed(res):
-    return {k: v for k, v in res.items() if v["share"] >= CONFIRM}
+    """Lists that have this trail: most of it lies on one of their trails, or half of it does and the trail number
+    is the same (a number is stronger evidence than the line)."""
+    return {k: v for k, v in res.items() if v["share"] >= CONFIRM or (v.get("ref") and v["share"] >= 0.5)}
 
 def not_for_hikers(res):
     """Most of the line lies on official lines that aren't for hikers, and hardly any on ones that are."""

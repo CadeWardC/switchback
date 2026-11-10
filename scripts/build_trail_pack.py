@@ -28,11 +28,13 @@ from shapely.strtree import STRtree
 
 CELL = 0.25
 SIMPLIFY_M = 4.0
-KEEP_TAGS = {"switchback:multiuse", "switchback:roadwalk", "informal", "access", "foot", "sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
+KEEP_TAGS = {"ref:usfs", "switchback:multiuse", "switchback:roadwalk", "informal", "access", "foot", "sac_scale", "surface", "trail_visibility", "operator", "network", "ref", "from", "to", "website",
              "wikidata", "wikimedia_commons", "dog", "symbol", "description", "description:en", "note", "name:en"}
 SKIP_ROLES = {"alternative", "excursion", "approach", "connection", "link"}
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett", "compacted"}
 NO_ACCESS = {"private", "no"}
+PLACEHOLDER_NAMES = {"unnamed", "unnamedtrail", "unnamedpath", "noname", "unknown", "none", "na", "tbd", "trail", "path",
+                     "footpath", "track", "hikingtrail", "walkingpath", "sidewalk"}
 NO_PARKING = {"private", "no", "customers", "permit", "delivery", "employees"}
 TRAILHEAD_M = 100    # a trailhead or car park this close to a trail is a place to start from
 ACCESS_M = 3000      # …and trails within this walk of it (along trails) can be started from there
@@ -346,6 +348,7 @@ class Relations(osmium.SimpleHandler):
         self.member_ways = set()
         self.pois = []            # (lat, lon, kind, name, ele, id)
         self.trailheads = []      # (rank, name, (lat, lon)): 0 = mapped trailhead, 1 = parking
+        self.parents = {}         # route id -> name of the superroute (a route made of routes) it's a section of
 
     def node(self, n):
         if not n.tags or not n.location.valid():
@@ -365,6 +368,10 @@ class Relations(osmium.SimpleHandler):
 
     def relation(self, r):
         t = r.tags
+        if t.get("type") in ("route", "superroute") and t.get("route") in ("hiking", "foot", "walking") and t.get("name"):
+            for m in r.members:
+                if m.type == "r":
+                    self.parents[m.ref] = t.get("name")
         if t.get("type") == "route" and t.get("route") in ("hiking", "foot", "walking"):
             members = [(m.ref, m.role) for m in r.members if m.type == "w"]
             self.routes[r.id] = ({k: v for k, v in t}, members)
@@ -487,6 +494,8 @@ class Ways(osmium.SimpleHandler):
         if t.get("access") in NO_ACCESS or t.get("foot") in NO_ACCESS:
             return   # private, or closed to people on foot (bike-only and similar)
         name = t.get("name")
+        if name and re.sub(r"[^a-z]", "", name.lower()) in PLACEHOLDER_NAMES:
+            name = None      # "Unnamed", "No name", "Trail": a placeholder, not a name
         if name and hw in ("path", "footway", "bridleway") and t.get("footway") not in ("sidewalk", "crossing"):
             self.named.append((w.id, name, {k: v for k, v in t}, nodes))
         elif name and hw == "cycleway":
@@ -803,7 +812,8 @@ def hikes(trails, adj, where, node_names, heads):
         if not name and not is_unnamed(t):
             name = by_lower.get(t["name"].lower())
         if name:
-            t.setdefault("tags", {})["switchback:system"] = name
+            t.setdefault("tags", {}).setdefault("switchback:system", name)
+        if "switchback:system" in t.get("tags", {}):
             tagged += 1
     print(f"  systems: {len(systems)} trail systems with {tagged} trails")
     return trails
@@ -857,6 +867,8 @@ def build(pbf):
         name = tags.get("name") or tags.get("name:en") or (f"Route {tags['ref']}" if "ref" in tags else "Unnamed route")
         made = make_trail(f"r{rid}", rid, "osmRelation", name, chains(pieces), tags, 300)
         if made:
+            if rid in rel.parents:      # a section of a long trail mapped as a superroute: that's its trail system
+                made[0].setdefault("tags", {})["switchback:system"] = rel.parents[rid]
             trails.append(made)
             relation_names.add(name.lower())
 

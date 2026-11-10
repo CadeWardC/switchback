@@ -17,7 +17,7 @@ ones, never the catalogue's finds), matched by shape:
 Rewrites <region-id>.trails in place (same version, same cells) and adds the counts to <region-id>.json. If the
 official lists can't be reached the pack is left as it is.
 """
-import json, os, sys, zlib
+import difflib, glob, json, os, sys, zlib
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,6 +48,20 @@ def write(path, header, cells):
     with open(path, "wb") as f:
         f.write(MAGIC + len(raw).to_bytes(4, "big") + raw + b"".join(blobs))
     return len(MAGIC) + 4 + len(raw) + offset
+
+def park_records(region_id):
+    """Trail lists researched park by park from each manager's own pages (data/parks/<region>/*.json):
+    {park, manager, source (URL), checked (date), trails: [{name, miles?, uses?, note?}]}, keyed by park name."""
+    out = {}
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "parks", region_id)
+    for f in sorted(glob.glob(os.path.join(folder, "*.json"))):
+        try:
+            rec = json.load(open(f))
+            for name in [rec["park"]] + rec.get("also_known_as", []):
+                out[official.norm_name(name)] = rec
+        except Exception as ex:
+            print(f"  park record {os.path.basename(f)} couldn't be read ({ex})")
+    return out
 
 def main():
     out, region_id = sys.argv[1], sys.argv[2]
@@ -81,6 +95,7 @@ def main():
         return
 
     counts = Counter()
+    parks = park_records(region_id)
     for t in inside:
         res = results[id(t)]
         tags = t.setdefault("tags", {})
@@ -97,10 +112,14 @@ def main():
                 counts["named from an official list"] += 1
         else:
             conf = official.confirmed(res)
-            hiking = {k: v for k, v in conf.items() if v["hike_share"] >= official.CONFIRM}
+            hiking = {k: v for k, v in conf.items()
+                      if v["hike_share"] >= official.CONFIRM or (v.get("ref") and v["hike_share"] >= 0.5)}
             if hiking:
                 src, v = max(hiking.items(), key=lambda kv: kv[1]["share"])
                 tags["official:source"] = src
+                # how sure the match is: share of the line on the official trail, same number, name likeness
+                tags["official:match"] = f"{round(v['share'] * 100)}%" + (", same number" if v.get("ref") else "") + \
+                                         (f", name {round(v['alike'] * 100)}% alike" if v.get("alike") else "")
                 n = v["named"]
                 if n:
                     if n.get("no"):
@@ -108,6 +127,18 @@ def main():
                     if not official.same_name(t["name"], n["name"]):
                         tags["official:name"] = official.tidy_name(n["name"])
                 counts["confirmed by an official list"] += 1
+        # a park's own published trail list (data/parks): a trail of that name in that park is official
+        rec = parks.get(official.norm_name(tags.get("switchback:area", "")))
+        if rec and "official:source" not in tags and tags.get("switchback:unnamed") != "yes":
+            hit = next((x for x in rec.get("trails", []) if official.same_name(x["name"], t["name"])
+                        or difflib.SequenceMatcher(None, official.norm_name(x["name"]), official.norm_name(t["name"])).ratio() >= 0.88), None)
+            if hit:
+                tags["official:source"] = rec.get("manager") or rec["park"]
+                tags["official:match"] = "named in the park's trail list"
+                if rec.get("source"):
+                    tags["official:url"] = rec["source"]
+                rec.setdefault("_found", set()).add(hit["name"])
+                counts["confirmed by a park's trail list"] += 1
         why = official.informal_reason(t, res)
         if why:
             tags["switchback:informal"] = "yes"
@@ -134,6 +165,10 @@ def main():
             tags["switchback:hike"] = "no"
         counts["hikes" if hike else "not listed as hikes"] += 1
 
+    for rec in parks.values():
+        missing = [x["name"] for x in rec.get("trails", []) if x["name"] not in rec.get("_found", ())]
+        if missing:
+            print(f"  {rec['park']}: in its trail list but not found in the pack: {', '.join(missing)}")
     for k, ts in trails_by_cell.items():
         for t in ts:
             t.pop("_lines", None)

@@ -11,6 +11,8 @@ on:
       - ".github/workflows/check-official-trails.yml"
       - ".github/workflows/find-trail-sources.yml"
       - ".github/workflows/whats-at.yml"
+      - ".github/workflows/gps-traces.yml"
+      - "data/**"
       - ".github/workflows/summarize-official-check.yml"
       - ".github/workflows/trail-packs.yml"
       - ".github/workflows/copy-trail-packs.yml"

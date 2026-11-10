@@ -298,7 +298,8 @@ struct TrailDetailView: View {
     private func credit(_ t: Trail) -> String {
         switch t.source {
         case .osmRelation, .osmWay:
-            return (t.tags["usfs:trail_class"] != nil ? "Includes U.S. Forest Service details. " : "") + "Trail data © OpenStreetMap contributors (ODbL). Elevation from Open-Meteo / Copernicus DEM. Difficulty and time are estimates; check conditions before you go."
+            let official = t.tags["official:source"].map { "Official record: \($0). " } ?? ""
+            return (t.tags["usfs:trail_class"] != nil ? "Includes U.S. Forest Service details. " : "") + official + "Trail data © OpenStreetMap contributors, Open Database License (ODbL). Elevation from open terrain data (USGS 3DEP and others). Difficulty and time are estimates; check conditions before you go."
         case .usfs:
             return "Trail data from the U.S. Forest Service (public domain). Elevation from Open-Meteo / Copernicus DEM. Difficulty and time are estimates; check conditions with the ranger district before you go."
         case .imported:

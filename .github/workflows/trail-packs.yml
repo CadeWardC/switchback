@@ -13,6 +13,9 @@ on:
     paths:
       - "scripts/build_trail_pack.py"
       - "scripts/enrich_trail_pack.py"
+      - "scripts/check_official_trails.py"
+      - "scripts/elevation.py"
+      - "data/parks/**"
 
 permissions:
   contents: write

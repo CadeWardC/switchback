@@ -383,6 +383,7 @@ struct Trail: Codable, Identifiable, Hashable {
             let ref = tags["official:ref"].map { " #\($0)" } ?? ""
             let name = tags["official:name"].map { "\($0)\(ref) · " } ?? (ref.isEmpty ? "" : "\(ref.dropFirst()) · ")
             out.append(TrailFact(title: "Official record", value: "\(name)\(source)"))
+            if let match = tags["official:match"] { out.append(TrailFact(title: "Match", value: match)) }
         }
         if isInformal, let why = tags["switchback:informal_reason"] {
             out.append(TrailFact(title: "Informal", value: why))

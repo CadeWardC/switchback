@@ -109,3 +109,5 @@ TrollStore.
 
 Build locally: `xcodegen generate && open Switchback.xcodeproj`. The icon is drawn by
 `scripts/make-icon.py`.
+
+Trail data licence and credits: see [DATA_LICENSE.md](DATA_LICENSE.md) (the trail files are ODbL, © OpenStreetMap contributors, with official sources credited).
