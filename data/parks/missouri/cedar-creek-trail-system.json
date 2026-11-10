@@ -1,0 +1,115 @@
+{
+ "park": "Mark Twain National Forest",
+ "system": "Cedar Creek Trail System",
+ "also_known_as": [
+  "Cedar Creek Trail"
+ ],
+ "manager": "USDA Forest Service, Mark Twain National Forest",
+ "source": "https://www.fs.usda.gov/r09/marktwain/recreation/trails/cedar-creek-trail-system",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "trails": [
+  {
+   "name": "Southern Loop",
+   "number": null,
+   "miles": 22.0,
+   "uses": "hiking, biking, equestrian",
+   "trailheads": [
+    "Paris Chapel Trailhead",
+    "Rutherford Bridge Trailhead",
+    "Dry Fork Recreation Area"
+   ],
+   "note": "Marked with gray diamonds. About two-thirds is pasture or county/gravel road. Connects to Smith Creek Loop at Rutherford Bridge and to Moon Loop at the north end. The Forest Service names Paris Chapel as its trailhead; Dry Fork is described as the equestrian trailhead of the 36-mile trail; Rutherford Bridge is the stated junction with Smith Creek Loop.",
+   "our_names": [
+    "Cedar Creek Trail - South"
+   ]
+  },
+  {
+   "name": "Smith Creek Loop",
+   "number": null,
+   "miles": 5.0,
+   "uses": "hiking, biking, equestrian",
+   "trailheads": [
+    "Smith Creek Trailhead",
+    "Rutherford Bridge Trailhead",
+    "Boydsville North Trailhead"
+   ],
+   "note": "Marked with orange diamonds. Between Boydsville and Rutherford Bridge. Crosses Smith Creek with no bridge. Grades of 10 to 12 percent; rated moderate."
+  },
+  {
+   "name": "Moon Loop",
+   "number": null,
+   "miles": 6.2,
+   "uses": "hiking, biking, equestrian",
+   "trailheads": [
+    "Moon Loop Trailhead (on Barnes Chapel Rd.)",
+    "Moon Loop Trailhead (on Ginn Rd.)",
+    "Rutherford Bridge Trailhead"
+   ],
+   "note": "Marked with yellow diamonds. Two crossings of Big Branch Creek with no bridges. Stated as approximately 6.2 miles; a search summary reported about 7 miles on another Forest Service page."
+  },
+  {
+   "name": "Pine Ridge Section",
+   "number": null,
+   "miles": 2.8,
+   "uses": "hiking, biking",
+   "trailheads": [
+    "Pine Ridge Recreation Area"
+   ],
+   "note": "Marked with gray diamonds; passes through Pine Ridge Recreation Area. Foot and mountain bike only, no horses; horse users are sent to Dry Fork, about 4 miles northeast on County Road 361.",
+   "our_names": [
+    "Cedar Creek Trail - Pine Ridge"
+   ]
+  }
+ ],
+ "trailheads": [
+  {
+   "name": "Moon Loop Trailhead (on Barnes Chapel Rd.)",
+   "road": "Barnes Chapel Road (Route AB), reached from US 63 south of Columbia"
+  },
+  {
+   "name": "Moon Loop Trailhead (on Ginn Rd.)",
+   "road": "South Ginn Lane, 0.8 mi south of East Highway AB (the search summary gave the starting point as 'Ginlet', 0.8 mi west on Highway AB; place name unverified)"
+  },
+  {
+   "name": "Rutherford Bridge Trailhead",
+   "road": null
+  },
+  {
+   "name": "Smith Creek Trailhead",
+   "road": "County Road 354, about 2.6 mi from State Highway J (about 3.5 mi on J from Millersburg); 38.824131, -92.137722"
+  },
+  {
+   "name": "Boydsville North Trailhead",
+   "road": "County Road 353, 2 mi beyond State Highway H (11.3 mi on H from Fulton)"
+  },
+  {
+   "name": "Paris Chapel Trailhead",
+   "road": "County Road 361, via State Highway J (4.5 mi from Guthrie) and County Road 356 (1.1 mi)"
+  },
+  {
+   "name": "Dry Fork Recreation Area",
+   "road": "County Road 361, 1 mi south of County Road 356; from Fulton US 54 south, Route H west, Route J north, County Road 356 west"
+  },
+  {
+   "name": "Pine Ridge Recreation Area",
+   "road": "Route Y; from Fulton US 54 south, Route H west, Route J south, Route Y west"
+  }
+ ],
+ "notes": "The Forest Service describes one 36-mile Cedar Creek Trail made of four sections: Southern Loop 22, Smith Creek Loop 5, Moon Loop 6.2, Pine Ridge Section 2.8 (sum 36.0). No Forest Service trail numbers were found. Open to hiking, mountain biking and horseback riding except the Pine Ridge Section (no horses). No motorized vehicles on the trail. Creek crossings on Smith Creek Loop (Smith Creek) and Moon Loop (Big Branch Creek, two) have no bridges. Much of the Southern Loop is pasture and county road. Dispersed camping allowed, no designated sites; potable water only at Dry Fork and Pine Ridge Recreation Areas. District contact given as Houston/Rolla/Cedar Creek Ranger District, 417-967-4194. The search summaries surfaced no Forest Service statement on private land crossings or hunting seasons, so none is recorded. A Forest Service trail map PDF exists (publication/Cedar%20Creek.pdf) but could not be read. Not read directly: www.fs.usda.gov is not reachable from this session; all facts are from search-result summaries of Forest Service pages, and the Barnes Chapel Rd. and Ginn Rd. trailhead directions in particular were garbled in those summaries.",
+ "missing_from_app": [
+  "Southern Loop (22 mi) as a named official section; the app has it only as unnamed 'Cedar Creek Trail - South' pieces totalling 15.7 mi",
+  "Pine Ridge Section at its official 2.8 mi (app has Pine Ridge 1.2 mi plus Pine Ridge Cutoff 0.7 mi)",
+  "Official whole-trail length of 36 mi (app has 20.0 mi)",
+  "Official Moon Loop length 6.2 mi (app has 4.4 mi) and Smith Creek Loop 5 mi (app has 5.8 mi)",
+  "Trailheads: Paris Chapel, Smith Creek, Boydsville North, Rutherford Bridge, Moon Loop (Barnes Chapel Rd.), Moon Loop (Ginn Rd.), Dry Fork Recreation Area, Pine Ridge Recreation Area"
+ ],
+ "in_app_not_official": [
+  "South Moon Loop (3.7 mi) - not a Forest Service name",
+  "Cedar Creek Trail - South (2.6 and 13.1 mi pieces) - official name is Southern Loop, 22 mi",
+  "Mill Creek (0.7 mi) - not found on Forest Service pages",
+  "Moon Loop Access (0.3 mi) - not a Forest Service name",
+  "Pine Ridge Cutoff (0.7 mi) - not a Forest Service name",
+  "Pine Ridge (1.2 mi) - official name is Pine Ridge Section, 2.8 mi"
+ ]
+}

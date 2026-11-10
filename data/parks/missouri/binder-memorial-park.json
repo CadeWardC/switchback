@@ -1,0 +1,134 @@
+{
+ "park": "Binder Memorial Park",
+ "also_known_as": [
+  "Binder Park",
+  "Binder Lake"
+ ],
+ "manager": "Jefferson City Parks, Recreation & Forestry",
+ "source": "https://www.jcparks.com/wp-content/uploads/Binder_Map07292021.pdf",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "trails": [
+  {
+   "name": "Problem Child",
+   "miles": 1.6,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Laser Rabbit",
+   "miles": 0.7,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": "Trailforks shows about 1 mi; app has 0.8."
+  },
+  {
+   "name": "Thread the Needle",
+   "miles": 1.6,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Easy Street",
+   "miles": 0.3,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Twisted Sister",
+   "miles": 3.8,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": "Longest trail in the park."
+  },
+  {
+   "name": "Mind the Gap",
+   "miles": 2.2,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Roller Coaster",
+   "miles": 0.4,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Gravy Train",
+   "miles": 1.0,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": "A third-party route description places its trailhead at the Lake Deck; the manager's trailhead naming was not confirmed."
+  },
+  {
+   "name": "Rabid Squirrel",
+   "miles": 0.6,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Root Canal",
+   "miles": 0.9,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Fishing Trail",
+   "miles": 0.6,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Beyond the Wall",
+   "miles": 0.3,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": ""
+  },
+  {
+   "name": "Rock Garden",
+   "miles": 1.6,
+   "uses": "hiking, biking",
+   "blaze": null,
+   "trailheads": [],
+   "note": "Length as returned in a search summary of the map legend; not read directly, verify against the PDF."
+  },
+  {
+   "name": "Audubon Trail",
+   "miles": 0.7,
+   "uses": "hiking",
+   "blaze": null,
+   "trailheads": [
+    "200 Campground Court"
+   ],
+   "note": "Legend spells it 'Audobon Trail'; the city's own walking-trail page calls it Audubon Nature Trail, 0.70 mi. Use (hiking only) is inferred from it being listed as a nature/walking trail; not explicitly stated."
+  }
+ ],
+ "notes": "Official organisation today is individually named trails, not coloured loops. The manager's map (Binder_Map07292021.pdf, dated 29 Jul 2021, on jcparks.com) has a legend of named trails with lengths; a Jan 2022 News Tribune article quotes a parks official saying the trails used to be described as the green, blue, red and yellow loops and now carry names such as Gravy Train, Laser Rabbit and Problem Child, with new signs to follow. The manager does not publish (in anything we could see) which named trails make up which old colour loop, so no loop-to-segment mapping is recorded. Older city maps still online on the legacy host use the colour scheme: 'Bike Trails-White BG.pdf' gives Yellow loop 3.85 mi, Blue loop 4.30, Green loop 3.48, Red loop 1.60 plus blue/green/red connectors; 'BIN_PDF.pdf' gives Light Green 1.30, Dark Green 2.23, Light Blue 1.19, Dark Blue 2.76, Red 1.53, Yellow 3.61, Audubon Nature Trail 0.70. The 'Green Loop 3.9' and 'Yellow Loop 3.5' on other sites are this superseded colour naming (third-party lengths, not the manager's). jcparks.com states 15 miles of trail in Binder Park, non-motorized use only, 'choose a loop or tackle all four'; trails are shared hiking/biking/running. Difficulty per trail and blaze colours are not stated in what we could see. Park address 5840 Rainbow Drive. The jcparks.com mountain-biking page links newer 2024 maps ('2024-Trail-Maps-Binder', plus separate Binder South and Binder East files) that could not be read; lengths or trail list may differ from the 2021 legend. None of jcparks.com, jeffersoncitymo.gov or cms4files.revize.com could be fetched from this environment (hosts not allowed), so all figures come from search-engine summaries of the manager's PDF. Trail association: Osage Region Trail Association (ORTA); no official ORTA trail list was found.",
+ "missing_from_app": [
+  "Audubon Trail (Audubon Nature Trail), 0.7 mi",
+  "Rock Garden length (official legend appears to give 1.6 mi; app has none)",
+  "Possibly trails on the 2024 'Binder South' and 'Binder East' maps (unread)"
+ ],
+ "in_app_not_official": []
+}

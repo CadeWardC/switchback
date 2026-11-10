@@ -1,0 +1,21 @@
+{
+ "park": "Rocky Fork Lakes Conservation Area",
+ "also_known_as": [
+  "Rocky Fork Lakes CA",
+  "Rocky Fork Conservation Area"
+ ],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/rocky-fork-lakes-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "trails": [],
+ "notes": "mdc.mo.gov could not be fetched from this environment (host not resolvable), so nothing was read directly; everything here is from search-result summaries of MDC pages. No named, designated trails were found in any MDC source. MDC's Missouri Conservationist 'Places to Go' entry (Aug 2017, https://mdc.mo.gov/magazines/conservationist/2017-08/places-go) states for hiking: no designated trails, but the area is accessible via field roads. The MDC area page summary describes hiking as an available activity but lists no trail names or lengths. The FY2018-2027 area management plan (https://mdc.mo.gov/sites/default/files/2020-12/2018%20Rocky%20Fork%20Lakes%20Conservation%20Area%20Plan.pdf) mentions maintaining field roads and trails, without names in the summaries seen. Area map PDF (not readable here): https://mdc.mo.gov/sites/default/files/2023-05/7912map_0.pdf ; area regulations: https://mdc.mo.gov/discover-nature/places/area-regs/7912 . Hiker must-knows stated by MDC: the area is open to hunting and trapping (area brochure 'Hunting and Trapping'); it contains the Rocky Fork Shooting Range (rifle, pistol, shotgun), used year-round; bicycles are limited to roads open to vehicles and service roads unless a trail is posted open to bicycles; horses are limited to roads open to vehicles or multi-use trails posted open to horses (none identified here); groups of 10 or more cyclists or riders need a special use permit; trail/game cameras are prohibited. MDC has in the past issued a temporary-closure notice for the shooting range, boat ramp and parking lots south of Rocky Fork Lake (trails stayed open); date and current status not confirmed. Area is about 2,200 acres, roughly 6 miles north of Columbia off US 63 via Peabody Road. A third-party magazine (Missouri Life) claims more than 16 miles of hiking, biking and horseback trails; this is not supported by any MDC source found and is not recorded. Parking-lot names were not stated in any summary. MDC contact for confirmation: Central Regional Office (573) 815-7900.",
+ "missing_from_app": [],
+ "in_app_not_official": [
+  "Fire Trail (1.2 mi) - no MDC source names a 'Fire Trail'; most likely a field/service road or fire lane, not an official hiking trail",
+  "unnamed 2.1 mi spur off Fire Trail - not an official trail; probably a field/service road",
+  "unnamed 2.2 mi path - not an official trail; probably a field/service road",
+  "unnamed 0.5 mi path - not an official trail; probably a field/service road",
+  "unnamed 3.0 mi path - not an official trail; probably a field/service road"
+ ]
+}

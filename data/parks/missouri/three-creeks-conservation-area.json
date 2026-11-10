@@ -1,0 +1,37 @@
+{
+ "park": "Three Creeks Conservation Area",
+ "also_known_as": [
+  "Three Creeks CA"
+ ],
+ "manager": "Missouri Department of Conservation",
+ "source": "https://mdc.mo.gov/discover-nature/places/three-creeks-conservation-area",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "trails": [
+  {
+   "name": "Turkey Creek Interpretive Trail",
+   "miles": 3.0,
+   "uses": "hiking",
+   "blaze": null,
+   "trailheads": [],
+   "note": "MDC states 3 miles, hiking only, with 1- and 2-mile cutoffs. MDC documents vary the name: 'Turkey Creek interpretive trail' (area listing), 'Turkey Creek Nature Trail' and 'Turkey Creek Interpretive Hiking Trail' (2018 area management plan), 'Turkey Creek Trail' (Missouri Conservationist, Sept 2021). Trailhead/parking lot name not seen in the summaries."
+  },
+  {
+   "name": "Three Creeks Trail",
+   "miles": 8.0,
+   "uses": "hiking, biking, equestrian",
+   "blaze": null,
+   "trailheads": [],
+   "note": "MDC 2018 area management plan and Missouri Conservationist (Sept 2021) state 8 miles, hike/bike/horse multi-use. An MDC area listing instead gives a total of 8.5 miles of hiking and multi-use trail for the area. The 2018 plan mentions a closed section of the multi-use trail that MDC was exploring ways to reopen; current status not verified. Trailhead names not stated in the summaries."
+  }
+ ],
+ "notes": "mdc.mo.gov could not be fetched from this environment (host not resolvable); facts come from search summaries of MDC pages: the area page, the 2018 Ten-Year Area Management Plan FY2018-2027 (https://mdc.mo.gov/sites/default/files/2020-12/2018%20Three%20Creeks%20Conservation%20Area%20Plan.pdf), the area hunting/trapping brochure (https://mdc.mo.gov/sites/default/files/2021-09/8315.pdf) and Missouri Conservationist Sept 2021 (https://mdc.mo.gov/magazines/missouri-conservationist/2021-09/places-go-three-creeks-ca). Hiker-relevant statements from MDC: area open 4:00 a.m. to 10:00 p.m. daily; hunting is allowed on the area and the (older) area brochure says trail users should wear hunter orange during all portions of the firearms deer and turkey seasons; walk-in camping allowed year-round except during the firearms deer season; the multi-use trail is shared with horses and bicycles and is muddy in wet conditions; bicycles (including e-bikes) allowed year-round on multi-use trails and service roads designated open to bicycles. The 2018 plan says area brochures with a map are available at each of four parking lots (a 2008 MDC article said five); lot names were not visible. Trails cross the area's creeks (Turkey, Bass, Bonne Femme) but no MDC wording on creek crossings or high water was found. Trail blazes not stated. Directions per MDC: from Columbia, Highway 63 south 5 miles, then Deer Park Road west 1.75 miles.",
+ "missing_from_app": [
+  "Three Creeks Trail (8-mile hike/bike/horse multi-use trail) - not in the app by name; the three unnamed paths of 1.8, 1.7 and 1.9 mi are most likely segments of it (not confirmed against the MDC area map)"
+ ],
+ "in_app_not_official": [
+  "Three unnamed paths (1.8, 1.7, 1.9 mi) - no separate official names found; probably segments of Three Creeks Trail or Turkey Creek cutoffs",
+  "Turkey Creek Interpretive Nature Trail 3.4 mi - trail is official, but MDC states 3 miles and does not use the word order 'Interpretive Nature Trail' (that is the AllTrails title)",
+  "'Three Creeks Hike/Bike/Equestrian Loop' and 'Three Creeks Trail via South Tomlin Hill Trailhead' are third-party names for the official Three Creeks Trail; 'South Tomlin Hill Trailhead' was not confirmed in MDC material"
+ ]
+}

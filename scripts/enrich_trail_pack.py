@@ -129,14 +129,26 @@ def main():
                 counts["confirmed by an official list"] += 1
         # a park's own published trail list (data/parks): a trail of that name in that park is official
         rec = parks.get(official.norm_name(tags.get("switchback:area", "")))
-        if rec and "official:source" not in tags and tags.get("switchback:unnamed") != "yes":
-            hit = next((x for x in rec.get("trails", []) if official.same_name(x["name"], t["name"])
-                        or difflib.SequenceMatcher(None, official.norm_name(x["name"]), official.norm_name(t["name"])).ratio() >= 0.88), None)
+        if rec and tags.get("switchback:unnamed") != "yes" and "official:url" not in tags:
+            # the same name (or the part after "System - "), spelled all but identically; never just a name
+            # inside a longer one ("Moon Loop" is not "South Moon Loop" or "Moon Loop Access")
+            mine = {official.norm_name(t["name"]), official.norm_name(t["name"].split(" - ")[-1])}
+            def same(x):
+                theirs = official.norm_name(x["name"])
+                return (t["name"] in x.get("our_names", []) or theirs in mine
+                        or any(difflib.SequenceMatcher(None, theirs, m).ratio() >= 0.88 for m in mine))
+            hit = next((x for x in rec.get("trails", []) if same(x)), None)
             if hit:
-                tags["official:source"] = rec.get("manager") or rec["park"]
-                tags["official:match"] = "named in the park's trail list"
+                if "official:source" not in tags:
+                    tags["official:source"] = rec.get("manager") or rec["park"]
+                    tags["official:match"] = "named in the park's trail list"
                 if rec.get("source"):
                     tags["official:url"] = rec["source"]
+                if not official.same_name(hit["name"], t["name"]):
+                    tags["official:name"] = hit["name"]
+                # the manager's length, when this is the whole trail and not one piece of it
+                if hit.get("miles") and 0.6 <= t["length"] / 1609.344 / hit["miles"] <= 1.6:
+                    tags["official:miles"] = str(hit["miles"])
                 rec.setdefault("_found", set()).add(hit["name"])
                 counts["confirmed by a park's trail list"] += 1
         why = official.informal_reason(t, res)

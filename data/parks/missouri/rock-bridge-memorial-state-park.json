@@ -1,0 +1,97 @@
+{
+ "park": "Rock Bridge Memorial State Park",
+ "also_known_as": [
+  "Rock Bridge State Park",
+  "Gans Creek Wild Area (part of the park)"
+ ],
+ "manager": "Missouri State Parks",
+ "source": "https://mostateparks.com/park/rock-bridge-memorial-state-park/trails",
+ "checked": "2026-11-10",
+ "confidence": "from search summaries of the manager's page",
+ "trails": [
+  {
+   "name": "Deer Run Trail",
+   "miles": 3.75,
+   "uses": null,
+   "blaze": "yellow",
+   "trailheads": [],
+   "note": "Length and blaze from search summary of the manager's park map (4ROC_ColorMap.pdf) and the manager's First Day Hike listing (3.75 mi). Manager's uses not seen; third-party sources say hiking and biking."
+  },
+  {
+   "name": "Devil's Icebox Trail",
+   "miles": 0.5,
+   "uses": "hiking",
+   "blaze": "yellow",
+   "trailheads": [
+    "Devil's Icebox parking lot"
+   ],
+   "note": "Boardwalk trail; manager's accessibility page says partially accessible from the trailhead to the rock bridge. Blaze colour yellow is from a search summary of the map and a third-party listing; Deer Run is also given as yellow, so one of the two may be wrong. Third-party sources say no bikes."
+  },
+  {
+   "name": "Gans Creek Wild Area Trail",
+   "miles": 6.5,
+   "uses": "hiking, equestrian",
+   "blaze": "orange",
+   "trailheads": [
+    "Wagon Wheel Trailhead"
+   ],
+   "note": "Park map summary gives 6.50 mi, orange, rated rugged. Manager's statewide Horseback Riding page calls it 8.5 miles and says horseback riding is permitted only when the trail is dry. The two manager figures conflict; 6.5 is from the newer map. White Connectors 8, 9 and 10 shorten or extend a hike. Bicycle status not confirmed from the manager (third-party sources say no bikes). Other trailhead names not confirmed."
+  },
+  {
+   "name": "Grassland Trail",
+   "miles": 2.0,
+   "uses": "hiking, biking",
+   "blaze": "blue",
+   "trailheads": [
+    "Grassland trailhead on Rock Bridge Lane"
+   ],
+   "note": "Loop; White Connector 2 cuts the loop in half; map summary says open to mountain biking when dry."
+  },
+  {
+   "name": "High Ridge Trail",
+   "miles": 1.75,
+   "uses": null,
+   "blaze": "blue",
+   "trailheads": [],
+   "note": "1.75 mi loop, blue, per search summary of the manager's map. Older third-party sources say 2.3 mi and a trailhead on Rock Quarry Road. Manager's uses not seen; third-party sources say hiking and biking when dry."
+  },
+  {
+   "name": "Karst Trail",
+   "miles": 1.75,
+   "uses": null,
+   "blaze": "red",
+   "trailheads": [],
+   "note": "1.75 mi, red, rated moderate per search summary of the manager's map; has a short white connector. Manager's uses not seen; third-party sources say hiking and biking."
+  },
+  {
+   "name": "Sinkhole Trail",
+   "miles": 1.5,
+   "uses": null,
+   "blaze": "green",
+   "trailheads": [
+    "Devil's Icebox parking lot"
+   ],
+   "note": "1.50 mi, green, rated moderate per search summary of the manager's map. Manager's uses not seen; third-party sources say hiking and biking."
+  },
+  {
+   "name": "Spring Brook Trail",
+   "miles": 3.1,
+   "uses": null,
+   "blaze": "red",
+   "trailheads": [
+    "Devil's Icebox parking lot"
+   ],
+   "note": "3.10 mi, red, rated moderate per search summary of the manager's map; a manager event listing also says 3.1-mile trail. Karst is also given as red, so one of the two colours may be wrong. Manager's uses not seen; third-party sources say hiking and biking."
+  }
+ ],
+ "notes": "mostateparks.com could not be fetched from this environment (host not in the session's allowed network domains), so everything is from search-result summaries of the manager's trails page, park map PDF (https://mostateparks.com/sites/mostateparks/files/4ROC_ColorMap.pdf), event pages and Horseback Riding page. The manager's trails page lists eight trails: Deer Run, Devil's Icebox, Gans Creek Wild Area, Grassland, High Ridge, Karst, Sinkhole, Spring Brook. The map also shows numbered White Connectors (up to 10), which are official connectors, not separate named trails. Hiker must-know: Devil's Icebox Cave is closed until further notice to protect bats (the boardwalk trail to the rock bridge and cave entrance stays open); horseback riding on Gans Creek Wild Area Trail only when the trail is dry, and biking is described as allowed only when trails are dry; the park has closed for managed deer hunts in early November (Nov. 1-3 in 2025; 2026 dates not confirmed); current trail conditions are posted on the manager's Park and Site Status Map; park office 573-449-7402. No permit requirement for day hiking was found. Per-trail allowed uses were mostly not visible in the manager's summaries and are left null.",
+ "missing_from_app": [
+  "High Ridge Trail",
+  "Karst Trail"
+ ],
+ "in_app_not_official": [
+  "Spur (two pieces; no trail of that name in the manager's list)",
+  "Gans Creek Wild Area Trail 0.8 mi piece (manager lists one Gans Creek Wild Area Trail; likely a connector or duplicate segment)",
+  "White Connector N pieces are on the manager's map as connectors but are not in its list of named trails"
+ ]
+}
