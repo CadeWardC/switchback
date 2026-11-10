@@ -6,7 +6,7 @@
 Searches ArcGIS Online's public catalogue (where federal, state and local agencies publish map data) and probes a
 few known national trail services, printing each layer's name, owner, fields and how many trails fall in the box.
 """
-import json, sys, urllib.parse, urllib.request
+import json, os, sys, urllib.parse, urllib.request
 
 def get(url, params=None, timeout=60):
     if params:
@@ -55,8 +55,24 @@ def show(rows, label=""):
 
 def main():
     box = [float(x) for x in sys.argv[2].split(",")] if len(sys.argv) > 2 else None
+    if os.environ.get("WFS"):
+        print("== WFS layers")
+        for spec in os.environ["WFS"].split(";"):
+            url, typename = spec.split("|")
+            try:
+                with urllib.request.urlopen(url + "?" + urllib.parse.urlencode({
+                        "service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": typename,
+                        "outputFormat": "json", "srsName": "EPSG:4326", "count": 2}), timeout=90) as r:
+                    data = json.load(r)
+                feats = data.get("features", [])
+                print(f"  {data.get('numberMatched', data.get('totalFeatures', '?'))} features  {typename}  {url}")
+                if feats:
+                    print(f"         fields: {', '.join(list(feats[0]['properties'])[:30])}")
+                    print(f"         e.g. {json.dumps(feats[0]['properties'])[:300]}")
+            except Exception as ex:
+                print(f"  unreachable {typename}: {ex}")
     print("== known national services")
-    for url in [
+    for url in [] if os.environ.get("SKIP_NATIONAL") else [
         "https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer",
         "https://partnerships.nationalmap.gov/arcgis/rest/services/USGSTrails/MapServer",
         "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/NPS_Public_Trails/FeatureServer",
