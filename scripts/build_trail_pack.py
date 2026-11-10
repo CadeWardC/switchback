@@ -445,14 +445,16 @@ class AreaFinder:
         return (self.names[best], self.polys[best].area) if best is not None else None
 
 class Ways(osmium.SimpleHandler):
-    def __init__(self, member_ways):
+    def __init__(self, member_ways, finder=None):
         super().__init__()
         self.member_ways = member_ways
+        self.finder = finder      # for unnamed park paths: kept only inside a named park
         self.geom = {}            # way id -> [(node_id, (lat, lon))] for route members
         self.named = []           # (way id, name, tags, nodes)
         self.tracks = []          # named dirt tracks: kept only where they're part of the trail network
         self.unnamed = []         # (way id, tags, nodes)
         self.parking = []         # (name, (lat, lon)): car parks drawn as areas
+        self.park_ways = 0
 
     def way(self, w):
         try:
@@ -482,6 +484,13 @@ class Ways(osmium.SimpleHandler):
             self.tracks.append((w.id, name, {k: v for k, v in t}, nodes))
         elif not name and hw == "path" and t.get("surface") not in PAVED and "segregated" not in t:
             self.unnamed.append((w.id, {k: v for k, v in t}, nodes))
+        elif (not name and hw in ("footway", "path", "bridleway", "cycleway") and self.finder is not None
+              and t.get("footway") not in ("sidewalk", "crossing", "access_aisle", "link") and "indoor" not in t):
+            # an unnamed walkway (often paved) is a trail only inside a named park: the park's loop, not a pavement
+            mid = nodes[len(nodes) // 2][1]
+            if self.finder.find(*mid):
+                self.unnamed.append((w.id, {k: v for k, v in t}, nodes))
+                self.park_ways += 1
 
 # ---------------------------------------------------------------- trails
 
@@ -782,8 +791,9 @@ def build(pbf):
     print(f"  {len(areas.names)} named parks and protected areas")
     rel = Relations()
     rel.apply_file(pbf)
-    ways = Ways(rel.member_ways)
+    ways = Ways(rel.member_ways, finder)
     ways.apply_file(pbf, locations=True, idx="flex_mem")
+    print(f"  {ways.park_ways} unnamed walkways inside parks")
 
     trails, relation_names, route_ends = [], set(), set()
     node_names = defaultdict(set)      # node id -> names of the trails through it
