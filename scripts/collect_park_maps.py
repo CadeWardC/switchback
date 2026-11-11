@@ -153,6 +153,8 @@ def main():
                         kind, pages, geo = describe(data)
                 digest = hashlib.sha256(data).hexdigest()[:16]
                 if not kind or len(data) < 20000 or digest in hashes:
+                    if os.environ.get("SHOW_LINKS"):
+                        print(f"  skipped {url} -> {final}: {kind}, {len(data)} bytes, starts {data[:60]!r}")
                     continue
                 hashes.add(digest)
                 stem = os.path.join(out, f"{slug}-{len(maps) + 1}")
