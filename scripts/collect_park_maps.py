@@ -153,6 +153,10 @@ def main():
                     inner += [u for u, _ in links(final)[1] if FILE.search(u)]
                     inner = [u for u in dict.fromkeys(inner) if not SKIP.search(u)]
                     inner.sort(key=lambda u: (".pdf" not in u.lower(), not MAP_WORDS.search(u)))
+                    if os.environ.get("SHOW_LINKS"):
+                        print(f"  viewer page {final}: files inside {inner[:5]}")
+                        for m in list(re.finditer(r"(?i)pdf|iframe|<embed|<object|file-url|download", raw))[:25]:
+                            print("    …" + " ".join(raw[max(0, m.start() - 110):m.start() + 130].split()))
                     if inner:
                         final, _, data = get(inner[0])
                         kind, pages, geo = describe(data)
