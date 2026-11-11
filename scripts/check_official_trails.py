@@ -50,6 +50,88 @@ NATIONAL = {"US": NATIONAL_US, "CA": NATIONAL_CA}
 NCC = ("National Capital Commission", "https://services2.arcgis.com/WLyMuW006nKOfa5Z/arcgis/rest/services/NCC_Paths_and_Trails/FeatureServer/1",
        ["trail_name"], ["trail_numb"], ["trail_type"])
 STATE_SOURCES = {
+    # United States: state agencies' own trail layers, found with scripts/survey_trail_sources.py and picked by hand.
+    # A label with " [" marks a list that only confirms trails (its names are never taken): used where the layer is
+    # the agency's data but was found on a staff or partner account, not the agency's own server.
+    "California": [
+        ("California State Parks roads and trails [California State Parks]",
+         "https://services2.arcgis.com/AhxrK3F6WM8ECvDi/arcgis/rest/services/RoadsTrails_Public/FeatureServer/15",
+         ["routename"], [], ["unitname", "routetype"], "ROUTETYPE LIKE '%Trail%'"),
+    ],
+    "Florida": [
+        ("Florida State Parks", "https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/PARKS_BOUNDARIES/MapServer/12",
+         ["name"], [], ["site_name", "use"]),
+        ("Florida Greenways and Trails System [Florida DEP]",
+         "https://services1.arcgis.com/nRHtyn3uE1kyzoYc/arcgis/rest/services/Existing_Trails/FeatureServer/0",
+         ["name"], [], ["type"]),
+    ],
+    "Georgia": [
+        ("Atlanta trails [City of Atlanta Parks and Recreation]",
+         "https://services6.arcgis.com/QmEXbya2dRd48yU4/arcgis/rest/services/TrailsATL_Public_View/FeatureServer/0",
+         ["trail_name_original"], [], ["design_type", "development_status"]),
+    ],
+    "Illinois": [
+        ("Lake County trails [Lake County, Illinois]",
+         "https://services3.arcgis.com/HESxeTbDliKKvec2/arcgis/rest/services/LakeCounty_Transportation/FeatureServer/2",
+         ["name"], [], ["surftype"]),
+        ("Lake County Forest Preserves trails [Lake County Forest Preserves]",
+         "https://services1.arcgis.com/OSvSLSpuEnbSu0lj/arcgis/rest/services/Trails/FeatureServer/0",
+         ["name"], [], ["surftype"]),
+    ],
+    "Iowa": [
+        ("Iowa DNR, Trails of Iowa", "https://programs.iowadnr.gov/geospatial/rest/services/Recreation/Recreation/MapServer/7",
+         ["name"], [], ["type", "use_type"]),
+    ],
+    "Maryland": [
+        ("Maryland Public Trail Network [State of Maryland]",
+         "https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/Selected_State_Owned_Properties_WFL1/FeatureServer/0",
+         ["name01"], [], ["status"]),
+    ],
+    "Massachusetts": [
+        ("Massachusetts DCR trails",
+         "https://arcgisserver.digital.mass.gov/arcgisserver/rest/services/AGOL/DCR_Roads_and_Trails_Arcs/FeatureServer/0",
+         ["name"], [], ["type"], "TYPE LIKE '%Trail%'"),
+    ],
+    "New Hampshire": [
+        ("New Hampshire Recreational Trails (GRANIT)",
+         "https://nhgeodata.unh.edu/hosting/rest/services/Hosted/CSD_RecreationResources/FeatureServer/2",
+         ["trailname"], [], ["townname"]),
+    ],
+    "New Jersey": [
+        ("New Jersey DEP, Statewide Trails",
+         "https://services1.arcgis.com/QWdNfRs7lkPq4g4Q/arcgis/rest/services/Statewide_Trails_in_New_Jersey/FeatureServer/10",
+         ["trail_name_long", "trail_name_segment"], [], ["park_name", "trail_type"]),
+        ("New Jersey State Park Service trails",
+         "https://services1.arcgis.com/QWdNfRs7lkPq4g4Q/arcgis/rest/services/NJ_State_Park_Service_Trails_h/FeatureServer/63",
+         ["trail_name"], [], ["park_name", "trl_type_s"]),
+    ],
+    "New York": [
+        ("New York DEC hiking trails", "https://services6.arcgis.com/DZHaqZm9cxOD4CWM/arcgis/rest/services/DEC_Trails/FeatureServer/1",
+         ["name"], [], ["slt_name", "publicuse"]),
+    ],
+    "Ohio": [
+        ("Northwest Ohio trails [Metroparks Toledo]",
+         "https://services1.arcgis.com/SvdVZfVAhlYe04Tl/arcgis/rest/services/NW_Ohio_Trails_View/FeatureServer/0",
+         ["trailsegname"], [], ["parkname", "use_"]),
+    ],
+    "Rhode Island": [
+        ("Rhode Island hiking trails on state lands (RIGIS)",
+         "https://services2.arcgis.com/S8zZg9pg23JUEexQ/arcgis/rest/services/TRANS_State_Hiking_Trails/FeatureServer/0",
+         [], [], ["type"]),
+    ],
+    "Utah": [
+        ("Utah Trails and Pathways [State of Utah]",
+         "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/TrailsAndPathways/FeatureServer/0",
+         ["primaryname"], [], ["designateduses", "status"]),
+    ],
+    "Wisconsin": [
+        ("Wisconsin DNR state trails",
+         "https://dnrmaps.wi.gov/arcgis/rest/services/PR_TRAILS/PR_STATE_TRAILS_NETWORK_PLAN_WTM_Ext/MapServer/0",
+         ["trail_name"], [], ["status"]),
+        ("Wisconsin trails [Wisconsin Office of Outdoor Recreation]",
+         "https://services5.arcgis.com/83GPubpIPhmSrWRQ/arcgis/rest/services/Trails/FeatureServer/10",
+         ["name"], [], []),
+    ],
     # Canada: the official provincial lists, picked by hand (the catalogue search finds too little there)
     "British Columbia, Canada": [
         ("Recreation Sites and Trails BC", "https://openmaps.gov.bc.ca/geo/pub/WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW/ows|WHSE_FOREST_TENURE.FTEN_RECREATION_LINES_SVW",
@@ -273,13 +355,14 @@ KEEP_ATTRS = False   # diagnostics set this to keep every field of each official
 def fetch(source, area):
     if "|" in source[1]:
         return fetch_wfs(source, area)
-    label, url, name_f, no_f, detail_f = source
+    label, url, name_f, no_f, detail_f, *more = source
+    where = more[0] if more else "1=1"     # an optional sixth entry keeps only the trails of a roads-and-trails layer
     seen, out = set(), []
     def grab(w, s, e, n, depth=0):
         offset = 0
         while True:
             data = get(url + "/query", {
-                "where": "1=1", "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
+                "where": where, "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
                 "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "true",
                 "outSR": 4326, "f": "json", "resultOffset": offset, "resultRecordCount": 1000})
             if "error" in data:
@@ -359,7 +442,10 @@ def trail_use(a):
     text = " ".join(str(v).lower() for k, v in a.items() if v and any(f in k for f in USE_FIELDS))
     if any(w in text for w in FOR_HIKERS):
         return "hike"
-    if any(w in text for w in NOT_FOR_HIKERS):
+    hits = [w for w in NOT_FOR_HIKERS if w in text]
+    if hits == ["road"] and "trail" in text:
+        return "?"       # "Forest Road/Trail": a road people also walk, not a list saying hikers aren't wanted
+    if hits:
         return "not"
     return "?"
 
