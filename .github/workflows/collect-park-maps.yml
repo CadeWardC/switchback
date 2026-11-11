@@ -1,0 +1,49 @@
+name: Collect park maps (Switchback)
+
+# Finds each park's own trail maps from the manager's pages listed in data/parks/<region>/, and makes an index of
+# them (links, pages, whether they carry real coordinates) plus pictures of their first pages. The index and pictures
+# go to a workflow artifact; with "share" they also go to the working release "park-maps-work" so they can be read
+# for matching trails, which is cleared when the work is done. Only by hand.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Region id (folder under data/parks)"
+        default: "missouri"
+      park:
+        description: "Only parks whose name contains this (empty = all)"
+        default: ""
+      share:
+        description: "Also put the index and pictures in the working release"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF and picture tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils imagemagick
+      - name: Find and draw the maps
+        run: python3 scripts/collect_park_maps.py "${{ inputs.region }}" maps "${{ inputs.park }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: park-maps-${{ inputs.region }}
+          path: maps
+      - name: Put them in the working release
+        if: inputs.share
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view park-maps-work > /dev/null 2>&1 || gh release create park-maps-work --target "${{ github.sha }}" \
+            --title "Park maps (working copies)" --latest=false --prerelease \
+            --notes "Working copies of park managers' own trail maps, used to match trail names. Each map belongs to its publisher; index.json says where each came from. Cleared when the work is done."
+          cp maps/index.json "maps/index-${{ inputs.region }}.json"
+          ls maps | wc -l
+          ls maps/* | xargs -n 40 gh release upload park-maps-work --clobber
