@@ -79,6 +79,10 @@ def find(start, extra):
             notes.append(f"{url}: {ex}")
             return
         host = urllib.parse.urlparse(final).netloc.removeprefix("www.")
+        if os.environ.get("SHOW_LINKS"):
+            print(f"  {final}: {len(found)} links")
+            for full, text in found:
+                print(f"    {full} | {text[:60]}")
         for full, text in found:
             if SKIP.search(full) or SKIP.search(text):
                 continue
@@ -88,7 +92,9 @@ def find(start, extra):
             elif depth and urllib.parse.urlparse(full).netloc.removeprefix("www.") == host \
                     and full.startswith(final.rstrip("/")) and PAGE_WORDS.search(full[len(final):] + " " + text):
                 scan(full, depth - 1)
-    if start:
+    if start and (FILE.search(start) or "/media/" in start):
+        files.setdefault(start, "the record's own source")   # the record points straight at a file
+    elif start:
         scan(start, 1)
     return files, notes
 

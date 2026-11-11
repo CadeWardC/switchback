@@ -31,6 +31,8 @@ jobs:
       - name: Install PDF and picture tools
         run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils imagemagick
       - name: Find and draw the maps
+        env:
+          SHOW_LINKS: ${{ inputs.park != '' && '1' || '' }}   # one park: also print every link seen
         run: python3 scripts/collect_park_maps.py "${{ inputs.region }}" maps "${{ inputs.park }}"
       - uses: actions/upload-artifact@v4
         with:
