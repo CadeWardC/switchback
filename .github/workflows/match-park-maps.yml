@@ -13,10 +13,6 @@ on:
       park:
         description: "Only parks whose slug contains this (empty = all)"
         default: ""
-      keep:
-        description: "Also put the map files and overlay pictures in the working release (for checking)"
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -29,16 +25,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install map tools
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gdal-bin poppler-utils
-          pip install --quiet numpy pillow
+          pip install --quiet numpy pymupdf
       - name: Get our trails
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download trails-us -p "${{ inputs.region }}.trails" -p "${{ inputs.region }}.json" -D pack
       - name: Match
-        env:
-          KEEP: ${{ inputs.keep && '1' || '' }}
         run: python3 scripts/match_park_maps.py "${{ inputs.region }}" pack out "${{ inputs.park }}"
       - name: Publish the results
         env:
