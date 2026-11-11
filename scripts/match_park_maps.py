@@ -140,12 +140,12 @@ def read_map(data):
     return text, (s, w, n, e), cells, width_m / (frame_pt * scale), lat0
 
 PLACE = re.compile(r"state park|historic site|conservation area|national forest|wild area|natural area|"
-                   r"trails of|missouri|\\d{4}", re.I)
+                   r"trails of|missouri|\d{4}", re.I)
 
 def trail_name(text, park):
     """The trail the map is of: the first printed line that isn't the park's name, a banner or a date."""
     for t in text[:5]:
-        if not official.same_name(t, park) and not PLACE.search(t) and 3 < len(t) < 60:
+        if official.norm_name(t) != official.norm_name(park) and not PLACE.search(t) and 3 < len(t) < 60:
             return re.sub(r"(?<=[a-z])(?=Trail$)", " ", t)   # "Hike OnlyTrail"
     return None
 
