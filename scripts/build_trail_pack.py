@@ -999,6 +999,139 @@ def build(pbf):
     pois = pois_near(trails, rel.pois)
     return trails, pois
 
+BRIDGE_M = 5000        # the longest stretch of a route's own line that may join two pieces of one trail
+BRIDGE_SHARE = 0.4     # ...and all such stretches together, as a share of the pieces they join
+
+def main_of(t):
+    return decode(t["segments"][t["pathIndex"]]) if "pathIndex" in t else decode(t["path"])
+
+def join_along(route_lines, pieces):
+    """Pieces of one named trail that only the route drawn over them connects (the route follows a road or an
+    unnamed stretch between them): joined into one trail along the route's own line, and closed into a loop when
+    the route brings the end back to the start. Returns [(main line, bridges used, pieces joined)]."""
+    key = lambda p: (round(p[0] * 4000), round(p[1] * 4000))          # about 25 m squares
+    nodes, adj, grid = [], defaultdict(list), defaultdict(list)
+    def node(p):
+        nodes.append(p)
+        grid[key(p)].append(len(nodes) - 1)
+        return len(nodes) - 1
+    def nearest(p, reach):
+        k, best = key(p), None
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                for i in grid.get((k[0] + dy, k[1] + dx), ()):
+                    d = dist(p, nodes[i])
+                    if d <= reach and (best is None or d < best[0]):
+                        best = (d, i)
+        return best
+    ends = []
+    for l in route_lines:
+        pts = densify(l, 20)
+        ids = [node(p) for p in pts]
+        for a, b in zip(ids, ids[1:]):
+            d = dist(nodes[a], nodes[b])
+            adj[a].append((b, d))
+            adj[b].append((a, d))
+        ends += [ids[0], ids[-1]]
+    for e in ends:                      # a line that ends on another line is joined to it there
+        k = key(nodes[e])
+        near = [(dist(nodes[e], nodes[i]), i) for dy in (-1, 0, 1) for dx in (-1, 0, 1)
+                for i in grid.get((k[0] + dy, k[1] + dx), ()) if i != e and dist(nodes[e], nodes[i]) <= 25]
+        for d, i in sorted(near)[:3]:
+            adj[e].append((i, d))
+            adj[i].append((e, d))
+    def blocked_by(lines):
+        cells = defaultdict(list)
+        for l in lines:
+            for p in densify(l, 10):
+                cells[key(p)].append(p)
+        def on(i):
+            k = key(nodes[i])
+            return any(dist(nodes[i], q) <= 20 for dy in (-1, 0, 1) for dx in (-1, 0, 1) for q in cells.get((k[0] + dy, k[1] + dx), ()))
+        return on
+    def path(a, b, on):
+        """Shortest way along the route from a to b that doesn't run along the pieces themselves."""
+        src, dst = nearest(a, 40), nearest(b, 40)
+        if not src or not dst:
+            return None
+        import heapq
+        best, prev, heap = {src[1]: 0.0}, {}, [(0.0, src[1])]
+        while heap:
+            d, n = heapq.heappop(heap)
+            if n == dst[1]:
+                out = [n]
+                while out[-1] in prev:
+                    out.append(prev[out[-1]])
+                return d, [a] + [nodes[i] for i in reversed(out)] + [b]
+            if d > best.get(n, 1e18) or d > BRIDGE_M:
+                continue
+            for m, w in adj[n]:
+                if m != dst[1] and dist(nodes[m], a) > 60 and dist(nodes[m], b) > 60 and on(m):
+                    continue
+                if d + w < best.get(m, 1e18):
+                    best[m], prev[m] = d + w, n
+                    heapq.heappush(heap, (d + w, m))
+        return None
+    runs = [{"main": main_of(t), "bridges": [], "of": [t]} for t in pieces]
+    budget = BRIDGE_SHARE * sum(t["length"] for t in pieces)
+    on = blocked_by([l for t in pieces for l in lines_of(t)])
+    while len(runs) > 1:
+        best = None
+        for i in range(len(runs)):
+            for j in range(i + 1, len(runs)):
+                for ei in (0, -1):
+                    for ej in (0, -1):
+                        got = path(runs[i]["main"][ei], runs[j]["main"][ej], on)
+                        if got and got[0] <= budget and (best is None or got[0] < best[0]):
+                            best = (got[0], i, j, ei, ej, got[1])
+        if not best:
+            break
+        d, i, j, ei, ej, bridge = best
+        a = runs[i]["main"] if ei == -1 else runs[i]["main"][::-1]      # a ends where the bridge starts
+        b = runs[j]["main"] if ej == 0 else runs[j]["main"][::-1]       # b starts where the bridge ends
+        runs[i] = {"main": a + bridge[1:-1] + b, "bridges": runs[i]["bridges"] + runs[j]["bridges"] + [bridge],
+                   "of": runs[i]["of"] + runs[j]["of"]}
+        runs.pop(j)
+        budget -= d
+    out = []
+    for r in runs:
+        if len(r["of"]) < 2:
+            continue
+        m = r["main"]
+        if dist(m[0], m[-1]) > 60:               # does the route bring the end back to the start?
+            got = path(m[-1], m[0], on)
+            if got and got[0] <= budget:
+                r["main"] = m + got[1][1:]
+                r["bridges"].append(got[1])
+                r["closed"] = True
+        out.append(r)
+    return out
+
+def merge_pieces(run):
+    """One trail out of joined pieces: the longest piece's identity, everyone's lines, trailheads and side loops."""
+    base = max(run["of"], key=lambda t: t["length"])
+    segs = [s for t in run["of"] for s in t["segments"]] + [encode(simplify(b)) for b in run["bridges"]]
+    t = dict(base, segments=segs, path=encode(simplify(run["main"])), length=round(length(run["main"]), 1))
+    t.pop("pathIndex", None)
+    t.pop("elev", None)
+    tags = dict(base.get("tags", {}))
+    for tag, cap, order in (("switchback:access", 6, "d"), ("switchback:ext", 3, "m")):
+        seen, merged = set(), []
+        for u in run["of"]:
+            for e in json.loads(u.get("tags", {}).get(tag, "[]")):
+                if e.get("n") not in seen:
+                    seen.add(e.get("n"))
+                    merged.append(e)
+        if merged:
+            merged.sort(key=lambda e: e.get(order, 0))
+            tags[tag] = json.dumps(merged[:cap], ensure_ascii=False, separators=(",", ":"))
+    tags["switchback:bridged"] = str(round(sum(length(b) for b in run["bridges"])))   # metres along the route between pieces
+    if run.get("closed"):
+        tags["switchback:closed"] = "yes"
+    tags.pop("switchback:hike", None)
+    t["tags"] = tags
+    return t, run["main"][0]
+
 def networks(trails):
     """A route whose lines form a web of loops (a relation drawn over a whole trail system) is not one walk: its
     "main line" would wander through the web and call itself a 20-mile one-way trail. Such a route is marked
@@ -1009,7 +1142,7 @@ def networks(trails):
     named = [(t, lines_of(t)) for t, _ in trails if not is_unnamed(t)]
     boxes = {id(t): (min(p[0] for l in ls for p in l), min(p[1] for l in ls for p in l),
                      max(p[0] for l in ls for p in l), max(p[1] for l in ls for p in l)) for t, ls in named if ls}
-    found = overviews = 0
+    found = overviews = joined = 0
     for t, lines in named:
         total = sum(length(l) for l in lines)
         if t["source"] != "osmRelation" or total < t["length"] * 1.3 or total - t["length"] < 800:
@@ -1027,6 +1160,20 @@ def networks(trails):
                   and u.get("tags", {}).get("switchback:network") != "yes"
                   and not (boxes[id(u)][2] < b[0] or boxes[id(u)][0] > b[2] or boxes[id(u)][3] < b[1] or boxes[id(u)][1] > b[3])]
         inside = [(u, ls) for u, ls in others if coverage(ls, lines, 20) >= 0.8]
+        # pieces of one named trail that only this route connects become one trail
+        same = defaultdict(list)
+        for u, _ in inside:
+            if u["source"] != "osmRelation":
+                same[u["name"]].append(u)
+        for name, group in same.items():
+            if len(group) < 2:
+                continue
+            for run in join_along(lines, group):
+                made, start = merge_pieces(run)
+                gone = {id(u) for u in run["of"]}
+                trails[:] = [(x, st) for x, st in trails if id(x) not in gone] + [(made, start)]
+                inside = [(u, ls) for u, ls in inside if id(u) not in gone] + [(made, lines_of(made))]
+                joined += 1
         if inside and coverage(lines, [l for _, ls in inside for l in ls], 20) >= 0.6:
             overviews += 1
             tags["switchback:hike"] = "no"
@@ -1035,7 +1182,7 @@ def networks(trails):
         else:
             t["length"] = round(total, 1)
     print(f"  {found} routes are webs of loops: {overviews} now overviews of their named trails, "
-          f"{found - overviews} kept as trail networks")
+          f"{found - overviews} kept as trail networks; {joined} trails joined from pieces along their route")
     return trails
 
 def pois_near(trails, pois):

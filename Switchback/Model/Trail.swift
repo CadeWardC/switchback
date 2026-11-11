@@ -394,6 +394,10 @@ struct Trail: Codable, Identifiable, Hashable {
         if isInformal, let why = tags["switchback:informal_reason"] {
             out.append(TrailFact(title: "Informal", value: why))
         }
+        // pieces of this trail were joined along the route drawn over them (often a road between two sections)
+        if let m = tags["switchback:bridged"].flatMap(Double.init), m > 0 {
+            out.append(TrailFact(title: "Joined sections", value: "\(Fmt.distance(m)) follows roads or unnamed stretches between the mapped sections"))
+        }
         return out
     }
 

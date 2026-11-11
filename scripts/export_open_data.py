@@ -37,6 +37,8 @@ def feature(t):
             props[key] = True
     if tags.get("switchback:informal_reason"):
         props["informal_reason"] = tags["switchback:informal_reason"]
+    if tags.get("switchback:bridged"):
+        props["joined_along_route_m"] = int(tags["switchback:bridged"])
     e = t.get("elev") or {}
     for key, k in (("climb_m", "g"), ("descent_m", "l"), ("lowest_m", "mn"), ("highest_m", "mx")):
         if isinstance(e.get(k), (int, float)):
