@@ -56,7 +56,7 @@ STATE_SOURCES = {
     "California": [
         ("California State Parks roads and trails [California State Parks]",
          "https://services2.arcgis.com/AhxrK3F6WM8ECvDi/arcgis/rest/services/RoadsTrails_Public/FeatureServer/15",
-         ["routename"], [], ["unitname", "routetype"], "ROUTETYPE LIKE '%Trail%'"),
+         ["routename"], [], ["unitname", "routetype"], "UPPER(ROUTETYPE) NOT LIKE '%ROAD%'"),
     ],
     "Florida": [
         ("Florida State Parks", "https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/PARKS_BOUNDARIES/MapServer/12",
@@ -358,13 +358,17 @@ def fetch(source, area):
     label, url, name_f, no_f, detail_f, *more = source
     where = more[0] if more else "1=1"     # an optional sixth entry keeps only the trails of a roads-and-trails layer
     seen, out = set(), []
+    paged = [True]    # older servers refuse paging: then ask without it and split squares that hold too much
     def grab(w, s, e, n, depth=0):
         offset = 0
         while True:
-            data = get(url + "/query", {
-                "where": where, "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
-                "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "true",
-                "outSR": 4326, "f": "json", "resultOffset": offset, "resultRecordCount": 1000})
+            q = {"where": where, "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
+                 "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "true",
+                 "outSR": 4326, "f": "json"}
+            data = get(url + "/query", dict(q, resultOffset=offset, resultRecordCount=1000) if paged[0] else q)
+            if "error" in data and paged[0] and offset == 0:
+                paged[0] = False
+                data = get(url + "/query", q)
             if "error" in data:
                 raise RuntimeError(data["error"].get("message"))
             feats = data.get("features", [])
