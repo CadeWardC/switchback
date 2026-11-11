@@ -256,6 +256,8 @@ def fetch_wfs(source, area):
             start += len(feats)
     return out
 
+KEEP_ATTRS = False   # diagnostics set this to keep every field of each official feature
+
 def fetch(source, area):
     if "|" in source[1]:
         return fetch_wfs(source, area)
@@ -286,6 +288,8 @@ def fetch(source, area):
                             "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines,
                             "use": trail_use(a), "sure": hiker_sure(a), "motor": motor_trail(a), "shut": shut(a),
                             "unit": pick(a, ["unitname"])})
+                if KEEP_ATTRS:
+                    out[-1]["a"] = a
             if not data.get("exceededTransferLimit") or not feats:
                 return
             if not new:          # the service ignores paging: split the square instead

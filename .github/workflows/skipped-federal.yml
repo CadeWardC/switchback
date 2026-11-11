@@ -1,0 +1,30 @@
+name: Federal trails we did not add (Switchback)
+
+# Read-only: sorts the Forest Service trails our data lacks and that weren't added, by the list's own fields.
+
+on:
+  workflow_dispatch:
+    inputs:
+      regions:
+        description: "Region ids, space separated"
+        default: "montana idaho colorado missouri"
+
+permissions:
+  contents: read
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --quiet osmium shapely numpy pillow
+      - name: Sort the skipped trails
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for r in ${{ inputs.regions }}; do
+            gh release download trails-us -p "$r.trails" -p "$r.json" -D pack --clobber
+            python3 scripts/skipped_federal.py "$r" pack || true
+            echo
+          done
