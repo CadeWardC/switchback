@@ -146,7 +146,12 @@ def main():
                 kind, pages, geo = describe(data)
                 if not kind and b"<html" in data[:2000].lower():
                     # a page that wraps the file (the Conservation Department's map pages): take the file inside
-                    inner = [u for u, _ in links(final)[1] if FILE.search(u) and not SKIP.search(u)]
+                    # any file the page links, embeds or frames (href, src, data…)
+                    raw = data.decode("utf-8", "replace").replace("\\/", "/")
+                    inner = [urllib.parse.urljoin(final, u) for u in
+                             re.findall(r"""["'(]([^"'()<>\s]+\.(?:pdf|PDF)(?:\?[^"'()<>\s]*)?)""", raw)]
+                    inner += [u for u, _ in links(final)[1] if FILE.search(u)]
+                    inner = [u for u in dict.fromkeys(inner) if not SKIP.search(u)]
                     inner.sort(key=lambda u: (".pdf" not in u.lower(), not MAP_WORDS.search(u)))
                     if inner:
                         final, _, data = get(inner[0])
