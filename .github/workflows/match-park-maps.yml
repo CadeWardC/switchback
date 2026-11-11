@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install map tools
         run: |
-          pip install --quiet numpy pymupdf shapely
+          pip install --quiet numpy pymupdf shapely osmium pillow
       - name: Get our trails
         env:
           GH_TOKEN: ${{ github.token }}
