@@ -20,7 +20,7 @@ PAGE_WORDS = re.compile(r"map|trail|hik", re.I)
 FILE = re.compile(r"\.(pdf|jpe?g|png)(\?|$)", re.I)
 SKIP = re.compile(r"logo|icon|sprite|facebook|twitter|instagram|banner|thumb|styles/|favicon|regulation|rules|"
                   r"permit|application|form|newsletter|minutes|agenda|hunting|fishing", re.I)
-MAX_FILES, MAX_PAGES, MAX_BYTES, PAGES_DRAWN = 8, 6, 40 << 20, 2
+MAX_FILES, MAX_PAGES, MAX_BYTES, PAGES_DRAWN = 40, 8, 40 << 20, 2
 last = {}
 
 class Links(HTMLParser):
@@ -86,7 +86,7 @@ def find(start, extra):
         for full, text in found:
             if SKIP.search(full) or SKIP.search(text):
                 continue
-            if FILE.search(full) or "/media/area/map/" in full:
+            if FILE.search(full) or "/media/" in urllib.parse.urlparse(full).path:   # "/media/…": a file behind a page
                 if MAP_WORDS.search(full) or MAP_WORDS.search(text):
                     files.setdefault(full, text[:80])
             elif depth and urllib.parse.urlparse(full).netloc.removeprefix("www.") == host \
@@ -96,6 +96,8 @@ def find(start, extra):
         files.setdefault(start, "the record's own source")   # the record points straight at a file
     elif start:
         scan(start, 1)
+        if not files and start.rstrip("/").count("/") > 3:
+            scan(start.rstrip("/").rsplit("/", 1)[0], 0)   # nothing on a sub-page (…/trails): try the park's own page
     return files, notes
 
 def describe(data):
@@ -144,7 +146,8 @@ def main():
                 kind, pages, geo = describe(data)
                 if not kind and b"<html" in data[:2000].lower():
                     # a page that wraps the file (the Conservation Department's map pages): take the file inside
-                    inner = [u for u, _ in links(final)[1] if FILE.search(u) and MAP_WORDS.search(u)]
+                    inner = [u for u, _ in links(final)[1] if FILE.search(u) and not SKIP.search(u)]
+                    inner.sort(key=lambda u: (".pdf" not in u.lower(), not MAP_WORDS.search(u)))
                     if inner:
                         final, _, data = get(inner[0])
                         kind, pages, geo = describe(data)
