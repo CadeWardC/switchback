@@ -249,7 +249,8 @@ def fetch_wfs(source, area):
                 seen.add(key)
                 out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
                             "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines,
-                            "use": trail_use(a)})
+                            "use": trail_use(a), "sure": hiker_sure(a), "motor": motor_trail(a), "shut": shut(a),
+                            "unit": pick(a, ["unitname"])})
             if len(feats) < 2000:
                 break
             start += len(feats)
@@ -283,7 +284,8 @@ def fetch(source, area):
                 new += 1
                 out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
                             "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines,
-                            "use": trail_use(a)})
+                            "use": trail_use(a), "sure": hiker_sure(a), "motor": motor_trail(a), "shut": shut(a),
+                            "unit": pick(a, ["unitname"])})
             if not data.get("exceededTransferLimit") or not feats:
                 return
             if not new:          # the service ignores paging: split the square instead
@@ -338,6 +340,36 @@ def trail_use(a):
     if any(w in text for w in NOT_FOR_HIKERS):
         return "not"
     return "?"
+
+def hiker_sure(a):
+    """The list itself says, in so many words, that this trail is for people on foot (stricter than trail_use, which
+    also takes "nothing says otherwise"). Asked before a line is ADDED to our data from the list."""
+    if "hiker_pedestrian_managed" in a:                       # Forest Service: managed for, or accepting, hikers
+        return bool(a.get("hiker_pedestrian_managed") or a.get("hiker_pedestrian_accpt"))
+    if "trltype" in a:                                        # National Park Service
+        use = str(a.get("trluse") or "").lower()
+        return any(w in use for w in ("hik", "foot", "pedestrian", "walk"))
+    return False
+
+def motor_trail(a):
+    """Managed for motor vehicles (an OHV trail hikers are merely allowed on)."""
+    return any(v not in (None, "", "N/A") and k.endswith("_managed") and
+               any(w in k for w in ("motor", "atv", "fourwd", "4wd", "ohv")) for k, v in a.items())
+
+SHUT_WORDS = ("decommission", "proposed", "planned", "closed", "abandon", "obliterat", "unauthor", "no public", "not exist",
+              "historic", "unmaintained", "non-system", "nonsystem")
+
+def shut(a):
+    """The list's own status fields say it isn't an existing, open, public trail."""
+    for k, v in a.items():
+        if v in (None, "") or not any(w in k for w in ("status", "publicdisplay", "system")):
+            continue
+        text = str(v).lower()
+        if any(w in text for w in SHUT_WORDS):
+            return True
+        if k == "trlstatus" and not text.startswith("exist"):
+            return True
+    return False
 
 def join_pieces(feats, gap=30):
     """Official trails cut into pieces, joined back: pieces with the same name whose ends meet (or unnamed pieces
@@ -506,7 +538,7 @@ def evidence(t):
         return "junk", junk
     return "uncertain", real + junk
 
-def evaluate(trails, area, sources, say=print):
+def evaluate(trails, area, sources, say=print, keep_lines=()):
     """Matches every trail in the area against each official list, one list at a time (so memory stays small).
     Returns per trail {source: info}, the lists' sizes, and per list the official hiking trails the pack misses."""
     inside = []
@@ -582,6 +614,10 @@ def evaluate(trails, area, sources, say=print):
                 f = max(group, key=lambda f: sum(length(l) for l in f["lines"]))
                 missed.append({"name": f["name"], "no": f["no"], "detail": f["detail"], "start": f["lines"][0][0],
                                "miles": total / 1609.34, "use": use})
+                if src[0] in keep_lines:   # enough to add the trail to our data, if it passes the stricter checks
+                    missed[-1].update(lines=lines, sure=all(x.get("sure") for x in group),
+                                      motor=any(x.get("motor") for x in group), shut=any(x.get("shut") for x in group),
+                                      unit=f.get("unit", ""))
         missing[src[0]] = missed
         del feats, g
     return inside, results, sizes, missing

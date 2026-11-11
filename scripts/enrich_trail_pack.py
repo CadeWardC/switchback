@@ -17,7 +17,7 @@ ones, never the catalogue's finds), matched by shape:
 Rewrites <region-id>.trails in place (same version, same cells) and adds the counts to <region-id>.json. If the
 official lists can't be reached the pack is left as it is.
 """
-import difflib, glob, json, os, re, sys, zlib
+import difflib, glob, json, math, os, re, sys, zlib
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -121,6 +121,88 @@ def apply_map(t, hit, counts):
     counts["confirmed by a park's map"] += 1
     return True
 
+ADD_FROM = {"Forest Service": "usfs", "National Park Service": "osmWay"}   # list -> the "source" the app reads
+ADD_MIN_M = 400
+
+def stitch(lines, gap=30):
+    """Pieces of one trail joined end to end where their ends meet: the longest run first."""
+    left = [list(l) for l in lines if len(l) >= 2]
+    out = []
+    while left:
+        run = left.pop(max(range(len(left)), key=lambda i: official.length(left[i])))
+        grew = True
+        while grew:
+            grew = False
+            for i, l in enumerate(left):
+                for mine, theirs, flip, front in ((run[-1], l[0], False, False), (run[-1], l[-1], True, False),
+                                                  (run[0], l[-1], False, True), (run[0], l[0], True, True)):
+                    if official.dist(mine, theirs) <= gap:
+                        piece = l[::-1] if flip else l
+                        run = piece + run if front else run + piece
+                        left.pop(i)
+                        grew = True
+                        break
+                if grew:
+                    break
+        out.append(run)
+    return sorted(out, key=official.length, reverse=True)
+
+def add_federal(missing, trails, counts):
+    """Trails the Forest Service and the National Park Service publish (public domain) that our data has no line
+    for, added as trails of their own: only ones the list itself says are for people on foot, existing and open,
+    not managed for motor vehicles, with a real name or number, at least a quarter mile, and not already added from
+    the other list. Each says where its line came from (switchback:origin, official:source).
+    Returns [(trail, start)]."""
+    import build_trail_pack as builder
+    grid = official.Grid()          # what has been added so far, so the two lists don't add the same trail twice
+    near = defaultdict(list)        # our trails by 0.05° square, to borrow the park or forest's name from a neighbour
+    for t in trails:
+        a = t.get("tags", {}).get("switchback:area")
+        if a:
+            p = t["_lines"][0][0]
+            near[(round(p[0] * 20), round(p[1] * 20))].append((p, a))
+    added = []
+    for label, source in ADD_FROM.items():
+        for m in missing.get(label, []):
+            why = ("not said to be for hikers" if m["use"] != "hike" or not m.get("sure") else
+                   "for motor vehicles" if m.get("motor") else "not an open, existing trail" if m.get("shut") else None)
+            name = official.tidy_name(m["name"] or "")
+            if not why and (not name or official.norm_name(name) in official.GENERIC):
+                name = f"Forest Trail {m['no']}" if label == "Forest Service" and m.get("no") else ""
+                why = None if name else "no name"
+            lines = stitch(m.get("lines", [])) if not why else []
+            if not why and (not lines or official.length(lines[0]) < ADD_MIN_M):
+                why = "too short"
+            if not why and added and official.match(lines, grid)[0] >= 0.3:
+                why = "already added from the other list"
+            if why:
+                counts[f"{label}: not added, {why}"] += 1
+                continue
+            start = lines[0][0]
+            tid = f"f{'s' if source == 'usfs' else 'n'}{m.get('no') or name}-{start[0]:.3f},{start[1]:.3f}"
+            made = builder.make_trail(tid, None, source, name, lines, {}, ADD_MIN_M, main=lines[0])
+            if not made:
+                continue
+            t, at = made
+            tags = t.setdefault("tags", {})
+            tags.update({"switchback:origin": label, "official:source": label,
+                         "official:match": "the line itself comes from this list"})
+            if m.get("no"):
+                tags["official:ref"] = tags["ref"] = str(m["no"])
+            k = (round(start[0] * 20), round(start[1] * 20))
+            around = [(official.dist(start, p), a) for dy in (-1, 0, 1) for dx in (-1, 0, 1)
+                      for p, a in near.get((k[0] + dy, k[1] + dx), ())]
+            area = m.get("unit") or (min(around)[1] if around and min(around)[0] < 3000 else "")
+            if area:
+                tags["switchback:area"] = official.tidy_name(area) if m.get("unit") else area
+            for i, l in enumerate(lines):
+                grid.add(l, len(added))
+            t["_lines"] = lines
+            added.append((t, at))
+            counts[f"added from the {label}"] += 1
+            counts["miles added"] += official.length(lines[0]) / 1609.344
+    return added
+
 def main():
     out, region_id = sys.argv[1], sys.argv[2]
     pack_path, info_path = os.path.join(out, f"{region_id}.trails"), os.path.join(out, f"{region_id}.json")
@@ -144,7 +226,7 @@ def main():
         print(f"  the state's own lists couldn't be looked up ({ex})")
     print(f"{region['name']}: {len(trails)} trails; official lists inside ({outline}):")
     try:
-        inside, results, sizes, _ = official.evaluate(trails, area, sources)
+        inside, results, sizes, missing = official.evaluate(trails, area, sources, keep_lines=set(ADD_FROM))
     except Exception as ex:
         print(f"  official lists couldn't be checked ({ex}); pack left as it is")
         return
@@ -239,15 +321,39 @@ def main():
         counts["hikes" if hike else "not listed as hikes"] += 1
 
     for rec in parks.values():
-        missing = [x["name"] for x in rec.get("trails", []) if x["name"] not in rec.get("_found", ())]
-        if missing:
-            print(f"  {rec['park']}: in its trail list but not found in the pack: {', '.join(missing)}")
+        absent = [x["name"] for x in rec.get("trails", []) if x["name"] not in rec.get("_found", ())]
+        if absent:
+            print(f"  {rec['park']}: in its trail list but not found in the pack: {', '.join(absent)}")
+    # federal trails our data has no line for
+    try:
+        added = add_federal(missing, trails, counts) if region["country"] == "US" else []
+        if added and os.environ.get("ELEVATION", "1") != "0":
+            import build_trail_pack as builder
+            builder.add_elevation(added, os.environ.get("TERRAIN_CACHE", "terrain"))
+        for t, at in added:
+            trails_by_cell.setdefault(f"{math.floor(at[0] / header['cell'])}_{math.floor(at[1] / header['cell'])}", []).append(t)
+            t.pop("_main", None)
+            info.setdefault("coverage", [])
+            sq = f"{math.floor(at[0])}_{math.floor(at[1])}"
+            if sq not in info["coverage"]:
+                info["coverage"] = sorted(info["coverage"] + [sq])
+            b = info.get("bbox")
+            if b:
+                info["bbox"] = [min(b[0], at[0]), min(b[1], at[1]), max(b[2], at[0]), max(b[3], at[1])]
+        if added:
+            header["bbox"] = info.get("bbox", header.get("bbox"))
+            info["trails"] = info.get("trails", 0) + len(added)
+            counts["hikes"] += len(added)
+            counts["miles added"] = round(counts["miles added"])
+    except Exception as ex:
+        print(f"  federal trails couldn't be added ({ex})")
     for k, ts in trails_by_cell.items():
         for t in ts:
             t.pop("_lines", None)
         cells[k] = json.dumps(ts, ensure_ascii=False, separators=(",", ":")).encode()
     size = write(pack_path, header, cells)
     info["bytes"] = size
+    info["cells"] = len(trails_by_cell)
     info["official"] = {"lists": sizes, **dict(counts)}
     json.dump(info, open(info_path, "w"), separators=(",", ":"))
     print("  " + ", ".join(f"{k} {v}" for k, v in counts.items()) + f"; file now {size / 1024:.0f} KB")

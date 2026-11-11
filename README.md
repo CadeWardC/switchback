@@ -86,6 +86,10 @@ subscription and no API keys.
 - **Activity:** every recorded hike with its map, stats and elevation chart; share as GPX, rename, or save it as a
   trail to follow again.
 
+## Download the trails
+
+The whole trail dataset is free to download as GeoJSON, one file per US state and Canadian province: see [docs/DOWNLOADS.md](docs/DOWNLOADS.md).
+
 ## Where the data comes from
 
 | | Source | Licence |

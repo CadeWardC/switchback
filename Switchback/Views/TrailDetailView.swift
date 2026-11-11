@@ -296,6 +296,11 @@ struct TrailDetailView: View {
     }
 
     private func credit(_ t: Trail) -> String {
+        // a line added from a federal list because OpenStreetMap has none
+        if let origin = t.tags["switchback:origin"] {
+            let terms = origin == "Forest Service" ? "USDA Forest Service, CC BY 4.0" : "U.S. federal data, public domain"
+            return "Trail line from the \(origin) (\(terms)); it isn't in OpenStreetMap yet. Elevation from open terrain data (USGS 3DEP and others). Difficulty and time are estimates; check conditions before you go."
+        }
         switch t.source {
         case .osmRelation, .osmWay:
             let official = t.tags["official:source"].map { "Official record: \($0). " } ?? ""

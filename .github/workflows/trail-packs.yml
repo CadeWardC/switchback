@@ -15,6 +15,7 @@ on:
       - "scripts/enrich_trail_pack.py"
       - "scripts/check_official_trails.py"
       - "scripts/elevation.py"
+      - "scripts/export_open_data.py"
       - "data/parks/**"
 
 permissions:
@@ -132,11 +133,17 @@ jobs:
           PACK_VERSION=$(date -u +%Y%m%d%H%M) python3 scripts/build_trail_pack.py trails.osm.pbf "${{ matrix.region.id }}" out "${{ matrix.region.country }}" "${{ matrix.region.name }}"
           du -sh out
 
-      - name: Add what official trail lists know (names, informal trails)
+      - name: Add what official trail lists know (names, informal trails, federal trails we lack)
         # never blocks publishing: if the official lists can't be reached the pack goes out as built
         continue-on-error: true
-        timeout-minutes: 60
-        run: python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
+        timeout-minutes: 75
+        run: |
+          export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
+          python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
+
+      - name: Write the open file (GeoJSON) anyone can download
+        continue-on-error: true
+        run: python3 scripts/export_open_data.py out "${{ matrix.region.id }}" open
 
       - name: Publish
         env:
@@ -146,6 +153,12 @@ jobs:
             --title "Switchback trail packs (US)" --latest=false \
             --notes "Trails for Switchback built from OpenStreetMap (© OpenStreetMap contributors, ODbL) via Geofabrik: one file per state plus regions.json. Rebuilt monthly." || true
           for i in 1 2 3 4; do gh release upload trails-us out/* --clobber && break; sleep $((i * 15)); done
+          if ls open/*.geojson.gz > /dev/null 2>&1; then
+            gh release view trails-open > /dev/null 2>&1 || gh release create trails-open --target "${{ github.sha }}" \
+              --title "Trails, open files (GeoJSON)" --latest=false \
+              --notes "Every trail in Switchback's dataset as GeoJSON, one gzipped file per US state and Canadian province. Lines from OpenStreetMap (© OpenStreetMap contributors, ODbL) and, where OpenStreetMap has none, from the U.S. Forest Service and National Park Service (public domain). See docs/DOWNLOADS.md." || true
+            for i in 1 2 3 4; do gh release upload trails-open open/*.geojson.gz --clobber && break; sleep $((i * 15)); done
+          fi
 
   index:
     needs: pack

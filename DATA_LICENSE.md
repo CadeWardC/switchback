@@ -13,6 +13,7 @@ Where a trail carries an `official:source` tag, its official name, number or sta
 | USGS National Digital Trails | confirming trails, official names and numbers | U.S. Geological Survey, public domain |
 | USDA Forest Service, National Forest System Trails | confirming trails, official names and numbers, use | USDA Forest Service (listed as CC BY 4.0 on data.gov) |
 | National Park Service, Public Trails | confirming trails, official names | National Park Service |
+| USDA Forest Service and National Park Service (the two lists above) | **the trail's line itself**, where OpenStreetMap has no line for a trail the list says is open to hikers; such trails carry `switchback:origin` | Forest Service: CC BY 4.0 as listed on data.gov (credit the USDA Forest Service); National Park Service: U.S. federal data, public domain |
 | State, provincial and city lists named in `scripts/check_official_trails.py` | confirming trails; names only from the hand-picked lists | each publisher's open-data terms |
 | Lists from vetted government publishers found in the ArcGIS Online catalogue | confirming trails only (never names) | each publisher's terms |
 | Park trail lists in `data/parks/` | confirming that a named trail is in a park's own published list (a fact, with its source link) | facts only; no text or maps are copied |
