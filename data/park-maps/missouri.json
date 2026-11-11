@@ -15,6 +15,67 @@
     }
    ]
   },
+  "annie-and-abel-van-meter-state-park": {
+   "park": "Annie and Abel Van Meter State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-earthworks.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 408602,
+     "sha256_16": "ef97212295a9ac79"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-loess.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 400662,
+     "sha256_16": "63ee630e00a2dd18"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-memorial.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 558344,
+     "sha256_16": "5f139a561783b09a"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-moriver.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 491108,
+     "sha256_16": "137bdfdb1936c120"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-Oumessourit_bluff.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 377873,
+     "sha256_16": "9636222846510c21"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap_Oumessourit-Boardwalk.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1938018,
+     "sha256_16": "b2965ec4da3d09aa"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4VAN_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1216688,
+     "sha256_16": "02a51d05f2c060e7"
+    }
+   ]
+  },
   "august-a-busch-memorial-conservation-area": {
    "park": "August A Busch Memorial Conservation Area",
    "maps": [
@@ -86,6 +147,14 @@
      "georeferenced": true,
      "bytes": 397860,
      "sha256_16": "50cf5cb358f609b0"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/10/4BEN_Color%20Map_Final.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1860838,
+     "sha256_16": "962e3ddf7c462303"
     }
    ]
   },
@@ -255,6 +324,78 @@
      "georeferenced": false,
      "bytes": 3912979,
      "sha256_16": "48d5ba01c59a8340"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-al_foster.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 475307,
+     "sha256_16": "e2ff6413f434c70f"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-castlewood.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 574040,
+     "sha256_16": "5ad8acdb05bde9ef"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-cedar.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 429902,
+     "sha256_16": "8ae2b5899fd4ed06"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-chubb.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 436743,
+     "sha256_16": "48179a3acc7c5a21"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-grotpeter.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 493079,
+     "sha256_16": "4bd9096891a5c799"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-lone_wolf.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 411908,
+     "sha256_16": "02e421d68a89ab82"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-riverscene.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 458697,
+     "sha256_16": "a93bfb26db2fcc4f"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap_StingingNettleTrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1062685,
+     "sha256_16": "440708a1f13254f1"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/Castlewood_Event_Hosting_Guide.pdf",
+     "kind": "pdf",
+     "pages": 12,
+     "georeferenced": false,
+     "bytes": 337755,
+     "sha256_16": "b841370737c885bd"
     }
    ]
   },
@@ -305,6 +446,27 @@
      "georeferenced": true,
      "bytes": 438101,
      "sha256_16": "c993b1caa60dab06"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4CRO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1212926,
+     "sha256_16": "3544222f0fa05636"
+    }
+   ]
+  },
+  "cuivre-river-state-park": {
+   "park": "Cuivre River State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4CUI_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1011277,
+     "sha256_16": "5b316b2b959d5c81"
     }
    ]
   },
@@ -342,6 +504,14 @@
      "georeferenced": false,
      "bytes": 1535926,
      "sha256_16": "12bf01c35ec0ed34"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4CUR_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 466977,
+     "sha256_16": "a671ceb4d3893d33"
     }
    ]
   },
@@ -429,12 +599,28 @@
      "georeferenced": true,
      "bytes": 436425,
      "sha256_16": "a7f1953026526398"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4BAB_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 2351332,
+     "sha256_16": "95cbbdd57c32bc5e"
     }
    ]
   },
   "fellows-lake-recreation-area": {
    "park": "Fellows Lake Recreation Area",
    "maps": [
+    {
+     "url": "https://ozarkgreenways.org/workspace/media/uploads/greenways-regional-map-2022_3.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 357812,
+     "sha256_16": "327ec3afcf62e678"
+    },
     {
      "url": "https://ozarkgreenways.org/workspace/media/uploads/fellows_lake_trail_map_kiosk_rev16_8-5x11_print-1.jpg",
      "kind": "jpg",
@@ -585,6 +771,14 @@
      "georeferenced": true,
      "bytes": 464438,
      "sha256_16": "817fa767a0d03c7c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/05/4HAH_ColorMap_0.pdf",
+     "kind": "pdf",
+     "pages": 3,
+     "georeferenced": false,
+     "bytes": 1774292,
+     "sha256_16": "8a24cbd0e1cac5ad"
     }
    ]
   },
@@ -630,6 +824,14 @@
      "georeferenced": true,
      "bytes": 378668,
      "sha256_16": "e1876b78c5f27fb0"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4HAW_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1523246,
+     "sha256_16": "4d8b8374572787cc"
     }
    ]
   },
@@ -691,6 +893,14 @@
      "georeferenced": true,
      "bytes": 405839,
      "sha256_16": "c1c6e5d82cea413c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/05/4JOH_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 2501283,
+     "sha256_16": "2dc64fff01922ca9"
     }
    ]
   },
@@ -760,6 +970,131 @@
      "georeferenced": false,
      "bytes": 7587535,
      "sha256_16": "00928611deb015ff"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4KNO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 2847911,
+     "sha256_16": "9cd9bff11be6152f"
+    }
+   ]
+  },
+  "lake-of-the-ozarks-state-park": {
+   "park": "Lake of the Ozarks State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-aquatic-LOSP.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 476362,
+     "sha256_16": "37c9a6de221b49de"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-bluestem.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 420715,
+     "sha256_16": "1834720bbf0d110b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-coakley.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 380498,
+     "sha256_16": "ec9c15a3d8b3226e"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-fawnsridge.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 317099,
+     "sha256_16": "86eebccf9ec3d144"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-hidden.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 379756,
+     "sha256_16": "c71308cd9bdf7d1b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-honey.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 431386,
+     "sha256_16": "b85f142e0a942e67"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lake_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 462287,
+     "sha256_16": "8c96f4527e989693"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakeviewbend.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 315570,
+     "sha256_16": "f9e57063af61bd67"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-rockytop.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 376707,
+     "sha256_16": "e31a2d976293425e"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-shady.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 372748,
+     "sha256_16": "56d6709f9ac29d85"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-trailoffourwinds.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 475753,
+     "sha256_16": "924c994055754de7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-whiteoak.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 510342,
+     "sha256_16": "e07c85d9d12ec16b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-woodland.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 372136,
+     "sha256_16": "977e842093ddf030"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4LAO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1942164,
+     "sha256_16": "ca2badb5e20fc4c5"
     }
    ]
   },
@@ -797,6 +1132,14 @@
      "georeferenced": true,
      "bytes": 462547,
      "sha256_16": "9c66dafae4137656"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4LAW_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1333667,
+     "sha256_16": "760c5e847612852b"
     }
    ]
   },
@@ -871,6 +1214,14 @@
      "georeferenced": true,
      "bytes": 466886,
      "sha256_16": "e68149c275e47146"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4MER_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 3830216,
+     "sha256_16": "14b12b8d62abd5e6"
     }
    ]
   },
@@ -1035,6 +1386,14 @@
      "georeferenced": true,
      "bytes": 433684,
      "sha256_16": "98c3453059757ad5"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4ROC_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1456564,
+     "sha256_16": "4a89581569e64853"
     }
    ]
   },
@@ -1122,6 +1481,14 @@
      "georeferenced": true,
      "bytes": 401259,
      "sha256_16": "22d9c7571eac2d19"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4BAK_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1742201,
+     "sha256_16": "89362f170b4ee876"
     }
    ]
   },
@@ -1164,6 +1531,136 @@
      "georeferenced": true,
      "bytes": 385300,
      "sha256_16": "0667b70a04f407a4"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4STF_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 2002564,
+     "sha256_16": "deb48e5ebdef9c06"
+    }
+   ]
+  },
+  "st-joe-state-park": {
+   "park": "St. Joe State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-GalenaTrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1825777,
+     "sha256_16": "0a2a710f4c846392"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-hickory.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 437259,
+     "sha256_16": "4764ef0838d96289"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lakeview_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 389776,
+     "sha256_16": "c92f9f0772a53187"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-monsanto.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 407865,
+     "sha256_16": "e6981130951ce696"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-ORV.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 479762,
+     "sha256_16": "89eaefe0af375c0b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_2.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 404531,
+     "sha256_16": "e6d3033c2f310f1c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pineridge_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 528199,
+     "sha256_16": "cf83f8da1b89db61"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/06/4STJ_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 2930422,
+     "sha256_16": "8691c005322636d2"
+    }
+   ]
+  },
+  "stockton-state-park": {
+   "park": "Stockton State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lakeview_1.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 422918,
+     "sha256_16": "aa68ca45a85bc490"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-nyblad.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 493322,
+     "sha256_16": "01770fbb448b4b9c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-sortors.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 1870896,
+     "sha256_16": "421d04e22681d307"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-stocktonwater.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 403215,
+     "sha256_16": "523f3eaddce51407"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-umber.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 396979,
+     "sha256_16": "0933adf3ca8bbec1"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4STO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1630513,
+     "sha256_16": "5d41ae1909cfc946"
     }
    ]
   },
@@ -1193,6 +1690,59 @@
      "georeferenced": true,
      "bytes": 451615,
      "sha256_16": "f0a7c20c3121bba7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4TAB_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 919958,
+     "sha256_16": "9fac5d153167403c"
+    }
+   ]
+  },
+  "thousand-hills-state-park": {
+   "park": "Thousand Hills State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-CarolynBagleyHarding.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1663977,
+     "sha256_16": "cd40c1d9e1839a82"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oak.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 336782,
+     "sha256_16": "16a613250b6a311d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-redbud_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 518368,
+     "sha256_16": "9f610d1acc214add"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-thousand.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 427488,
+     "sha256_16": "5fb4d05647fe6332"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/04/4THO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1472945,
+     "sha256_16": "dd0f1fac3685a353"
     }
    ]
   },
@@ -1214,6 +1764,83 @@
      "georeferenced": false,
      "bytes": 253593,
      "sha256_16": "b9658558ec7a1ff7"
+    }
+   ]
+  },
+  "wakonda-state-park": {
+   "park": "Wakonda State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-agatelake.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 394762,
+     "sha256_16": "556020db147111f7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-agate-water.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 403238,
+     "sha256_16": "a697818b43368fa9"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-campground.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 455666,
+     "sha256_16": "027d1ebccbc5bc1d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-jasperwater.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 588458,
+     "sha256_16": "585d4beb02e19758"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-jasper-lake.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 578475,
+     "sha256_16": "9c3bf75db6ca4f4d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-quartz-lake.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 347522,
+     "sha256_16": "f5791c02725b3147"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-sand-prairie.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 557892,
+     "sha256_16": "72691410b1b8a227"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-wakonda-water.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 400298,
+     "sha256_16": "7a9d5b04917c140d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4WAK_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 6,
+     "georeferenced": false,
+     "bytes": 3240025,
+     "sha256_16": "69d27660202600eb"
     }
    ]
   },
@@ -1251,6 +1878,14 @@
      "georeferenced": true,
      "bytes": 378130,
      "sha256_16": "9286c1971efed1ef"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4WAL_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 681069,
+     "sha256_16": "cd52eda06793b575"
     }
    ]
   },
@@ -1312,6 +1947,959 @@
      "georeferenced": true,
      "bytes": 431103,
      "sha256_16": "26fa1618912078c4"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4WES_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 897155,
+     "sha256_16": "f4b982b52e9b79de"
+    }
+   ]
+  },
+  "big-lake-state-park": {
+   "park": "Big Lake State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/09/4BLA_Color%20Map_FINAL.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 222720,
+     "sha256_16": "1bee4e9148380fd5"
+    }
+   ]
+  },
+  "big-oak-tree-state-park": {
+   "park": "Big Oak Tree State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4BOA_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 325083,
+     "sha256_16": "6b9fdfdb1696b2bb"
+    }
+   ]
+  },
+  "big-sugar-creek-state-park": {
+   "park": "Big Sugar Creek State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4BSC_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1350946,
+     "sha256_16": "382ee515a0e1544f"
+    }
+   ]
+  },
+  "bryant-creek-state-park": {
+   "park": "Bryant Creek State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-PikeHollowTrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1708194,
+     "sha256_16": "dcb255025fb33060"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-PinewoodsTrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 2453167,
+     "sha256_16": "6d4e41bee96bba5e"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/09/4BRC_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 823556,
+     "sha256_16": "ed9ed4dba85b8ab1"
+    }
+   ]
+  },
+  "echo-bluff-state-park": {
+   "park": "Echo Bluff State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-painter.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 430122,
+     "sha256_16": "54f46eeed8eb97cd"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4ECB_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 792222,
+     "sha256_16": "8dc7719defcf73cc"
+    }
+   ]
+  },
+  "elephant-rocks-state-park": {
+   "park": "Elephant Rocks State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_braille.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 459339,
+     "sha256_16": "1751dbd1c861ec5b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_enginehouse.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 374883,
+     "sha256_16": "ccb4aa0c1386b2fa"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4ELE_ColorMap_0.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 465508,
+     "sha256_16": "55f164b51478382c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/ERock_TeacherGuide_03132012.pdf",
+     "kind": "pdf",
+     "pages": 22,
+     "georeferenced": false,
+     "bytes": 314145,
+     "sha256_16": "ea998130e0199237"
+    }
+   ]
+  },
+  "finger-lakes-state-park": {
+   "park": "Finger Lakes State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_kelley.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 1290662,
+     "sha256_16": "9f993945091e782b"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_ORV.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 1563932,
+     "sha256_16": "34b43c5b83dc561d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_watertrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 417010,
+     "sha256_16": "c5636633df394235"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4FIN_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 865331,
+     "sha256_16": "9b0adf2ef2eab937"
+    }
+   ]
+  },
+  "graham-cave-state-park": {
+   "park": "Graham Cave State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_fern.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 346545,
+     "sha256_16": "dba24ce5c5ed7948"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_graham.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 475761,
+     "sha256_16": "b2fd4b2e4c940979"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_indian.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 407664,
+     "sha256_16": "07bdf1093f0ce127"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_loutre.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 414654,
+     "sha256_16": "67afd6c1d807b47c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_woodland.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 405698,
+     "sha256_16": "f2f3f40c4fbc73a3"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4GRA_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 581991,
+     "sha256_16": "5cd36dcce21700d6"
+    }
+   ]
+  },
+  "grand-gulf-state-park": {
+   "park": "Grand Gulf State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4GUL_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 352754,
+     "sha256_16": "d182cf5d10efaca8"
+    }
+   ]
+  },
+  "edward-ted-and-pat-jones-confluence-point-state-park": {
+   "park": "Edward \"Ted\" and Pat Jones-Confluence Point State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4CNP_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 345020,
+     "sha256_16": "8e1ba71e901f0959"
+    }
+   ]
+  },
+  "katy-trail-state-park": {
+   "park": "Katy Trail State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-KatyTrail%20%281%29.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1020353,
+     "sha256_16": "e3df40bf736b11dc"
+    }
+   ]
+  },
+  "lewis-and-clark-state-park": {
+   "park": "Lewis and Clark State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-gosling.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 519543,
+     "sha256_16": "4712fcb71e86f770"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/4LEW_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 545643,
+     "sha256_16": "cc0d925353e51ebd"
+    }
+   ]
+  },
+  "long-branch-state-park": {
+   "park": "Long Branch State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-beetrace.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 437875,
+     "sha256_16": "22c0e8073f5096a0"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakeview-LB.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 504060,
+     "sha256_16": "31cc3486ece480f5"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-littlechariton.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 509070,
+     "sha256_16": "a1e27eaca7fef1b4"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4LON_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 896853,
+     "sha256_16": "08d001167e8a44d8"
+    }
+   ]
+  },
+  "montauk-state-park": {
+   "park": "Montauk State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-montauk.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 349397,
+     "sha256_16": "54d147f0c7b41951"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_1.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 424363,
+     "sha256_16": "322e3e9dfbf01dca"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pineridge.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 395866,
+     "sha256_16": "a46897d42d3bf0e7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/06/4MON_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1943534,
+     "sha256_16": "f5ec6b29fcea2a39"
+    }
+   ]
+  },
+  "morris-state-park": {
+   "park": "Morris State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-beech.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 386970,
+     "sha256_16": "5395af8c9c7d5121"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4MOR_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 416180,
+     "sha256_16": "cb892eda05d39bda"
+    }
+   ]
+  },
+  "onondaga-cave-state-park": {
+   "park": "Onondaga Cave State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-amphitheater_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 285176,
+     "sha256_16": "6fbd0d479766d714"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-blueheron.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 362903,
+     "sha256_16": "0e6d6677761b5066"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerrun.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 420909,
+     "sha256_16": "36e4c6d297e52003"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oakridge.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 420713,
+     "sha256_16": "4148289c37b7e6bb"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-vilander.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 377665,
+     "sha256_16": "6a9abcdd4b2edcba"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4ONO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 858969,
+     "sha256_16": "8926786040b6cda8"
+    }
+   ]
+  },
+  "pershing-state-park": {
+   "park": "Pershing State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-boardwalk_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 556493,
+     "sha256_16": "eb02a531294a212c"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-canfield.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 377938,
+     "sha256_16": "3b66034d1605e9a7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-locust.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 386966,
+     "sha256_16": "7d19f6dc0e9887e7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oakridge_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 387915,
+     "sha256_16": "81207500fd99487f"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-scout.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 529316,
+     "sha256_16": "b9a1521ef0f5d3cb"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4PRS_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 931011,
+     "sha256_16": "5fec209dc2e32d22"
+    }
+   ]
+  },
+  "pomme-de-terre-state-park": {
+   "park": "Pomme de Terre State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-cedar_1.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 606670,
+     "sha256_16": "8e4a4877e2545fd7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-indian.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 409033,
+     "sha256_16": "d454122b17efcfc4"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/4POM_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 5468025,
+     "sha256_16": "82fb1789520312d5"
+    }
+   ]
+  },
+  "roaring-river-state-park": {
+   "park": "Roaring River State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerleap.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 455555,
+     "sha256_16": "c89c35169be5b57a"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-devils_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 415563,
+     "sha256_16": "0b2d36966bacabeb"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-eagles.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1646884,
+     "sha256_16": "1e0d6240e5bf3512"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-firetower_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 928104,
+     "sha256_16": "18b3bd153dd9f919"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pibern.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 403219,
+     "sha256_16": "996ccb3402bd3f7a"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-river_1.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 414520,
+     "sha256_16": "bef00ec13095b981"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-springhouse.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 474723,
+     "sha256_16": "39594f599f5bedc7"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/4ROA_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 4155536,
+     "sha256_16": "624257109fce9285"
+    }
+   ]
+  },
+  "robertsville-state-park": {
+   "park": "Robertsville State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-losthill.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 369269,
+     "sha256_16": "1ce6e851a79b6a0d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-spice.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 402825,
+     "sha256_16": "b56b4949b93ed9cd"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4ROB_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 605787,
+     "sha256_16": "9f69f9649726b159"
+    }
+   ]
+  },
+  "don-robinson-state-park": {
+   "park": "Don Robinson State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-labarque.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 433722,
+     "sha256_16": "3301333c772a3cef"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-sandstone.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 418468,
+     "sha256_16": "b9b217b426839bac"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4DRO_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 958378,
+     "sha256_16": "b8dc204e86f02821"
+    }
+   ]
+  },
+  "rock-island-trail-state-park": {
+   "park": "Rock Island Trail State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/4RIT_BOOK_MasterPlan.pdf",
+     "kind": "pdf",
+     "pages": 57,
+     "georeferenced": false,
+     "bytes": 10888530,
+     "sha256_16": "e8c00b8654745526"
+    }
+   ]
+  },
+  "route-66-state-park": {
+   "park": "Route 66 State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-innerloop.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 405381,
+     "sha256_16": "3d62bb9c69542e87"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-outerloop.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 434368,
+     "sha256_16": "e5729ac02bb4d2d5"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-southloop.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 386383,
+     "sha256_16": "6b1b22afa72314f0"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-wtrail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 404831,
+     "sha256_16": "a3880c5306c90252"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4R66_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1222687,
+     "sha256_16": "108b61d7aadcde49"
+    }
+   ]
+  },
+  "taum-sauk-mountain-state-park": {
+   "park": "Taum Sauk Mountain State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/04/TrailMap-ozark_0_2.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 1956145,
+     "sha256_16": "0673a2c743d0505e"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-MinaSaukFalls.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 2153787,
+     "sha256_16": "a582934a66990b33"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/5TSM_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1433252,
+     "sha256_16": "79d7140c0c106bd2"
+    }
+   ]
+  },
+  "trail-of-tears-state-park": {
+   "park": "Trail of Tears State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lake_1.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 396035,
+     "sha256_16": "a185651f078c3b2f"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-nature.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 510186,
+     "sha256_16": "93717fcbd4f7ad48"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-peewah.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 437266,
+     "sha256_16": "94ddf902df20adce"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-shepard.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 386825,
+     "sha256_16": "94c124665cc0131a"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/01/trail-tears-camping-fees-2027.pdf",
+     "kind": "pdf",
+     "pages": 0,
+     "georeferenced": false,
+     "bytes": 115137,
+     "sha256_16": "6a2bff1d91465d0d"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-tears-lake-boutin-cg.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 170130,
+     "sha256_16": "642aebdcf677a188"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-tears-mississippi-cg.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": false,
+     "bytes": 114787,
+     "sha256_16": "a778c16e50a65bb3"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/07/4TRA_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1859295,
+     "sha256_16": "77f1cf73d70a0595"
+    }
+   ]
+  },
+  "harry-s-truman-state-park": {
+   "park": "Harry S Truman State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-1000.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 372230,
+     "sha256_16": "c9c62294c65f035e"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-bluff.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 369737,
+     "sha256_16": "007ae9980a9a8fce"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-western.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 509630,
+     "sha256_16": "f0f5b3ec8d36ceaf"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2026/09/4TRU_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 612463,
+     "sha256_16": "b22e663b0c1247d0"
+    }
+   ]
+  },
+  "mark-twain-state-park": {
+   "park": "Mark Twain State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-barefoot.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 459843,
+     "sha256_16": "39b25a41685534d6"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-dogwood_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 412724,
+     "sha256_16": "1eef85dc8fd5282a"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-postoak.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 399659,
+     "sha256_16": "890afe59fbbb54d5"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whiteoak_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 383493,
+     "sha256_16": "187d8782d5398a74"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whitetail.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 503484,
+     "sha256_16": "a69a2fa0fd1783c3"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/06/mark-twain-color-map.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1562534,
+     "sha256_16": "2bae3d3ec8907480"
+    }
+   ]
+  },
+  "washington-state-park": {
+   "park": "Washington State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-1000steps.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 534184,
+     "sha256_16": "0c7e6b3bc56800fc"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-opossum_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 417243,
+     "sha256_16": "2d87eafcb976b9f1"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-rockywood.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 427038,
+     "sha256_16": "6d290c827bb597b0"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4WAS_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 1047427,
+     "sha256_16": "97701e6d7111f71d"
+    }
+   ]
+  },
+  "watkins-mill-state-park": {
+   "park": "Watkins Mill State Park",
+   "maps": [
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-equestrian_0.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1957826,
+     "sha256_16": "b918f0befcf224df"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_3.pdf",
+     "kind": "pdf",
+     "pages": 1,
+     "georeferenced": true,
+     "bytes": 1482379,
+     "sha256_16": "962947b82625e2e3"
+    },
+    {
+     "url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4WAT_ColorMap.pdf",
+     "kind": "pdf",
+     "pages": 2,
+     "georeferenced": false,
+     "bytes": 705493,
+     "sha256_16": "3701b7d452dc69f0"
     }
    ]
   }

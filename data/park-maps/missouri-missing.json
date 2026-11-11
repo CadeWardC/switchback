@@ -1,0 +1,131 @@
+{
+ "note": "Trails a park's own map shows that our data (OpenStreetMap) mostly lacks: a to-do list for mapping, not trail data.",
+ "trails": [
+  {
+   "park": "Annie and Abel Van Meter State Park",
+   "trail": "MO River Overlook Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-moriver.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Dr. Edmund A. Babler Memorial State Park",
+   "trail": "Dogwood Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-dogwood.pdf",
+   "share_in_our_data": 0.19
+  },
+  {
+   "park": "Dr. Edmund A. Babler Memorial State Park",
+   "trail": "Paved Bicycle Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-pavedbike.pdf",
+   "share_in_our_data": 0.26
+  },
+  {
+   "park": "Ha Ha Tonka State Park",
+   "trail": "Big Niangua River Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-bigniangua.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Ha Ha Tonka State Park",
+   "trail": "Cedar Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-CedarTrail.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Hawn State Park",
+   "trail": "Overlook Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-overlook.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Johnson's Shut-Ins State Park",
+   "trail": "Horseshoe Glade Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-horseshoe.pdf",
+   "share_in_our_data": 0.37
+  },
+  {
+   "park": "Lake of the Ozarks State Park",
+   "trail": "White Oak Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-whiteoak.pdf",
+   "share_in_our_data": 0.04
+  },
+  {
+   "park": "Meramec State Park",
+   "trail": "Hamilton Iron Works Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-hamilton_0.pdf",
+   "share_in_our_data": 0.11
+  },
+  {
+   "park": "Sam A. Baker State Park",
+   "trail": "Paved Bicycle Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_0.pdf",
+   "share_in_our_data": 0.16
+  },
+  {
+   "park": "St. Joe State Park",
+   "trail": "Paved Bicycle Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_2.pdf",
+   "share_in_our_data": 0.15
+  },
+  {
+   "park": "Thousand Hills State Park",
+   "trail": "Oak Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oak.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Weston Bend State Park",
+   "trail": "Bear Creek Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-bearcreek.pdf",
+   "share_in_our_data": 0.1
+  },
+  {
+   "park": "Graham Cave State Park",
+   "trail": "Graham Cave Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_graham.pdf",
+   "share_in_our_data": 0.1
+  },
+  {
+   "park": "Graham Cave State Park",
+   "trail": "Woodland Way Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_woodland.pdf",
+   "share_in_our_data": 0.07
+  },
+  {
+   "park": "Montauk State Park",
+   "trail": "Paved Bicycle Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_1.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Onondaga Cave State Park",
+   "trail": "Amphitheater Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-amphitheater_0.pdf",
+   "share_in_our_data": 0.0
+  },
+  {
+   "park": "Roaring River State Park",
+   "trail": "Deer Leap Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerleap.pdf",
+   "share_in_our_data": 0.19
+  },
+  {
+   "park": "Route 66 State Park",
+   "trail": "Inner Loop Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-innerloop.pdf",
+   "share_in_our_data": 0.04
+  },
+  {
+   "park": "Mark Twain State Park",
+   "trail": "Dogwood Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-dogwood_0.pdf",
+   "share_in_our_data": 0.07
+  },
+  {
+   "park": "Mark Twain State Park",
+   "trail": "White Oak Trail",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whiteoak_0.pdf",
+   "share_in_our_data": 0.08
+  }
+ ]
+}

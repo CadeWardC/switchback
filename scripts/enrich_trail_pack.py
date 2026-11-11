@@ -17,7 +17,7 @@ ones, never the catalogue's finds), matched by shape:
 Rewrites <region-id>.trails in place (same version, same cells) and adds the counts to <region-id>.json. If the
 official lists can't be reached the pack is left as it is.
 """
-import difflib, glob, json, os, sys, zlib
+import difflib, glob, json, os, re, sys, zlib
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +63,64 @@ def park_records(region_id):
             print(f"  park record {os.path.basename(f)} couldn't be read ({ex})")
     return out
 
+def map_matches(region_id):
+    """What laying the parks' own georeferenced trail maps over our lines found (data/park-maps/<region>-matches.json,
+    written by match_park_maps.py): trail id -> {trail (the name printed on the map), park, url, share}."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "park-maps", f"{region_id}-matches.json")
+    out = {}
+    if not os.path.exists(path):
+        return out
+    for m in json.load(open(path)).get("maps", []):
+        # only maps drawn for one trail ("TrailMap-…"), and not paddling routes
+        if not m.get("trail") or not ONE_TRAIL.search(m["url"]) or WATER.search(m["trail"]):
+            continue
+        for o in m.get("ours", []):
+            if o["share"] >= 0.8 and o["on_map"] >= 0.7 and o["share"] > out.get(o["id"], {}).get("share", 0):
+                out[o["id"]] = {"trail": m["trail"], "park": m["park"], "url": m["url"], "share": o["share"]}
+    return out
+
+ONE_TRAIL = re.compile(r"trail(-|_|%20| )?map", re.I)
+WATER = re.compile(r"\b(water|aquatic|paddl\w*|canoe|kayak|float)\b", re.I)
+MOTOR = re.compile(r"\b(orv|ohv|atv|off[- ]road|motor\w*)\b", re.I)
+
+def like(ours, theirs):
+    """Our name is the map's name: the same, the map's name plus a part ("X - North Loop"), or a spelling apart."""
+    a, b = official.norm_name(ours), official.norm_name(theirs)
+    return a == b or a.startswith(b + " ") or difflib.SequenceMatcher(None, a, b).ratio() >= 0.85
+
+def apply_map(t, hit, counts):
+    """A trail one of the park's own maps shows: confirm it, and name it when it has no name of its own.
+    Returns True when the map vouches for it."""
+    tags = t.setdefault("tags", {})
+    nameless = tags.get("switchback:unnamed") == "yes" or tags.get("switchback:derived_name") == "yes"
+    same = not nameless and like(t["name"], hit["trail"])
+    if MOTOR.search(hit["trail"]):
+        # the park's map of its off-road vehicle trails: not a hike
+        if not same:
+            tags["switchback:informal"] = "yes"
+            tags["switchback:informal_reason"] = f"on the park's map of its off-road vehicle trails ({hit['trail']})"
+            counts["off-road vehicle trails (park map)"] += 1
+        return False
+    if nameless:
+        # only a name that reads like a whole trail name ("Deer Run Trail"), never a system's or a garbled one
+        if hit["share"] < 0.85 or re.search(r"\bsystem\b", hit["trail"], re.I) or \
+                not re.fullmatch(r"(?:[A-Z][\w.'’-]+ )+(?:Trail|Loop|Path|Walk|Boardwalk|Trace)", hit["trail"]):
+            return False
+        t["name"] = hit["trail"]
+        tags.pop("switchback:unnamed", None)
+        tags.pop("switchback:derived_name", None)
+        tags["official:name"] = hit["trail"]
+        counts["named from a park's map"] += 1
+    elif not same and hit["share"] < 0.9:
+        return False   # a differently named line only partly on the map's trail: say nothing
+    # (a differently named line that runs along the map's trail is confirmed but keeps its name: the name read off
+    # a map is not sure enough to show beside ours)
+    tags.setdefault("official:source", f"{hit['park']} trail map")
+    tags.setdefault("official:match", f"{round(hit['share'] * 100)}% on the park's own map of this trail")
+    tags["official:url"] = hit["url"]
+    counts["confirmed by a park's map"] += 1
+    return True
+
 def main():
     out, region_id = sys.argv[1], sys.argv[2]
     pack_path, info_path = os.path.join(out, f"{region_id}.trails"), os.path.join(out, f"{region_id}.json")
@@ -96,6 +154,7 @@ def main():
 
     counts = Counter()
     parks = park_records(region_id)
+    on_maps = map_matches(region_id)
     for t in inside:
         res = results[id(t)]
         tags = t.setdefault("tags", {})
@@ -151,7 +210,9 @@ def main():
                     tags["official:miles"] = str(hit["miles"])
                 rec.setdefault("_found", set()).add(hit["name"])
                 counts["confirmed by a park's trail list"] += 1
-        why = official.informal_reason(t, res)
+        mapped = t["id"] in on_maps and apply_map(t, on_maps[t["id"]], counts)
+        why = None if mapped else (tags.get("switchback:informal_reason") if t["id"] in on_maps and
+                                   tags.get("switchback:informal") == "yes" else None) or official.informal_reason(t, res)
         if why:
             tags["switchback:informal"] = "yes"
             tags["switchback:informal_reason"] = why

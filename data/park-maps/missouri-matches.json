@@ -1,0 +1,4202 @@
+{
+"region": "missouri",
+"pack_version": "202611102346",
+"matched": "2026-11-11",
+"note": "What laying each park's own georeferenced trail map over our lines found. Names and measurements only; made by scripts/match_park_maps.py.",
+"maps": [
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "Earthworks Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-earthworks.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wEarthworks Trail-39.274,-93.262",
+"name": "Earthworks Trail",
+"m": 2960,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "Loess Hills Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-loess.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wLoess Hills Trail-39.279,-93.260",
+"name": "Loess Hills Trail",
+"m": 3152,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "Memorial Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-memorial.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wMemorial Trail-39.262,-93.267",
+"name": "Memorial Trail",
+"m": 1277,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "MO River Overlook Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-moriver.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "Oumessourit Wetland Bluff Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-Oumessourit_bluff.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wOumessourit Wetland Bluff Trail-39.266,-93.269",
+"name": "Oumessourit Wetland Bluff Trail",
+"m": 643,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Annie and Abel Van Meter State Park",
+"trail": "Annie and Abel Van M",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap_Oumessourit-Boardwalk.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Bennett Spring State Park",
+"trail": "Bridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/TrailMap-bridge.pdf",
+"covered": 0.72,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wBridge Trail-37.722,-92.854",
+"name": "Bridge Trail",
+"m": 761,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bennett Spring State Park",
+"trail": "Natural Tunnel Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/TrailMap-natural.pdf",
+"covered": 0.59,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wNatural Tunnel Trail-37.715,-92.854",
+"name": "Natural Tunnel Trail",
+"m": 5495,
+"share": 0.86,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bennett Spring State Park",
+"trail": "Oak-Hickory Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/TrailMap-oak_hickory.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wOak-Hickory Trail-37.722,-92.855",
+"name": "Oak-Hickory Trail",
+"m": 484,
+"share": 1.0,
+"on_map": 0.86,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bennett Spring State Park",
+"trail": "Savanna Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-savanna.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSavanna Ridge Trail-37.716,-92.854",
+"name": "Savanna Ridge Trail",
+"m": 3620,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bennett Spring State Park",
+"trail": "Whistle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-whistle.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wWhistle Trail-37.734,-92.860",
+"name": "Whistle Trail",
+"m": 1407,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Big Sugar Creek Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-bigsugar.pdf",
+"covered": 0.91,
+"covered_any": 0.91,
+"ours": [
+{
+"id": "wBig Sugar Creek Trail-39.045,-90.928",
+"name": "Big Sugar Creek Trail",
+"m": 4622,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBig Sugar Creek Trail and Cuivre River Trail - North Loop-39.040,-90.935",
+"name": "Big Sugar Creek Trail and Cuivre River Trail - North Loop",
+"m": 877,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Blackhawk Point Mountain Bike Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-blackhawk.pdf",
+"covered": 0.4,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wBlackhawk Point Mountain Bike Trail-39.034,-90.954",
+"name": "Blackhawk Point Mountain Bike Trail",
+"m": 2113,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wHamilton Hollow Trail and Blackhawk Point Mountain Bike Trail-39.011,-90.939",
+"name": "Hamilton Hollow Trail and Blackhawk Point Mountain Bike Trail",
+"m": 624,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wWhite Connector 1 and Blackhawk Point Mountain Bike Trail-39.015,-90.944",
+"name": "White Connector 1 and Blackhawk Point Mountain Bike Trail",
+"m": 401,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Blazing Star Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-blazing.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wBlazing Star Trail-39.039,-90.920",
+"name": "Blazing Star Trail",
+"m": 3854,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Cuivre River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-cuivreriver.pdf",
+"covered": 0.7,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wCuivre River Trail - South Loop-39.010,-90.942",
+"name": "Cuivre River Trail - South Loop",
+"m": 8137,
+"share": 0.94,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Frenchmans Bluff Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-frenchmans.pdf",
+"covered": 0.5,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wFrenchman's Bluff Trail-39.007,-90.945",
+"name": "Frenchman's Bluff Trail",
+"m": 1031,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Hamilton Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-hamilton.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wHamilton Hollow Trail-39.012,-90.936",
+"name": "Hamilton Hollow Trail",
+"m": 848,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wHamilton Hollow Trail and Blackhawk Point Mountain Bike Trail-39.011,-90.939",
+"name": "Hamilton Hollow Trail and Blackhawk Point Mountain Bike Trail",
+"m": 624,
+"share": 0.88,
+"on_map": 0.81,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Lakeside Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-lakeside.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wLakeside Trail-39.023,-90.920",
+"name": "Lakeside Trail",
+"m": 3930,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLakeside Trail and Old Schoolhouse Trail-39.022,-90.915",
+"name": "Lakeside Trail and Old Schoolhouse Trail",
+"m": 1214,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLakeside Trail-39.019,-90.918",
+"name": "Lakeside Trail",
+"m": 952,
+"share": 0.87,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Lone Spring Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-lonespring.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wLone Spring Trail-39.072,-90.931",
+"name": "Lone Spring Trail",
+"m": 7942,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLake Trail-39.072,-90.931",
+"name": "Lake Trail",
+"m": 739,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Mossy Hill Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-mossy.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wMossy Hill Trail-39.033,-90.912",
+"name": "Mossy Hill Trail",
+"m": 918,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Old Schoolhouse Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-oldschoolhouse.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wOld Schoolhouse Trail-39.022,-90.915",
+"name": "Old Schoolhouse Trail",
+"m": 5124,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLakeside Trail and Old Schoolhouse Trail-39.022,-90.915",
+"name": "Lakeside Trail and Old Schoolhouse Trail",
+"m": 1214,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Prairie Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-prairie_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPrairie Trail-39.039,-90.920",
+"name": "Prairie Trail",
+"m": 437,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Big Sugar Creek Wild Area",
+"trail": "Turkey Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-turkey.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wTurkey Hollow Trail-39.015,-90.923",
+"name": "Turkey Hollow Trail",
+"m": 1242,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Binder Memorial Park",
+"trail": "Greenway",
+"url": "https://www.jcparks.com/wp-content/uploads/Binder_Map07292021.pdf",
+"covered": 0.95,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wTwisted Sister-38.599,-92.302",
+"name": "Twisted Sister",
+"m": 5972,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wGravy Train-38.603,-92.305",
+"name": "Gravy Train",
+"m": 1430,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wEasy Street-38.599,-92.308",
+"name": "Easy Street",
+"m": 481,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Al Foster Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-al_foster.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wAl Foster Trail-38.547,-90.558",
+"name": "Al Foster Trail",
+"m": 8404,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Castlewood Loop Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-castlewood.pdf",
+"covered": 0.87,
+"covered_any": 0.87,
+"ours": [
+{
+"id": "wCastlewood Loop-38.539,-90.560",
+"name": "Castlewood Loop",
+"m": 4428,
+"share": 0.89,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Cedar Bluff Loop",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-cedar.pdf",
+"covered": 0.78,
+"covered_any": 0.8,
+"ours": [
+{
+"id": "wCedar Bluff Trail-38.541,-90.573",
+"name": "Cedar Bluff Trail",
+"m": 3772,
+"share": 0.84,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Chubb Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-chubb.pdf",
+"covered": 0.0,
+"covered_any": 0.95,
+"ours": []
+},
+{
+"park": "Castlewood State Park",
+"trail": "Grotpeter Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-grotpeter.pdf",
+"covered": 0.96,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wGrotpeter Trail-38.554,-90.537",
+"name": "Grotpeter Trail",
+"m": 7112,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Lone Wolf Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-lone_wolf.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wLone Wolf Trail-38.548,-90.545",
+"name": "Lone Wolf Trail",
+"m": 2569,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Riverscene Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-riverscene.pdf",
+"covered": 0.67,
+"covered_any": 0.81,
+"ours": [
+{
+"id": "wRiverscene Trail-38.547,-90.537",
+"name": "Riverscene Trail",
+"m": 3068,
+"share": 0.89,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wWhite Connector 7-38.548,-90.542",
+"name": "White Connector 7",
+"m": 967,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Castlewood State Park",
+"trail": "Stinging Nettle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap_StingingNettleTrail.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wStinging Nettle Trail-38.536,-90.588",
+"name": "Stinging Nettle Trail",
+"m": 3871,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Crowder State Park",
+"trail": "Redbud Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-redbud.pdf",
+"covered": 0.92,
+"covered_any": 0.92,
+"ours": [
+{
+"id": "wRedbud Trail-40.090,-93.671",
+"name": "Redbud Trail",
+"m": 2575,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wRedbud Trail-40.089,-93.668",
+"name": "Redbud Trail",
+"m": 961,
+"share": 0.9,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Crowder State Park",
+"trail": "River Forks Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-riverforks.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wRiver Forks Trail-40.095,-93.659",
+"name": "River Forks Trail",
+"m": 3286,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Crowder State Park",
+"trail": "Tall Oaks Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-talloaks.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wTall Oaks Trail-40.090,-93.673",
+"name": "Tall Oaks Trail",
+"m": 7466,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Crowder State Park",
+"trail": "Thompson River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-thompson.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wThompson River Trail - North Loop-40.112,-93.693",
+"name": "Thompson River Trail - North Loop",
+"m": 5944,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wThompson River Trail - South Loop-40.103,-93.685",
+"name": "Thompson River Trail - South Loop",
+"m": 5601,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Current River State Park",
+"trail": "Centennial Bluff Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-centennial.pdf",
+"covered": 0.78,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCentennial Bluff Trail-37.326,-91.436",
+"name": "Centennial Bluff Trail",
+"m": 2038,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Current River State Park",
+"trail": "Jones Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-jones.pdf",
+"covered": 0.81,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wJones Hollow Trail-37.320,-91.430",
+"name": "Jones Hollow Trail",
+"m": 4841,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Current River State Park",
+"trail": "Ninebark Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-ninebark.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wNinebark Trail-37.328,-91.442",
+"name": "Ninebark Trail",
+"m": 2437,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wNinebark Trail-37.321,-91.440",
+"name": "Ninebark Trail",
+"m": 864,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Daniel Boone Conservation Area",
+"trail": "TOWER RD",
+"url": "https://mdc.mo.gov/sites/default/files/2023-04/4603map_0.pdf",
+"covered": 0.0,
+"covered_any": 0.01,
+"ours": []
+},
+{
+"park": "Devils Backbone Wilderness",
+"trail": "Devils Backbone Wilderness Trails",
+"url": "https://www.fs.usda.gov/sites/nfs/files/r09/marktwain/publication/Mark%20Twain%20NF%20-%20Devils%20Backbone%20Wilderness%20Trails%20Map.pdf",
+"covered": 0.11,
+"covered_any": 0.14,
+"ours": [
+{
+"id": "wRidge Runner Trail / Ozark Trail - North Fork-36.826,-92.064",
+"name": "Ridge Runner Trail / Ozark Trail - North Fork",
+"m": 10199,
+"share": 1.0,
+"on_map": 0.61,
+"unnamed": false
+},
+{
+"id": "wRidge Runner Trail-36.772,-92.117",
+"name": "Ridge Runner Trail",
+"m": 6148,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wRacoon Hollow-36.768,-92.177",
+"name": "Racoon Hollow",
+"m": 5265,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wMcGarr Ridge Trail / Ozark Trail - North Fork Section-36.761,-92.132",
+"name": "McGarr Ridge Trail / Ozark Trail - North Fork Section",
+"m": 4928,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBackbone Trail-36.742,-92.143",
+"name": "Backbone Trail",
+"m": 2228,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Dogwood Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-dogwood.pdf",
+"covered": 0.0,
+"covered_any": 0.19,
+"ours": []
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Equestrian Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-equestrian.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wEquestrian Trail-38.613,-90.695",
+"name": "Equestrian Trail",
+"m": 14326,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Hawthorn Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-hawthorn.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wHawthorn Trail-38.616,-90.707",
+"name": "Hawthorn Trail",
+"m": 1870,
+"share": 0.98,
+"on_map": 0.98,
+"unnamed": false
+}
+]
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Paved Bicycle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-pavedbike.pdf",
+"covered": 0.0,
+"covered_any": 0.26,
+"ours": []
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Virginia Day Memorial Nature Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-virginia.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "r14180489",
+"name": "Virginia Day Memorial Nature Trail",
+"m": 2195,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Dr. Edmund A. Babler Memorial State Park",
+"trail": "Woodbine Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-woodbine.pdf",
+"covered": 0.83,
+"covered_any": 0.87,
+"ours": [
+{
+"id": "wWoodbine Trail-38.623,-90.698",
+"name": "Woodbine Trail",
+"m": 1273,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wWoodbine Trail-38.613,-90.695",
+"name": "Woodbine Trail",
+"m": 1280,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Acorn Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-acorn.pdf",
+"covered": 0.7,
+"covered_any": 0.89,
+"ours": [
+{
+"id": "wAcorn Trail-37.971,-92.759",
+"name": "Acorn Trail",
+"m": 797,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Big Niangua River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-bigniangua.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Boulder Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-boulder.pdf",
+"covered": 0.88,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBoulder Ridge Trail-37.972,-92.776",
+"name": "Boulder Ridge Trail",
+"m": 1781,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Castle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-castle.pdf",
+"covered": 0.0,
+"covered_any": 0.99,
+"ours": []
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Cedar Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-CedarTrail.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Colosseum Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-colosseum.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wColosseum Trail-37.975,-92.765",
+"name": "Colosseum Trail",
+"m": 1037,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Dell Rim Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-dellrim.pdf",
+"covered": 0.91,
+"covered_any": 0.91,
+"ours": [
+{
+"id": "wDell Rim Trail-37.975,-92.767",
+"name": "Dell Rim Trail",
+"m": 982,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Devils Kitchen Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-devils.pdf",
+"covered": 0.63,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wDevil's Kitchen Trail-37.973,-92.769",
+"name": "Devil's Kitchen Trail",
+"m": 1440,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Island Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-island.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wIsland Trail-37.974,-92.772",
+"name": "Island Trail",
+"m": 1289,
+"share": 1.0,
+"on_map": 0.95,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-lake.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wLake Trail-37.976,-92.770",
+"name": "Lake Trail",
+"m": 678,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Oak Woodland Interpretive Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-oakwoodland.pdf",
+"covered": 0.74,
+"covered_any": 0.74,
+"ours": [
+{
+"id": "wDevil's Kitchen Trail-37.973,-92.769",
+"name": "Devil's Kitchen Trail",
+"m": 1440,
+"share": 0.91,
+"on_map": 0.09,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Quarry Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-quarry.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wQuarry Trail-37.977,-92.773",
+"name": "Quarry Trail",
+"m": 2690,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLake Trail-37.976,-92.770",
+"name": "Lake Trail",
+"m": 678,
+"share": 0.8,
+"on_map": 0.75,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Spring Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-spring_0.pdf",
+"covered": 0.94,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "wSpring Trail-37.974,-92.767",
+"name": "Spring Trail",
+"m": 2359,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Ha Ha Tonka State Park",
+"trail": "Turkey Pen Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-turkey_0.pdf",
+"covered": 0.96,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wTurkey Pen Hollow Trail-37.963,-92.770",
+"name": "Turkey Pen Hollow Trail",
+"m": 12934,
+"share": 0.95,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBackpack Camp Spur-37.963,-92.751",
+"name": "Backpack Camp Spur",
+"m": 495,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Hawn State Park",
+"trail": "Overlook Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-overlook.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Hawn State Park",
+"trail": "Pickle Creek Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-pickle.pdf",
+"covered": 0.94,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "wPickle Creek Trail-37.830,-90.231",
+"name": "Pickle Creek Trail",
+"m": 1279,
+"share": 0.86,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Hawn State Park",
+"trail": "Whispering Pine Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-whispering.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wWhispering Pine Trail - North Loop-37.829,-90.230",
+"name": "Whispering Pine Trail - North Loop",
+"m": 9892,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Hawn State Park",
+"trail": "White Oaks Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-whiteoaks.pdf",
+"covered": 0.99,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWhite Oaks Trail-37.833,-90.240",
+"name": "White Oaks Trail",
+"m": 4620,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Johnson's Shut-Ins State Park",
+"trail": "Black River Trail System",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-blackriver.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wBlack River Trail System-37.540,-90.844",
+"name": "Black River Trail System",
+"m": 3258,
+"share": 0.86,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBlack River Trail System-37.560,-90.852",
+"name": "Black River Trail System",
+"m": 2839,
+"share": 0.95,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Johnson's Shut-Ins State Park",
+"trail": "Campground Trail System",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-campground.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCampground Trail System-37.561,-90.866",
+"name": "Campground Trail System",
+"m": 2878,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wCampground Trail System-37.560,-90.852",
+"name": "Campground Trail System",
+"m": 1350,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wCampground Trail System-37.560,-90.866",
+"name": "Campground Trail System",
+"m": 438,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Johnson's Shut-Ins State Park",
+"trail": "Horseshoe Glade Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-horseshoe.pdf",
+"covered": 0.37,
+"covered_any": 0.37,
+"ours": [
+{
+"id": "wHorseshoe Glade Trail-37.535,-90.846",
+"name": "Horseshoe Glade Trail",
+"m": 773,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Johnson's Shut-Ins State Park",
+"trail": "Scour Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-scour.pdf",
+"covered": 0.0,
+"covered_any": 0.85,
+"ours": []
+},
+{
+"park": "Johnson's Shut-Ins State Park",
+"trail": "Shut-Ins Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-shutins_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wShut-Ins Trail-37.539,-90.838",
+"name": "Shut-Ins Trail",
+"m": 3779,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "Buteo Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-ButeoTrail.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wButeo Trail-38.750,-93.581",
+"name": "Buteo Trail",
+"m": 1666,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "Clearfork W",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-ClearforkTrail.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wClearfork Woodland Trail-38.744,-93.584",
+"name": "Clearfork Woodland Trail",
+"m": 1016,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "Discovery Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-DiscoveryTrail.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wDiscovery Trail-38.753,-93.583",
+"name": "Discovery Trail",
+"m": 1240,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "Hawk Nest Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-HawkNest.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wHawk Nest Trail-38.750,-93.582",
+"name": "Hawk Nest Trail",
+"m": 2558,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "McAdoo Trail System",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-McAdooTrail.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wMcAdoo Trail - Yellow Loop-38.742,-93.626",
+"name": "McAdoo Trail - Yellow Loop",
+"m": 6206,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wSpirit Trail and McAdoo Trail-38.742,-93.626",
+"name": "Spirit Trail and McAdoo Trail",
+"m": 2051,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "North Loop Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-NorthLoopTrail.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wNorth Loop Trail-38.753,-93.581",
+"name": "North Loop Trail",
+"m": 3025,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Knob Noster State Park",
+"trail": "Opossum Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/TrailMap-Opossum.pdf",
+"covered": 0.69,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wOpossum Hollow - Red Trail, Back End-38.750,-93.615",
+"name": "Opossum Hollow - Red Trail, Back End",
+"m": 3416,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wOposum Hollow - Red Trail, South-38.753,-93.608",
+"name": "Oposum Hollow - Red Trail, South",
+"m": 2514,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wOpsum Hollow - Red Trail, Main Hill-38.754,-93.604",
+"name": "Opsum Hollow - Red Trail, Main Hill",
+"m": 588,
+"share": 0.95,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Aquatic Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-aquatic-LOSP.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Bluestem Knoll Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-bluestem.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBluestem Knoll Trail-38.115,-92.562",
+"name": "Bluestem Knoll Trail",
+"m": 1986,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Coakley Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-coakley.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCoakley Hollow Trail-38.054,-92.583",
+"name": "Coakley Hollow Trail",
+"m": 1498,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Fawns Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-fawnsridge.pdf",
+"covered": 0.89,
+"covered_any": 0.89,
+"ours": [
+{
+"id": "wFawn's Ridge Trail-38.082,-92.568",
+"name": "Fawn's Ridge Trail",
+"m": 2308,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Hidden Springs Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-hidden.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wHidden Springs Trail-38.083,-92.562",
+"name": "Hidden Springs Trail",
+"m": 3637,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Honey Run Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-honey.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wHoney Run Trail - North Loop-38.069,-92.615",
+"name": "Honey Run Trail - North Loop",
+"m": 6710,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wHoney Run Trail - Upland Flatwoods Section-38.067,-92.596",
+"name": "Honey Run Trail - Upland Flatwoods Section",
+"m": 4954,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wHoney Run Trail - South Loop-38.065,-92.615",
+"name": "Honey Run Trail - South Loop",
+"m": 4299,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lake_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wLake Trail-38.129,-92.619",
+"name": "Lake Trail",
+"m": 1964,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Lake View Bend Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakeviewbend.pdf",
+"covered": 0.92,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "wLake View Bend Trail-38.076,-92.569",
+"name": "Lake View Bend Trail",
+"m": 3146,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Rocky Top Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-rockytop.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wRocky Top Trail-38.113,-92.668",
+"name": "Rocky Top Trail",
+"m": 4050,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Shady Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-shady.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wShady Ridge Trail-38.116,-92.668",
+"name": "Shady Ridge Trail",
+"m": 1525,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Trail of Four Winds",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-trailoffourwinds.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wTrail of Four Winds - South Loop-38.113,-92.545",
+"name": "Trail of Four Winds - South Loop",
+"m": 18253,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "White Oak Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-whiteoak.pdf",
+"covered": 0.0,
+"covered_any": 0.04,
+"ours": []
+},
+{
+"park": "Lake of the Ozarks State Park",
+"trail": "Woodland Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-woodland.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWoodland Trail-38.117,-92.564",
+"name": "Woodland Trail",
+"m": 4742,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake Wappapello State Park",
+"trail": "Allison Cemetery Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-allison.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wAllison Cemetery Trail-36.943,-90.316",
+"name": "Allison Cemetery Trail",
+"m": 6110,
+"share": 0.93,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wAllison Cemetery Trail and Lake View Trail-36.937,-90.322",
+"name": "Allison Cemetery Trail and Lake View Trail",
+"m": 723,
+"share": 0.87,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake Wappapello State Park",
+"trail": "Asher Creek Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-asher.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wAsher Creek Trail-36.938,-90.336",
+"name": "Asher Creek Trail",
+"m": 3208,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wAsher Creek Trail-36.939,-90.345",
+"name": "Asher Creek Trail",
+"m": 608,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLake Wappapello Trail and Asher Creek Trail-36.944,-90.343",
+"name": "Lake Wappapello Trail and Asher Creek Trail",
+"m": 486,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake Wappapello State Park",
+"trail": "Lake View Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakeview.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wAllison Cemetery Trail and Lake View Trail-36.937,-90.322",
+"name": "Allison Cemetery Trail and Lake View Trail",
+"m": 723,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLake View Trail-36.936,-90.320",
+"name": "Lake View Trail",
+"m": 638,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Lake Wappapello State Park",
+"trail": "Lake Wappapello Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakewapp.pdf",
+"covered": 0.9,
+"covered_any": 0.9,
+"ours": [
+{
+"id": "r21357644",
+"name": "Lake Wappapello Trail",
+"m": 20499,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wAsher Creek Trail-36.939,-90.345",
+"name": "Asher Creek Trail",
+"m": 608,
+"share": 0.91,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLake Wappapello Trail and Asher Creek Trail-36.944,-90.343",
+"name": "Lake Wappapello Trail and Asher Creek Trail",
+"m": 486,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "Bluff View Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-bluffview.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBluff View Trail-38.217,-91.092",
+"name": "Bluff View Trail",
+"m": 2082,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "Deer Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerhollow.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wDeer Hollow Trail-38.218,-91.092",
+"name": "Deer Hollow Trail",
+"m": 1981,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "Hamilton Iron Works Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-hamilton_0.pdf",
+"covered": 0.0,
+"covered_any": 0.11,
+"ours": []
+},
+{
+"park": "Meramec State Park",
+"trail": "Natural Wonders Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-natural_0.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wNatural Wonders Trail-38.206,-91.102",
+"name": "Natural Wonders Trail",
+"m": 1690,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-river_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wRiver Trail-38.218,-91.081",
+"name": "River Trail",
+"m": 925,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "Walking Fern Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-walkingfern.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWalking Fern Trail-38.229,-91.083",
+"name": "Walking Fern Trail",
+"m": 831,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Meramec State Park",
+"trail": "Wilderness Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-wilderness.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wWilderness Trail-38.213,-91.093",
+"name": "Wilderness Trail",
+"m": 12977,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Coyote Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-coyote.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wCoyote Trail-37.521,-94.571",
+"name": "Coyote Trail",
+"m": 5302,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wCoyote Trail-37.527,-94.577",
+"name": "Coyote Trail",
+"m": 1074,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wDrovers Trail and Coyote Trail-37.527,-94.570",
+"name": "Drovers Trail and Coyote Trail",
+"m": 572,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Gayfeather Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-gayfeather.pdf",
+"covered": 0.99,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wGayfeather Trail-37.520,-94.577",
+"name": "Gayfeather Trail",
+"m": 3216,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Nature Center Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-naturecenter.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wNature Center Interpretive Trail-37.525,-94.571",
+"name": "Nature Center Interpretive Trail",
+"m": 550,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Path of the Earth People",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pathoftheearthpeople.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wPath of the Earth People-37.505,-94.553",
+"name": "Path of the Earth People",
+"m": 3008,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Path of the Sky People",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pathoftheskypeople.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPath of the Sky People-37.512,-94.531",
+"name": "Path of the Sky People",
+"m": 2708,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Prairie State Park",
+"trail": "Sandstone Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-sandstone_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSandstone Trail-37.518,-94.535",
+"name": "Sandstone Trail",
+"m": 6496,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Deer Run Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerrun_0.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wDeer Run Trail-38.883,-92.334",
+"name": "Deer Run Trail",
+"m": 5930,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Devils Icebox Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-devilsicebox.pdf",
+"covered": 0.93,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSpur-38.872,-92.326",
+"name": "Spur",
+"m": 738,
+"share": 0.82,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wDevil's Icebox Trail-38.873,-92.327",
+"name": "Devil's Icebox Trail",
+"m": 562,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Grassland Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-grassland.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wGrassland Trail-38.866,-92.322",
+"name": "Grassland Trail",
+"m": 3639,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "High Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-highridge.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wHigh Ridge Trail-38.876,-92.324",
+"name": "High Ridge Trail",
+"m": 2715,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Karst Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-karst.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wKarst Trail-38.864,-92.303",
+"name": "Karst Trail",
+"m": 2782,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Sinkhole Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-sinkhole.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wSinkhole Trail-38.873,-92.326",
+"name": "Sinkhole Trail",
+"m": 2388,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rock Bridge Memorial State Park",
+"trail": "Spring Brook Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-springbrook.pdf",
+"covered": 0.92,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wSpring Brook Trail-38.877,-92.336",
+"name": "Spring Brook Trail",
+"m": 4872,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wSpur-38.875,-92.327",
+"name": "Spur",
+"m": 999,
+"share": 0.92,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Rudolf Bennitt Conservation Area",
+"trail": "C.R. 140",
+"url": "https://mdc.mo.gov/sites/default/files/2024-09/6214map_0.pdf",
+"covered": 0.0,
+"covered_any": 0.07,
+"ours": []
+},
+{
+"park": "Sam A. Baker State Park",
+"trail": "Fire Tower Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-firetower.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wFire Tower Trail-37.253,-90.505",
+"name": "Fire Tower Trail",
+"m": 3057,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Sam A. Baker State Park",
+"trail": "Mudlick Equestrian Hike Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-mudlickeqhike.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wMudlick Equestrian and Hike Trail-37.257,-90.524",
+"name": "Mudlick Equestrian and Hike Trail",
+"m": 18063,
+"share": 0.94,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wMudlick Equestrian and Hike Trail-37.266,-90.499",
+"name": "Mudlick Equestrian and Hike Trail",
+"m": 6096,
+"share": 0.92,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Sam A. Baker State Park",
+"trail": "Mudlick Hike Only Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-mudlickhikeonly.pdf",
+"covered": 0.81,
+"covered_any": 0.92,
+"ours": [
+{
+"id": "wMudlick Hike Only Trail-37.241,-90.517",
+"name": "Mudlick Hike Only Trail",
+"m": 8118,
+"share": 0.86,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wMudlick Hike Only Trail-37.262,-90.511",
+"name": "Mudlick Hike Only Trail",
+"m": 576,
+"share": 0.87,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Sam A. Baker State Park",
+"trail": "Paved Bicycle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_0.pdf",
+"covered": 0.0,
+"covered_any": 0.16,
+"ours": []
+},
+{
+"park": "Sam A. Baker State Park",
+"trail": "Shut-Ins Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-shutins.pdf",
+"covered": 0.0,
+"covered_any": 0.79,
+"ours": []
+},
+{
+"park": "St. Francois State Park",
+"trail": "ooner's Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/Trail%20Map-mooners.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wMooner's Hollow Trail-37.970,-90.533",
+"name": "Mooner's Hollow Trail",
+"m": 4730,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Francois State Park",
+"trail": "Pike Run Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pikerun.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPike Run Trail - South Loop-37.962,-90.531",
+"name": "Pike Run Trail - South Loop",
+"m": 9313,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPike Run Trail - North Loop-37.981,-90.519",
+"name": "Pike Run Trail - North Loop",
+"m": 6744,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPike Run Trail - Access Spur-37.966,-90.512",
+"name": "Pike Run Trail - Access Spur",
+"m": 1911,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPike Run Trail-37.959,-90.533",
+"name": "Pike Run Trail",
+"m": 431,
+"share": 0.95,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Francois State Park",
+"trail": "Swimming Deer Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-swimming.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wSwimming Deer Trail-37.956,-90.533",
+"name": "Swimming Deer Trail",
+"m": 4671,
+"share": 0.99,
+"on_map": 0.98,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Galena Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-GalenaTrail.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wGalena Trail-37.808,-90.504",
+"name": "Galena Trail",
+"m": 12436,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Hickory Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-hickory.pdf",
+"covered": 0.66,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wHickory Ridge Trail-37.788,-90.493",
+"name": "Hickory Ridge Trail",
+"m": 3784,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Lakeview Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lakeview_0.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wLakeview Trail-37.810,-90.501",
+"name": "Lakeview Trail",
+"m": 1874,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLakeview Trail-37.807,-90.505",
+"name": "Lakeview Trail",
+"m": 982,
+"share": 0.91,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Monsanto Lake Water Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-monsanto.pdf",
+"covered": 0.0,
+"covered_any": 0.03,
+"ours": []
+},
+{
+"park": "St. Joe State Park",
+"trail": "ORV Trail System",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-ORV.pdf",
+"covered": 0.57,
+"covered_any": 0.57,
+"ours": [
+{
+"id": "u37.81808,-90.47583|37.82213,-90.49557",
+"name": "St. Joe State Park path",
+"m": 4358,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80404,-90.48684|37.82387,-90.48882",
+"name": "St. Joe State Park path",
+"m": 2546,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82431,-90.51094|37.82466,-90.49237",
+"name": "St. Joe State Park path",
+"m": 2280,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80772,-90.48103|37.81460,-90.49932",
+"name": "St. Joe State Park path",
+"m": 2207,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81789,-90.51134|37.82458,-90.49525",
+"name": "St. Joe State Park path",
+"m": 2064,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80886,-90.47389|37.80953,-90.48727",
+"name": "St. Joe State Park path",
+"m": 1746,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81761,-90.51146|37.82987,-90.52025",
+"name": "St. Joe State Park path",
+"m": 1699,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81340,-90.49719|37.81533,-90.48850",
+"name": "St. Joe State Park path",
+"m": 1656,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82324,-90.51853|37.83037,-90.51164",
+"name": "St. Joe State Park path",
+"m": 1580,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81452,-90.47703|37.81728,-90.48592",
+"name": "St. Joe State Park path",
+"m": 1441,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82397,-90.51691|37.82659,-90.51973",
+"name": "St. Joe State Park path",
+"m": 1405,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81706,-90.49263|37.82302,-90.48140",
+"name": "St. Joe State Park path",
+"m": 1266,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82012,-90.50569|37.82437,-90.49527",
+"name": "St. Joe State Park path",
+"m": 1215,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81487,-90.50174|37.81988,-90.50520",
+"name": "St. Joe State Park path",
+"m": 1176,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81756,-90.48282|37.82535,-90.48393",
+"name": "St. Joe State Park path",
+"m": 1113,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81951,-90.51527|37.82097,-90.51502",
+"name": "St. Joe State Park path",
+"m": 1040,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82158,-90.50587|37.82264,-90.51072",
+"name": "St. Joe State Park path",
+"m": 1005,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80734,-90.49775|37.80940,-90.48863",
+"name": "St. Joe State Park path",
+"m": 1003,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82469,-90.51043|37.82614,-90.50485",
+"name": "St. Joe State Park path",
+"m": 991,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.82506,-90.51126|37.82730,-90.51985",
+"name": "St. Joe State Park path",
+"m": 981,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81321,-90.49562|37.81330,-90.49125",
+"name": "St. Joe State Park path",
+"m": 968,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81498,-90.50117|37.81793,-90.49693",
+"name": "St. Joe State Park path",
+"m": 959,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81599,-90.49574|37.82305,-90.49358",
+"name": "St. Joe State Park path",
+"m": 922,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80512,-90.49005|37.80799,-90.48125",
+"name": "St. Joe State Park path",
+"m": 919,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81533,-90.49895|37.82342,-90.50003",
+"name": "St. Joe State Park path",
+"m": 909,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81934,-90.51068|37.82203,-90.51736",
+"name": "St. Joe State Park path",
+"m": 901,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80780,-90.47832|37.81210,-90.47270",
+"name": "St. Joe State Park path",
+"m": 890,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81713,-90.49090|37.82376,-90.49404",
+"name": "St. Joe State Park path",
+"m": 882,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.81006,-90.48945|37.81091,-90.49827",
+"name": "St. Joe State Park path",
+"m": 871,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+},
+{
+"id": "u37.80818,-90.48142|37.81431,-90.47817",
+"name": "St. Joe State Park path",
+"m": 813,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": true
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Paved Bicycle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_2.pdf",
+"covered": 0.03,
+"covered_any": 0.15,
+"ours": [
+{
+"id": "wWhite Connector 4-37.802,-90.493",
+"name": "White Connector 4",
+"m": 1186,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "St. Joe State Park",
+"trail": "Pine Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pineridge_0.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wPine Ridge Trail-37.801,-90.530",
+"name": "Pine Ridge Trail",
+"m": 9654,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPine Ridge Trail-37.776,-90.486",
+"name": "Pine Ridge Trail",
+"m": 6442,
+"share": 0.91,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Stockton State Park",
+"trail": "Lakeview Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lakeview_1.pdf",
+"covered": 0.83,
+"covered_any": 0.83,
+"ours": [
+{
+"id": "wLakeview Trail-37.625,-93.756",
+"name": "Lakeview Trail",
+"m": 11088,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wUmber Ridge Trail-37.628,-93.753",
+"name": "Umber Ridge Trail",
+"m": 2238,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLakeview Trail-37.608,-93.741",
+"name": "Lakeview Trail",
+"m": 506,
+"share": 0.89,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Stockton State Park",
+"trail": "Nyblad Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-nyblad.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wNyblad Trail-37.610,-93.740",
+"name": "Nyblad Trail",
+"m": 928,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Stockton State Park",
+"trail": "Umber Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-umber.pdf",
+"covered": 0.79,
+"covered_any": 0.87,
+"ours": [
+{
+"id": "wUmber Ridge Trail-37.628,-93.753",
+"name": "Umber Ridge Trail",
+"m": 2238,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Table Rock State Park",
+"trail": "Chinquapin Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-chinquapin.pdf",
+"covered": 0.87,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wChinquapin Trail-36.583,-93.310",
+"name": "Chinquapin Trail",
+"m": 1411,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Table Rock State Park",
+"trail": "Table Rock Lakeshore Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lakeshore.pdf",
+"covered": 0.99,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "r18083328",
+"name": "Table Rock Lakeshore Trail",
+"m": 3976,
+"share": 0.91,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Table Rock State Park",
+"trail": "White River Valley Trail System",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whiteriver.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWhite River Valley Trail System - Blue Loop-36.592,-93.305",
+"name": "White River Valley Trail System - Blue Loop",
+"m": 5502,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wWhite River Valley Trail System - Red Loop-36.591,-93.313",
+"name": "White River Valley Trail System - Red Loop",
+"m": 4771,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wFeature Spur-36.591,-93.310",
+"name": "Feature Spur",
+"m": 559,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Thousand Hills State Park",
+"trail": "Carolyn Bagley Harding Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-CarolynBagleyHarding.pdf",
+"covered": 0.88,
+"covered_any": 0.88,
+"ours": [
+{
+"id": "wCarolyn Bagley Harding Trail-40.196,-92.646",
+"name": "Carolyn Bagley Harding Trail",
+"m": 1038,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wCarolyn Bagley Harding Trail-40.190,-92.642",
+"name": "Carolyn Bagley Harding Trail",
+"m": 973,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Thousand Hills State Park",
+"trail": "Oak Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oak.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Thousand Hills State Park",
+"trail": "Red Bud Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-redbud_0.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wRed Bud Trail-40.178,-92.652",
+"name": "Red Bud Trail",
+"m": 1956,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Thousand Hills State Park",
+"trail": "Thousand Hills Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-thousand.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "r21039912",
+"name": "Thousand Hills Trail - South Route",
+"m": 17597,
+"share": 0.87,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Agate Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-agatelake.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wAgate Lake Trail-40.010,-91.508",
+"name": "Agate Lake Trail",
+"m": 5034,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wJasper Lake Trail and Agate Lake Trail-40.012,-91.505",
+"name": "Jasper Lake Trail and Agate Lake Trail",
+"m": 568,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Agate Water Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-agate-water.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Wakonda State Park",
+"trail": "Campground Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-campground.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCampground Trail-40.009,-91.516",
+"name": "Campground Trail",
+"m": 668,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Jasper Water Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-jasperwater.pdf",
+"covered": 0.0,
+"covered_any": 0.05,
+"ours": []
+},
+{
+"park": "Wakonda State Park",
+"trail": "Jasper Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-jasper-lake.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wJasper Lake Trail-40.012,-91.505",
+"name": "Jasper Lake Trail",
+"m": 2505,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wJasper Lake Trail and Agate Lake Trail-40.012,-91.505",
+"name": "Jasper Lake Trail and Agate Lake Trail",
+"m": 568,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Quartz Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-quartz-lake.pdf",
+"covered": 0.95,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wQuartz Lake Trail-40.005,-91.515",
+"name": "Quartz Lake Trail",
+"m": 445,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Sand Prairie Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-sand-prairie.pdf",
+"covered": 0.93,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSand Prairie Trail-40.005,-91.510",
+"name": "Sand Prairie Trail",
+"m": 1797,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wakonda State Park",
+"trail": "Wakonda Water Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-wakonda-water.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Wallace State Park",
+"trail": "Deer Run Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-deerrun.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wDeer Run Trail - Red Loop-39.656,-94.215",
+"name": "Deer Run Trail - Red Loop",
+"m": 2518,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wallace State Park",
+"trail": "Skunk Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-skunk.pdf",
+"covered": 0.94,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wSkunk Hollow Trail-39.655,-94.216",
+"name": "Skunk Hollow Trail",
+"m": 2134,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wallace State Park",
+"trail": "Old Quarry Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-oldquarry.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wOld Quarry Trail-39.657,-94.209",
+"name": "Old Quarry Trail",
+"m": 2006,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Wallace State Park",
+"trail": "Rocky Ford Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/09/trail-map-rocky.pdf",
+"covered": 0.81,
+"covered_any": 0.85,
+"ours": [
+{
+"id": "wRocky Ford Trail-39.659,-94.216",
+"name": "Rocky Ford Trail",
+"m": 1070,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Weston Bend State Park",
+"trail": "Bear Creek Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-bearcreek.pdf",
+"covered": 0.0,
+"covered_any": 0.1,
+"ours": []
+},
+{
+"park": "Weston Bend State Park",
+"trail": "Harpst Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-harpst.pdf",
+"covered": 0.89,
+"covered_any": 0.89,
+"ours": [
+{
+"id": "wHarpst Trail-39.388,-94.879",
+"name": "Harpst Trail",
+"m": 1143,
+"share": 0.96,
+"on_map": 0.9,
+"unnamed": false
+},
+{
+"id": "wHarpst Trail/West Ridge Trail-39.388,-94.880",
+"name": "Harpst Trail/West Ridge Trail",
+"m": 442,
+"share": 0.97,
+"on_map": 0.9,
+"unnamed": false
+}
+]
+},
+{
+"park": "Weston Bend State Park",
+"trail": "North Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-northridge.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wNorth Ridge Trail-39.396,-94.889",
+"name": "North Ridge Trail",
+"m": 1540,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Weston Bend State Park",
+"trail": "Paved Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-paved.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "r9921316",
+"name": "Paved Bicycle Trail",
+"m": 4577,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBarn Trail Connector-39.390,-94.871",
+"name": "Barn Trail Connector",
+"m": 472,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Weston Bend State Park",
+"trail": "Weston Bluffs Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-weston.pdf",
+"covered": 0.8,
+"covered_any": 0.8,
+"ours": [
+{
+"id": "r9921315",
+"name": "Weston Bluffs Trail",
+"m": 4821,
+"share": 0.83,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Weston Bend State Park",
+"trail": "West Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-westridge.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wWest Ridge Trail-39.385,-94.878",
+"name": "West Ridge Trail",
+"m": 1709,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wHarpst Trail/West Ridge Trail-39.388,-94.880",
+"name": "Harpst Trail/West Ridge Trail",
+"m": 442,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bryant Creek State Park",
+"trail": "Pike Hollow Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-PikeHollowTrail.pdf",
+"covered": 0.93,
+"covered_any": 0.95,
+"ours": [
+{
+"id": "wPike Hollow Trail-36.827,-92.425",
+"name": "Pike Hollow Trail",
+"m": 7856,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Bryant Creek State Park",
+"trail": "Pinewoods Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/11/TrailMap-PinewoodsTrail.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wPinewoods Trail-36.828,-92.426",
+"name": "Pinewoods Trail",
+"m": 1046,
+"share": 1.0,
+"on_map": 0.96,
+"unnamed": false
+}
+]
+},
+{
+"park": "Echo Bluff State Park",
+"trail": "Painter Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-painter.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPainter Ridge Trail - South Loop-37.309,-91.410",
+"name": "Painter Ridge Trail - South Loop",
+"m": 1738,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPainter Ridge Trail - South Loop-37.306,-91.408",
+"name": "Painter Ridge Trail - South Loop",
+"m": 912,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Elephant Rocks State Park",
+"trail": "Braille Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_braille.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wBraille Trail-37.654,-90.690",
+"name": "Braille Trail",
+"m": 1636,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBraille Trail-37.654,-90.686",
+"name": "Braille Trail",
+"m": 723,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Elephant Rocks State Park",
+"trail": "Engine House Ruins Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_enginehouse.pdf",
+"covered": 0.0,
+"covered_any": 1.0,
+"ours": []
+},
+{
+"park": "Graham Cave State Park",
+"trail": "Fern Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_fern.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wFern Ridge Trail-38.905,-91.574",
+"name": "Fern Ridge Trail",
+"m": 612,
+"share": 0.92,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Graham Cave State Park",
+"trail": "Graham Cave Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_graham.pdf",
+"covered": 0.0,
+"covered_any": 0.1,
+"ours": []
+},
+{
+"park": "Graham Cave State Park",
+"trail": "Indian Glade Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_indian.pdf",
+"covered": 0.9,
+"covered_any": 0.9,
+"ours": [
+{
+"id": "wIndian Glade Trail-38.910,-91.581",
+"name": "Indian Glade Trail",
+"m": 1347,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Graham Cave State Park",
+"trail": "Loutre River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_loutre.pdf",
+"covered": 0.86,
+"covered_any": 0.86,
+"ours": [
+{
+"id": "wLoutre River Trail-38.912,-91.581",
+"name": "Loutre River Trail",
+"m": 4017,
+"share": 0.84,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Graham Cave State Park",
+"trail": "Woodland Way Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap_woodland.pdf",
+"covered": 0.0,
+"covered_any": 0.07,
+"ours": []
+},
+{
+"park": "Lewis and Clark State Park",
+"trail": "Gosling Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-gosling.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wGosling Lake Trail-39.537,-95.057",
+"name": "Gosling Lake Trail",
+"m": 1297,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wGosling Lake Trail-39.539,-95.055",
+"name": "Gosling Lake Trail",
+"m": 1024,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Long Branch State Park",
+"trail": "Bee Trace Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-beetrace.pdf",
+"covered": 0.67,
+"covered_any": 0.67,
+"ours": [
+{
+"id": "wBee Trace Trail - South Loop-39.793,-92.513",
+"name": "Bee Trace Trail - South Loop",
+"m": 5243,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Long Branch State Park",
+"trail": "Lakeview Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-lakeview-LB.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wLakeview Trail-39.754,-92.522",
+"name": "Lakeview Trail",
+"m": 886,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Long Branch State Park",
+"trail": "Little Chariton Prairie Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/TrailMap-littlechariton.pdf",
+"covered": 0.98,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wLittle Chariton Prairie Trail-39.769,-92.518",
+"name": "Little Chariton Prairie Trail",
+"m": 3673,
+"share": 0.9,
+"on_map": 0.99,
+"unnamed": false
+}
+]
+},
+{
+"park": "Montauk State Park",
+"trail": "Montauk Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-montauk.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wMontauk Lake Trail-37.456,-91.685",
+"name": "Montauk Lake Trail",
+"m": 1124,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Montauk State Park",
+"trail": "Paved Bicycle Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_1.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Montauk State Park",
+"trail": "Pine Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pineridge.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPine Ridge Trail-37.450,-91.688",
+"name": "Pine Ridge Trail",
+"m": 2428,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Morris State Park",
+"trail": "Beech Tree Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-beech.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBeech Tree Trail-36.544,-90.037",
+"name": "Beech Tree Trail",
+"m": 2350,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wBeech Tree Trail-36.551,-90.040",
+"name": "Beech Tree Trail",
+"m": 1034,
+"share": 0.85,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Onondaga Cave State Park",
+"trail": "Amphitheater Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-amphitheater_0.pdf",
+"covered": 0.0,
+"covered_any": 0.0,
+"ours": []
+},
+{
+"park": "Onondaga Cave State Park",
+"trail": "Blue Heron Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-blueheron.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBlue Heron Trail-38.057,-91.232",
+"name": "Blue Heron Trail",
+"m": 1220,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Onondaga Cave State Park",
+"trail": "Deer Run Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerrun.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wDeer Run Trail-38.056,-91.235",
+"name": "Deer Run Trail",
+"m": 3932,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Onondaga Cave State Park",
+"trail": "Oak Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oakridge.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wOak Ridge Trail-38.057,-91.233",
+"name": "Oak Ridge Trail",
+"m": 4874,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Onondaga Cave State Park",
+"trail": "Vilander Bluff Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-vilander.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wVilander Bluff Trail-38.098,-91.131",
+"name": "Vilander Bluff Trail",
+"m": 1862,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pershing State Park",
+"trail": "Boardwalk Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-boardwalk_0.pdf",
+"covered": 0.0,
+"covered_any": 0.7,
+"ours": []
+},
+{
+"park": "Pershing State Park",
+"trail": "Canfield Savanna Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-canfield.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCanfield Savanna Trail-39.754,-93.217",
+"name": "Canfield Savanna Trail",
+"m": 628,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pershing State Park",
+"trail": "Locust Creek Riparian Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-locust.pdf",
+"covered": 0.93,
+"covered_any": 0.98,
+"ours": [
+{
+"id": "wLocust Creek Riparian Trail-39.726,-93.264",
+"name": "Locust Creek Riparian Trail",
+"m": 8284,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wLocust Creek Riparian Trail-39.704,-93.269",
+"name": "Locust Creek Riparian Trail",
+"m": 1650,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pershing State Park",
+"trail": "Oak Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-oakridge_0.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wOak Ridge Trail-39.759,-93.216",
+"name": "Oak Ridge Trail",
+"m": 679,
+"share": 0.89,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pershing State Park",
+"trail": "Scout Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-scout.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wScout Lake Trail-39.762,-93.215",
+"name": "Scout Lake Trail",
+"m": 547,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pomme de Terre State Park",
+"trail": "Cedar Bluff Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-cedar_1.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wCedar Bluff Trail-37.883,-93.304",
+"name": "Cedar Bluff Trail",
+"m": 2232,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wCedar Bluffs Trail-37.872,-93.308",
+"name": "Cedar Bluffs Trail",
+"m": 1129,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Pomme de Terre State Park",
+"trail": "Indian Point Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-indian.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wIndian Point Trail-37.889,-93.313",
+"name": "Indian Point Trail",
+"m": 4965,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "Deer Leap Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-deerleap.pdf",
+"covered": 0.0,
+"covered_any": 0.19,
+"ours": []
+},
+{
+"park": "Roaring River State Park",
+"trail": "Devils Kitchen Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-devils_0.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wDevil's Kitchen Trail-36.591,-93.835",
+"name": "Devil's Kitchen Trail",
+"m": 2653,
+"share": 0.88,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "Eagles Nest Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-eagles.pdf",
+"covered": 0.92,
+"covered_any": 0.92,
+"ours": [
+{
+"id": "wEagle's Nest Trail-36.578,-93.832",
+"name": "Eagle's Nest Trail",
+"m": 3252,
+"share": 0.93,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "Fire Tower Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-firetower_0.pdf",
+"covered": 0.89,
+"covered_any": 0.92,
+"ours": [
+{
+"id": "wFire Tower Trail-36.578,-93.823",
+"name": "Fire Tower Trail",
+"m": 6872,
+"share": 0.9,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "Pibern Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pibern.pdf",
+"covered": 0.97,
+"covered_any": 0.97,
+"ours": [
+{
+"id": "wPibern Trail-36.590,-93.844",
+"name": "Pibern Trail",
+"m": 1919,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "River Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-river_1.pdf",
+"covered": 0.98,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wRiver Trail-36.590,-93.834",
+"name": "River Trail",
+"m": 1252,
+"share": 0.84,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Roaring River State Park",
+"trail": "Springhouse Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-springhouse.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSpringhouse Trail-36.582,-93.837",
+"name": "Springhouse Trail",
+"m": 514,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Robertsville State Park",
+"trail": "Lost Hill Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-losthill.pdf",
+"covered": 0.94,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "wLost Hill Trail-38.423,-90.806",
+"name": "Lost Hill Trail",
+"m": 3925,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Robertsville State Park",
+"trail": "Spice Bush Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-spice.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wSpice Bush Trail-38.427,-90.819",
+"name": "Spice Bush Trail",
+"m": 1410,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Don Robinson State Park",
+"trail": "LaBarque Hills Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-labarque.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wLaBarque Hills Trail-38.391,-90.696",
+"name": "LaBarque Hills Trail",
+"m": 4772,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Don Robinson State Park",
+"trail": "Sandstone Canyon Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-sandstone.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "r11955996",
+"name": "Sandstone Canyon Trail",
+"m": 5852,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Route 66 State Park",
+"trail": "Inner Loop Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-innerloop.pdf",
+"covered": 0.0,
+"covered_any": 0.04,
+"ours": []
+},
+{
+"park": "Route 66 State Park",
+"trail": "Outer Loop Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-outerloop.pdf",
+"covered": 0.67,
+"covered_any": 0.68,
+"ours": [
+{
+"id": "wOuter Loop Trail-38.504,-90.594",
+"name": "Outer Loop Trail",
+"m": 2959,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPicnic Area Spur-38.508,-90.600",
+"name": "Picnic Area Spur",
+"m": 962,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Route 66 State Park",
+"trail": "South Loop Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-southloop.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wSouth Loop Trail-38.503,-90.594",
+"name": "South Loop Trail",
+"m": 2384,
+"share": 0.94,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Route 66 State Park",
+"trail": "W Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-wtrail.pdf",
+"covered": 0.96,
+"covered_any": 0.96,
+"ours": [
+{
+"id": "wWest Trail-38.506,-90.606",
+"name": "West Trail",
+"m": 773,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Taum Sauk Mountain State Park",
+"trail": "Taum",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-MinaSaukFalls.pdf",
+"covered": 0.94,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "r21428987",
+"name": "Ozark Trail - Taum Sauk Section",
+"m": 55466,
+"share": 0.91,
+"on_map": 0.05,
+"unnamed": false
+},
+{
+"id": "wOzark Trail - Taum Sauk Section and Mina Sauk Falls Trail-37.563,-90.741",
+"name": "Ozark Trail - Taum Sauk Section and Mina Sauk Falls Trail",
+"m": 2295,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wMina Sauk Falls Trail-37.563,-90.741",
+"name": "Mina Sauk Falls Trail",
+"m": 2293,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Trail of Tears State Park",
+"trail": "Lake Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-lake_1.pdf",
+"covered": 0.99,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wLake Trail-37.455,-89.485",
+"name": "Lake Trail",
+"m": 3600,
+"share": 0.96,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Trail of Tears State Park",
+"trail": "Nature Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-nature.pdf",
+"covered": 0.59,
+"covered_any": 0.59,
+"ours": [
+{
+"id": "wNature Trail-37.440,-89.482",
+"name": "Nature Trail",
+"m": 892,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Trail of Tears State Park",
+"trail": "Peewah Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-peewah.pdf",
+"covered": 0.93,
+"covered_any": 0.93,
+"ours": [
+{
+"id": "wPeewah Trail - West Loop-37.470,-89.489",
+"name": "Peewah Trail - West Loop",
+"m": 4519,
+"share": 0.89,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wPeewah Trail - West Loop-37.469,-89.499",
+"name": "Peewah Trail - West Loop",
+"m": 2476,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Trail of Tears State Park",
+"trail": "Shepard Point Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/trail-map-shepard.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wSheppard Point Trail-37.445,-89.467",
+"name": "Sheppard Point Trail",
+"m": 2396,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Harry S Truman State Park",
+"trail": "Bluff Ridge Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-bluff.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBluff Ridge Trail-38.287,-93.453",
+"name": "Bluff Ridge Trail",
+"m": 2529,
+"share": 0.98,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Harry S Truman State Park",
+"trail": "Western Wallflower Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-western.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWestern Wallflower Trail-38.274,-93.451",
+"name": "Western Wallflower Trail",
+"m": 1003,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Mark Twain State Park",
+"trail": "Barefoot Sam Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-barefoot.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wBarefoot Sam Trail-39.488,-91.784",
+"name": "Barefoot Sam Trail",
+"m": 492,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Mark Twain State Park",
+"trail": "Dogwood Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-dogwood_0.pdf",
+"covered": 0.0,
+"covered_any": 0.07,
+"ours": []
+},
+{
+"park": "Mark Twain State Park",
+"trail": "Post Oak Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-postoak.pdf",
+"covered": 0.95,
+"covered_any": 0.95,
+"ours": [
+{
+"id": "wPost Oak Trail-39.468,-91.810",
+"name": "Post Oak Trail",
+"m": 2553,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Mark Twain State Park",
+"trail": "White Oak Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whiteoak_0.pdf",
+"covered": 0.0,
+"covered_any": 0.08,
+"ours": []
+},
+{
+"park": "Mark Twain State Park",
+"trail": "Whitetail Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-whitetail.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wWhitetail Trail-39.471,-91.795",
+"name": "Whitetail Trail",
+"m": 677,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Washington State Park",
+"trail": "Opossum Track Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-opossum_0.pdf",
+"covered": 0.71,
+"covered_any": 0.94,
+"ours": [
+{
+"id": "wOpossum Track Trail-38.090,-90.692",
+"name": "Opossum Track Trail",
+"m": 2617,
+"share": 0.97,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Washington State Park",
+"trail": "Rockywood Trail",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-rockywood.pdf",
+"covered": 0.91,
+"covered_any": 0.99,
+"ours": [
+{
+"id": "wRockywood Trail-38.085,-90.684",
+"name": "Rockywood Trail",
+"m": 9115,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Watkins Mill State Park",
+"trail": "atkins W",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-equestrian_0.pdf",
+"covered": 1.0,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wEquestrian Trail System-39.398,-94.251",
+"name": "Equestrian Trail System",
+"m": 6946,
+"share": 0.95,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+},
+{
+"park": "Watkins Mill State Park",
+"trail": "atkins W",
+"url": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/01/TrailMap-pavedbike_3.pdf",
+"covered": 0.98,
+"covered_any": 1.0,
+"ours": [
+{
+"id": "wPaved Bicycle Lake Trail-39.410,-94.256",
+"name": "Paved Bicycle Lake Trail",
+"m": 6114,
+"share": 0.99,
+"on_map": 1.0,
+"unnamed": false
+},
+{
+"id": "wStream Bed Trail-39.397,-94.258",
+"name": "Stream Bed Trail",
+"m": 418,
+"share": 1.0,
+"on_map": 1.0,
+"unnamed": false
+}
+]
+}
+]
+}
