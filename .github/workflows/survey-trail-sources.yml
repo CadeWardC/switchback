@@ -1,0 +1,31 @@
+name: Survey state trail sources (Switchback)
+
+# Read-only: lists, state by state, the trail layers agencies publish in ArcGIS Online's catalogue and who
+# publishes them, to pick government publishers for the vetted list in scripts/check_official_trails.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      regions:
+        description: 'Region ids, space separated, or "us" for every state'
+        default: "us"
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Survey
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download trails-us -p regions.json
+          python3 scripts/survey_trail_sources.py regions.json "${{ inputs.regions }}" | tee survey.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survey
+          path: survey.txt
