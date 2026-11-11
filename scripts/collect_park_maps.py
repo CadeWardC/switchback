@@ -150,6 +150,9 @@ def main():
                     raw = data.decode("utf-8", "replace").replace("\\/", "/")
                     inner = [urllib.parse.urljoin(final, u) for u in
                              re.findall(r"""["'(]([^"'()<>\s]+\.(?:pdf|PDF)(?:\?[^"'()<>\s]*)?)""", raw)]
+                    # a PDF viewer's link carries the real file in "file="
+                    inner = [urllib.parse.unquote(u.split("file=", 1)[1].split("&")[0]) if "file=" in u else u
+                             for u in inner]
                     inner += [u for u, _ in links(final)[1] if FILE.search(u)]
                     inner = [u for u in dict.fromkeys(inner) if not SKIP.search(u)]
                     inner.sort(key=lambda u: (".pdf" not in u.lower(), not MAP_WORDS.search(u)))
