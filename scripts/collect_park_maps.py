@@ -90,7 +90,8 @@ def find(start, extra):
                 if MAP_WORDS.search(full) or MAP_WORDS.search(text):
                     files.setdefault(full, text[:80])
             elif depth and urllib.parse.urlparse(full).netloc.removeprefix("www.") == host \
-                    and full.startswith(final.rstrip("/")) and PAGE_WORDS.search(full[len(final):] + " " + text):
+                    and (full.rstrip("/").endswith("/trails")   # a park's trails page, wherever the site keeps it
+                         or (full.startswith(final.rstrip("/")) and PAGE_WORDS.search(full[len(final):] + " " + text))):
                 scan(full, depth - 1)
     if start and (FILE.search(start) or "/media/" in start):
         files.setdefault(start, "the record's own source")   # the record points straight at a file
@@ -194,7 +195,7 @@ def main():
                         print(f"  skipped {url} -> {final}: {kind}, {len(data)} bytes, starts {data[:60]!r}")
                     continue
                 hashes.add(digest)
-                stem = os.path.join(out, f"{slug}-{len(maps) + 1}")
+                stem = os.path.join(out, f"{slug}-{len(index.get(slug, {}).get('maps', [])) + len(maps) + 1}")
                 raw = f"{stem}.{kind}"
                 open(raw, "wb").write(data)
                 pictures = [] if os.environ.get("NO_PICTURES") else draw(kind, raw, stem)
@@ -203,8 +204,11 @@ def main():
                              "georeferenced": geo, "sha256_16": digest, "pictures": pictures})
             except Exception as ex:
                 notes.append(f"{url}: {ex}")
-        index[slug] = {"park": rec["park"], "manager": rec.get("manager"), "page": rec.get("source"),
-                       "maps": maps, "notes": notes[:6]}
+        if slug in index:   # the same park from its record and from the manager's list of parks
+            index[slug]["maps"] += maps
+        else:
+            index[slug] = {"park": rec["park"], "manager": rec.get("manager"), "page": rec.get("source"),
+                           "maps": maps, "notes": notes[:6]}
         print(f"{rec['park']}: {len(maps)} map(s)" + (f", {sum(m['georeferenced'] for m in maps)} georeferenced" if maps else "")
               + (f"; {notes[0]}" if notes and not maps else ""), flush=True)
     json.dump(index, open(os.path.join(out, "index.json"), "w"), indent=1)
