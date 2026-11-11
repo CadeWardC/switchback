@@ -129,7 +129,8 @@ final class ExploreModel: ObservableObject {
     /// Every loaded trail of a trail system (side trails included), longest first.
     func systemMembers(_ name: String) -> [Trail] {
         let informal = Trail.showsInformal
-        return known.values.filter { $0.system == name && (informal || !$0.isInformal) }
+        // (the overview route drawn over the whole system isn't one of its trails)
+        return known.values.filter { $0.system == name && (informal || !$0.isInformal) && !($0.isNetwork && !$0.isHike) }
             .map { Profiles.shared.withProfile($0) }
             .sorted { $0.length > $1.length }
     }

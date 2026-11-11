@@ -197,7 +197,10 @@ struct Trail: Codable, Identifiable, Hashable {
         return Geo.distance(f, l) < max(150, length * 0.03)
     }
 
-    var routeTypeTitle: String { isLoop ? "Loop" : "One way" }
+    /// A route drawn over a whole web of trails (several loops), not one walk: its length is all of its trails.
+    var isNetwork: Bool { tags["switchback:network"] == "yes" }
+
+    var routeTypeTitle: String { isNetwork ? "Trail network" : isLoop ? "Loop" : "One way" }
 
     /// A path mapped in OpenStreetMap without a name.
     var isUnnamed: Bool { tags["switchback:unnamed"] == "yes" }

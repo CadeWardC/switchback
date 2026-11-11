@@ -992,11 +992,51 @@ def build(pbf):
     print(f"  named {park_named} unnamed paths after the park they're in")
     trails = drop_duplicates(trails)
     trails = hikes(trails, adj, where, node_names, rel.trailheads + [(1, n, c) for n, c in ways.parking])
+    trails = networks(trails)
     for t, _ in trails:
         for k in [k for k in t if k.startswith("_")]:
             del t[k]
     pois = pois_near(trails, rel.pois)
     return trails, pois
+
+def networks(trails):
+    """A route whose lines form a web of loops (a relation drawn over a whole trail system) is not one walk: its
+    "main line" would wander through the web and call itself a 20-mile one-way trail. Such a route is marked
+    switchback:network. Where the trails inside it are mapped under their own names it becomes the system's
+    overview (not a hike; the named trails are the hikes, and join the system); where they aren't, it stays
+    listed, as a network with the length of all its trails."""
+    from shapely.ops import polygonize, unary_union
+    named = [(t, lines_of(t)) for t, _ in trails if not is_unnamed(t)]
+    boxes = {id(t): (min(p[0] for l in ls for p in l), min(p[1] for l in ls for p in l),
+                     max(p[0] for l in ls for p in l), max(p[1] for l in ls for p in l)) for t, ls in named if ls}
+    found = overviews = 0
+    for t, lines in named:
+        total = sum(length(l) for l in lines)
+        if t["source"] != "osmRelation" or total < t["length"] * 1.3 or total - t["length"] < 800:
+            continue
+        k = math.cos(math.radians(lines[0][0][0]))
+        web = unary_union([LineString([(lo * k, la) for la, lo in l]) for l in lines if len(l) >= 2])
+        loops = [f for f in polygonize(web) if f.length * 111320 >= 300]
+        if len(loops) < 2:
+            continue          # a line with a gap, a lollipop or an alternate: still one walk
+        found += 1
+        tags = t.setdefault("tags", {})
+        tags["switchback:network"] = "yes"
+        b = boxes[id(t)]
+        others = [(u, ls) for u, ls in named if u is not t and id(u) in boxes
+                  and u.get("tags", {}).get("switchback:network") != "yes"
+                  and not (boxes[id(u)][2] < b[0] or boxes[id(u)][0] > b[2] or boxes[id(u)][3] < b[1] or boxes[id(u)][1] > b[3])]
+        inside = [(u, ls) for u, ls in others if coverage(ls, lines, 20) >= 0.8]
+        if inside and coverage(lines, [l for _, ls in inside for l in ls], 20) >= 0.6:
+            overviews += 1
+            tags["switchback:hike"] = "no"
+            for u, _ in inside:
+                u.setdefault("tags", {}).setdefault("switchback:system", t["name"])
+        else:
+            t["length"] = round(total, 1)
+    print(f"  {found} routes are webs of loops: {overviews} now overviews of their named trails, "
+          f"{found - overviews} kept as trail networks")
+    return trails
 
 def pois_near(trails, pois):
     """Keeps the points of interest within about 200 m of a trail (not every café and toilet in town)."""

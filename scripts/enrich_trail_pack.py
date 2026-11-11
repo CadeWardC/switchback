@@ -320,6 +320,8 @@ def main():
         listed = "official:source" in tags
         if any(tags.get(k) == "yes" for k in ("switchback:informal", "switchback:side", "switchback:roadwalk", "switchback:unnamed")):
             hike = False
+        elif tags.get("switchback:network") == "yes":
+            hike = tags.get("switchback:hike") != "no"   # the builder decided: an overview of named trails isn't a hike
         elif tags.get("switchback:fragment") == "yes":
             hike = listed
         else:

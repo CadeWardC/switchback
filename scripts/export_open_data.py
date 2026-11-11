@@ -32,7 +32,7 @@ def feature(t):
             props[key] = tags[tag]
     props["hike"] = tags.get("switchback:hike") != "no"
     for key, tag in (("informal", "switchback:informal"), ("unnamed", "switchback:unnamed"), ("side_trail", "switchback:side"),
-                     ("road_walk", "switchback:roadwalk"), ("shared_with_bikes", "switchback:multiuse")):
+                     ("road_walk", "switchback:roadwalk"), ("network", "switchback:network"), ("shared_with_bikes", "switchback:multiuse")):
         if tags.get(tag) == "yes":
             props[key] = True
     if tags.get("switchback:informal_reason"):
