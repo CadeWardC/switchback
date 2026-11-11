@@ -32,6 +32,17 @@ NATIONAL_US = [
      ["trail_name"], ["trail_no"], ["trail_type"]),
     ("National Park Service", "https://mapservices.nps.gov/arcgis/rest/services/NationalDatasets/NPS_Public_Trails/FeatureServer/0",
      ["trlname", "maplabel"], [], ["unitname", "trltype"]),
+    # Bureau of Land Management: its designated trails for foot, stock and other non-motor use
+    ("Bureau of Land Management (non-motorized trails)",
+     "https://gis.blm.gov/arcgis/rest/services/transportation/BLM_Natl_GTLF_Public_Display/MapServer/4",
+     ["route_prmry_nm"], [], ["plan_mode_trnsprt", "admin_st"]),
+    ("Bureau of Land Management (non-mechanized trails)",
+     "https://gis.blm.gov/arcgis/rest/services/transportation/BLM_Natl_GTLF_Public_Display/MapServer/5",
+     ["route_prmry_nm"], [], ["plan_mode_trnsprt", "admin_st"]),
+    # Fish and Wildlife Service: public trails on national wildlife refuges
+    ("Fish and Wildlife Service",
+     "https://services.arcgis.com/QVENGdaPbd4LUkLV/arcgis/rest/services/FWS_HQ_Trails_Cycle_3_Public_View/FeatureServer/1",
+     ["trname"], ["trnumber"], ["orgname", "trtype"]),
 ]
 # The Trans Canada Trail is NOT a source: the only terms found for its data allow personal, non-commercial use.
 NATIONAL_CA = []
@@ -249,7 +260,8 @@ def fetch_wfs(source, area):
                 seen.add(key)
                 out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
                             "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines,
-                            "use": trail_use(a), "sure": hiker_sure(a), "motor": motor_trail(a), "shut": shut(a),
+                            "use": trail_use(a), "sure": hiker_sure(a), "accepted": hiker_accepted(a),
+                            "motor": motor_trail(a), "shut": shut(a),
                             "unit": pick(a, ["unitname"])})
             if len(feats) < 2000:
                 break
@@ -286,7 +298,8 @@ def fetch(source, area):
                 new += 1
                 out.append({"source": label, "name": pick(a, name_f), "no": pick(a, no_f),
                             "detail": " · ".join(x for x in (pick(a, [d]) for d in detail_f) if x), "lines": lines,
-                            "use": trail_use(a), "sure": hiker_sure(a), "motor": motor_trail(a), "shut": shut(a),
+                            "use": trail_use(a), "sure": hiker_sure(a), "accepted": hiker_accepted(a),
+                            "motor": motor_trail(a), "shut": shut(a),
                             "unit": pick(a, ["unitname"])})
                 if KEEP_ATTRS:
                     out[-1]["a"] = a
@@ -329,6 +342,11 @@ def trail_use(a):
                                   "hiker_pedestrian_disc")):
             return "hike"
         return "not" if a.get("hiker_pedestrian_restricted") else "?"
+    if "plan_mode_trnsprt" in a:                                                   # Bureau of Land Management
+        mode = str(a.get("plan_mode_trnsprt") or "").lower()
+        if "non-mech" in mode or "non-motor" in mode or "nonmotor" in mode or "nonmech" in mode:
+            return "hike"
+        return "not" if "motor" in mode else "?"
     if "trltype" in a:                                                             # National Park Service
         tt = str(a.get("trltype") or "").lower()
         if "water" in tt or "snow" in tt:
@@ -355,10 +373,28 @@ def hiker_sure(a):
         return any(w in use for w in ("hik", "foot", "pedestrian", "walk"))
     return False
 
+def filled(v):
+    return v not in (None, "", "N/A")
+
+MOTORS = ("motorcycle", "atv", "fourwd", "4wd", "ohv")
+
 def motor_trail(a):
     """Managed for motor vehicles (an OHV trail hikers are merely allowed on)."""
-    return any(v not in (None, "", "N/A") and k.endswith("_managed") and
-               any(w in k for w in ("motor", "atv", "fourwd", "4wd", "ohv")) for k, v in a.items())
+    return any(filled(v) and k.endswith("_managed") and any(w in k for w in MOTORS) for k, v in a.items())
+
+def motorized(a):
+    """Open to motor vehicles at all, managed for them or not."""
+    return str(a.get("terra_motorized") or "").upper() == "Y" or \
+        any(filled(v) and any(w in k for w in MOTORS) and not k.endswith("_restricted") for k, v in a.items())
+
+def hiker_accepted(a):
+    """Forest Service: hikers are accepted (the older "accepted or discouraged" column is filled, the newer
+    "discouraged" one is not, nothing restricts them) and the trail is kept for some non-motor use."""
+    return ("hiker_pedestrian_accpt_disc" in a and filled(a.get("hiker_pedestrian_accpt_disc"))
+            and not filled(a.get("hiker_pedestrian_disc")) and not filled(a.get("hiker_pedestrian_restricted"))
+            and not motorized(a)
+            and any(filled(v) and k.endswith("_managed") and any(w in k for w in ("pack_saddle", "bicycle", "hiker"))
+                    for k, v in a.items()))
 
 SHUT_WORDS = ("decommission", "proposed", "planned", "closed", "abandon", "obliterat", "unauthor", "no public", "not exist",
               "historic", "unmaintained", "non-system", "nonsystem")
@@ -620,6 +656,7 @@ def evaluate(trails, area, sources, say=print, keep_lines=()):
                                "miles": total / 1609.34, "use": use})
                 if src[0] in keep_lines:   # enough to add the trail to our data, if it passes the stricter checks
                     missed[-1].update(lines=lines, sure=all(x.get("sure") for x in group),
+                                      accepted=all(x.get("sure") or x.get("accepted") for x in group),
                                       motor=any(x.get("motor") for x in group), shut=any(x.get("shut") for x in group),
                                       unit=f.get("unit", ""))
         missing[src[0]] = missed

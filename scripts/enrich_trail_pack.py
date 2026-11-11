@@ -164,8 +164,11 @@ def add_federal(missing, trails, counts):
     added = []
     for label, source in ADD_FROM.items():
         for m in missing.get(label, []):
-            why = ("not said to be for hikers" if m["use"] != "hike" or not m.get("sure") else
-                   "for motor vehicles" if m.get("motor") else "not an open, existing trail" if m.get("shut") else None)
+            # for hikers: the list manages it for them, or accepts them on a trail with no motor use at all
+            # (the horse and pack trails of the backcountry, which walkers use)
+            why = ("for motor vehicles" if m.get("motor") else
+                   "not said to be for hikers" if m["use"] != "hike" or not (m.get("sure") or m.get("accepted")) else
+                   "not an open, existing trail" if m.get("shut") else None)
             name = official.tidy_name(m["name"] or "")
             if not why and (not name or official.norm_name(name) in official.GENERIC):
                 name = f"Forest Trail {m['no']}" if label == "Forest Service" and m.get("no") else ""
@@ -187,6 +190,9 @@ def add_federal(missing, trails, counts):
             tags = t.setdefault("tags", {})
             tags.update({"switchback:origin": label, "official:source": label,
                          "official:match": "the line itself comes from this list"})
+            if not m.get("sure"):
+                tags["description"] = "The Forest Service keeps this trail for horses, pack stock or bicycles; hikers are welcome."
+                counts[f"added from the {label}: horse, pack and bicycle trails open to hikers"] += 1
             if m.get("no"):
                 tags["official:ref"] = tags["ref"] = str(m["no"])
             k = (round(start[0] * 20), round(start[1] * 20))
@@ -228,11 +234,13 @@ def main():
     try:
         inside, results, sizes, missing = official.evaluate(trails, area, sources, keep_lines=set(ADD_FROM))
     except Exception as ex:
-        print(f"  official lists couldn't be checked ({ex}); pack left as it is")
-        return
-    if not sizes:
-        print("  no official list could be fetched; pack left as it is")
-        return
+        print(f"  official lists couldn't be checked ({ex})")
+        inside, results, sizes, missing = trails, {id(t): {} for t in trails}, {}, {}
+    # with no list at all nothing can be confirmed, named or called informal for being on no list; the hikes are
+    # still sorted from the fragments, side trails and unnamed lines, and park records and maps still apply
+    listless = not sizes
+    if listless:
+        print("  no official list could be fetched: only sorting hikes and applying park records")
 
     counts = Counter()
     parks = park_records(region_id)
@@ -294,7 +302,8 @@ def main():
                 counts["confirmed by a park's trail list"] += 1
         mapped = t["id"] in on_maps and apply_map(t, on_maps[t["id"]], counts)
         why = None if mapped else (tags.get("switchback:informal_reason") if t["id"] in on_maps and
-                                   tags.get("switchback:informal") == "yes" else None) or official.informal_reason(t, res)
+                                   tags.get("switchback:informal") == "yes" else None) or \
+            (None if listless else official.informal_reason(t, res))
         if why:
             tags["switchback:informal"] = "yes"
             tags["switchback:informal_reason"] = why
