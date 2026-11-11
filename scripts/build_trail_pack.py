@@ -42,6 +42,8 @@ FAR_LINK_M = 3000    # …or this close when both pieces are in the same park (s
 FRAGMENT_M = 805     # a named piece shorter than this (half a mile) isn't a hike on its own
 LINK_M = 1000   # pieces of one named trail this close along other trails are one trail (a loop mapped in halves)
 GAP_M = 30      # a straight jump allowed between pieces where the map has a small gap
+NEAR_GAP_M = 400     # ...or a longer one (a road crossing, a bridge, a stretch of pavement that isn't mapped as trail)
+NEAR_GAP_SHARE = 0.15  # when it is this small beside the two pieces it joins
 
 # ---------------------------------------------------------------- geometry
 
@@ -237,7 +239,7 @@ def reach(adj, src, targets, limit):
         walks[t] = (d, path[::-1])
     return walks
 
-def link_pieces(pieces, adj, where, parks=None):
+def link_pieces(pieces, adj, where, parks=None, near=True):
     """Joins the pieces of one named trail (lines of (node id, (lat, lon))) that meet along other trails, or across a
     small gap, into walks: a loop mapped as two halves joined by another trail becomes one closed loop, and a trail
     broken where it shares a stretch with another becomes one line. Returns [(walk, segments)]: the line to follow,
@@ -265,11 +267,13 @@ def link_pieces(pieces, adj, where, parks=None):
                     walk = (0.0, [a])
                 elif n in walks:
                     walk = walks[n]
-                elif dist(where[a], where[n]) <= GAP_M:
+                elif dist(where[a], where[n]) <= (NEAR_GAP_M if near else GAP_M):
                     walk = (dist(where[a], where[n]), [a, n])
                 else:
                     continue
                 for j, f in ends[n]:
+                    if len(walk[1]) == 2 and walk[0] > GAP_M and walk[0] > NEAR_GAP_SHARE * (sizes[i] + sizes[j]):
+                        continue              # a longer straight jump only between pieces that dwarf it
                     if (j, f) > (i, e):       # each pair once
                         links.append((walk[0], (i, e), (j, f), [where[x] for x in walk[1]]))
     links.sort(key=lambda l: l[0])
@@ -913,7 +917,7 @@ def build(pbf):
         # generic names ("Connector", "White Connector 1") are many different trails: never joined across gaps
         generic = bool(SIDE_WORDS.search(name)) or name.lower() in NOT_SYSTEMS
         parks = None if generic or len(lines) < 2 else [finder.find(*middle([c for _, c in l])) for l in lines]
-        walks = link_pieces(lines, adj, where, parks)
+        walks = link_pieces(lines, adj, where, parks, near=not generic)
         joined += len(lines) - len(walks)
         for walk, segs in walks:
             first = walk[0]
