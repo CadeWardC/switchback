@@ -124,17 +124,42 @@ def draw(kind, path, stem):
         made = [out] if os.path.exists(out) else []
     return [os.path.basename(m) for m in made]
 
+def whole_sites(region, have):
+    """Every park on a manager's own list of parks (data/park-maps/sites.json), beyond the ones with records:
+    [(slug, {park, manager, source})]."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "park-maps", "sites.json")
+    out, seen = [], set()
+    for site in (json.load(open(path)).get(region, []) if os.path.exists(path) else []):
+        try:
+            _, found = links(site["list"])
+        except Exception as ex:
+            print(f"{site['list']}: {ex}")
+            continue
+        for url, text in found:
+            url = url.rstrip("/")
+            page = url + site.get("append", "")
+            if not re.search(site["park_link"], url) or url in seen or page in have or not text:
+                continue
+            seen.add(url)
+            out.append((re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-"),
+                        {"park": text, "manager": site.get("manager"), "source": page}))
+    return out
+
 def main():
     region, out = sys.argv[1], sys.argv[2]
     only = sys.argv[3].lower() if len(sys.argv) > 3 and sys.argv[3] else ""
     os.makedirs(out, exist_ok=True)
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "parks", region)
     index, hashes = {}, set()
+    recs = []
     for f in sorted(glob.glob(os.path.join(folder, "*.json"))):
         rec = json.load(open(f))
-        if not isinstance(rec, dict) or "park" not in rec or (only and only not in rec["park"].lower()):
+        if isinstance(rec, dict) and "park" in rec:
+            recs.append((os.path.basename(f)[:-5], rec))
+    recs += whole_sites(region, {r.get("source") for _, r in recs})
+    for slug, rec in recs:
+        if only and only not in rec["park"].lower():
             continue
-        slug = os.path.basename(f)[:-5]
         files, notes = find(rec.get("source"), rec.get("maps", []))
         maps = []
         for url, text in list(files.items())[:MAX_FILES]:
@@ -172,7 +197,7 @@ def main():
                 stem = os.path.join(out, f"{slug}-{len(maps) + 1}")
                 raw = f"{stem}.{kind}"
                 open(raw, "wb").write(data)
-                pictures = draw(kind, raw, stem)
+                pictures = [] if os.environ.get("NO_PICTURES") else draw(kind, raw, stem)
                 os.remove(raw)
                 maps.append({"url": final, "link_text": text, "kind": kind, "bytes": len(data), "pages": pages,
                              "georeferenced": geo, "sha256_16": digest, "pictures": pictures})

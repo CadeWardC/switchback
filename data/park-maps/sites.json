@@ -1,0 +1,10 @@
+{
+ "missouri": [
+  {
+   "manager": "Missouri State Parks",
+   "list": "https://mostateparks.com/basic-page/quick-list-parks-and-historic-sites",
+   "park_link": "^https://(www\\.)?mostateparks\\.com/park/[^/?#]+$",
+   "append": "/trails"
+  }
+ ]
+}

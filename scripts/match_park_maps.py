@@ -139,11 +139,14 @@ def read_map(data):
     text = [t.strip() for t in page.get_text().splitlines() if t.strip()]
     return text, (s, w, n, e), cells, width_m / (frame_pt * scale), lat0
 
+PLACE = re.compile(r"state park|historic site|conservation area|national forest|wild area|natural area|"
+                   r"trails of|missouri|\\d{4}", re.I)
+
 def trail_name(text, park):
-    """The trail the map is of: the line printed under the park's name."""
-    for i, t in enumerate(text[:6]):
-        if official.same_name(t, park) and i + 1 < len(text):
-            return text[i + 1]
+    """The trail the map is of: the first printed line that isn't the park's name, a banner or a date."""
+    for t in text[:5]:
+        if not official.same_name(t, park) and not PLACE.search(t) and 3 < len(t) < 60:
+            return re.sub(r"(?<=[a-z])(?=Trail$)", " ", t)   # "Hike OnlyTrail"
     return None
 
 def main():
@@ -151,7 +154,9 @@ def main():
     only = sys.argv[4] if len(sys.argv) > 4 else ""
     os.makedirs(out, exist_ok=True)
     here = os.path.dirname(os.path.abspath(__file__))
-    parks = json.load(open(os.path.join(here, "..", "data", "park-maps", region + ".json")))["parks"]
+    fresh = os.path.join(pack_dir, f"index-{region}.json")   # the collector's newest index, when the workflow fetched it
+    parks = json.load(open(fresh)) if os.path.exists(fresh) else \
+        json.load(open(os.path.join(here, "..", "data", "park-maps", region + ".json")))["parks"]
     header, cells = packs.read(os.path.join(pack_dir, region + ".trails"))
     trails = {}
     for k, v in cells.items():

@@ -29,7 +29,9 @@ jobs:
       - name: Get our trails
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download trails-us -p "${{ inputs.region }}.trails" -p "${{ inputs.region }}.json" -D pack
+        run: |
+          gh release download trails-us -p "${{ inputs.region }}.trails" -p "${{ inputs.region }}.json" -D pack
+          gh release download park-maps-work -p "index-${{ inputs.region }}.json" -D pack || true
       - name: Match
         run: python3 scripts/match_park_maps.py "${{ inputs.region }}" pack out "${{ inputs.park }}"
       - name: Publish the results

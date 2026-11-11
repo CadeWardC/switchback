@@ -15,7 +15,7 @@ on:
         description: "Only parks whose name contains this (empty = all)"
         default: ""
       share:
-        description: "Also put the index and pictures in the working release"
+        description: "Also draw the maps as pictures and put them in the working release"
         type: boolean
         default: true
 
@@ -33,13 +33,13 @@ jobs:
       - name: Find and draw the maps
         env:
           SHOW_LINKS: ${{ inputs.park != '' && '1' || '' }}   # one park: also print every link seen
+          NO_PICTURES: ${{ !inputs.share && '1' || '' }}
         run: python3 scripts/collect_park_maps.py "${{ inputs.region }}" maps "${{ inputs.park }}"
       - uses: actions/upload-artifact@v4
         with:
           name: park-maps-${{ inputs.region }}
           path: maps
-      - name: Put them in the working release
-        if: inputs.share
+      - name: Put the index (and with "share" the pictures) in the working release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
