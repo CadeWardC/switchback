@@ -596,6 +596,13 @@ export function createMap(container: HTMLElement): void {
     if (region.length && m.getZoom() < MIN_TRAIL_ZOOM) {
       const r = regions.peek().find((x) => x.region === region[0].properties.region);
       if (r) fitTo(r.bbox, 9);
+      return;
+    }
+    // a tap away from any trail closes the open one: back to the whole map and the list
+    if (page === 'trail') {
+      popup?.remove();
+      if (phone()) sheet.value = 'half';
+      go({ page: 'explore' });
     }
   });
 

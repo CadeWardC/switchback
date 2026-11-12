@@ -144,6 +144,10 @@ button:disabled, .btn[disabled] { cursor: default; opacity: 0.45; }
   background: var(--c-ink); color: var(--c-bg); font-size: var(--text-small); font-weight: 600; box-shadow: var(--c-shadow);
 }
 .pill-quiet { background: var(--c-card); color: var(--c-muted); font-weight: 500; text-align: center; }
+.pill-button { pointer-events: auto; min-height: 36px; cursor: pointer; }
+.locate-card { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+.locate-card span { flex: 1; font: 700 var(--text-body) var(--font-num); }
+.locate-card .btn { min-height: 40px; }
 
 .toast {
   position: absolute; z-index: 40; left: 50%; bottom: calc(var(--space-6) + var(--safe-bottom)); transform: translateX(-50%);

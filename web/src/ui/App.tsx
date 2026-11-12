@@ -1,15 +1,16 @@
 // The frame: the map behind, a panel beside it (wide screens) or a sheet over it with a tab bar (phones).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  baseMap, dark, flyTo, go, loading, online, query, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
+  baseMap, dark, go, loading, online, query, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
 } from '../state';
-import { createMap, myLocation, resizeMap, zoomBy } from '../map/map';
+import { createMap, resizeMap, zoomBy } from '../map/map';
 import { mapJobs, mapOffline } from '../map/tilesource';
 import { saveView } from '../offline';
 import { isPhone, sheetVisible } from '../layout';
 import { isNativeApp, platform } from '../platform';
 import { Icon } from './Icon';
 import { Explore, FilterChips, SearchBox } from './Explore';
+import { locateMe, locationState, turnOnLocation } from '../locate';
 import { TrailPage } from './TrailPage';
 import { Record } from './Record';
 
@@ -63,31 +64,6 @@ function Tabs() {
   );
 }
 
-let stopWatching: (() => void) | null = null;
-
-function locate(): void {
-  platform.haptics.tap();
-  const first = !myLocation.peek();
-  if (!stopWatching) {
-    let moved = false;
-    stopWatching = platform.location.watch(
-      (fix) => {
-        myLocation.value = { at: [fix.lat, fix.lon], accuracy: fix.accuracy, ele: fix.ele, heading: fix.heading };
-        if (!moved) { moved = true; flyTo.value = { center: [fix.lat, fix.lon], zoom: Math.max(13, view.peek()?.zoom ?? 0) }; }
-      },
-      (problem) => {
-        stopWatching?.();
-        stopWatching = null;
-        say(problem === 'denied' ? 'Location is turned off for this site. Allow it in your settings to see where you are.'
-          : problem === 'unsupported' ? "This browser can't share your location." : "Your position can't be found right now.");
-      },
-    );
-  } else if (!first) {
-    const me = myLocation.peek()!;
-    flyTo.value = { center: me.at, zoom: Math.max(13, view.peek()?.zoom ?? 0) };
-  }
-}
-
 /** Buttons and notes that sit on the map. */
 function MapChrome() {
   const zoomedOut = (view.value?.zoom ?? 99) < MIN_TRAIL_ZOOM;
@@ -104,7 +80,7 @@ function MapChrome() {
       )}
       <div class="map-buttons">
         <a class="map-btn only-phone" href="#/settings" aria-label="Settings"><Icon name="gear" size={20} /></a>
-        <button type="button" class="map-btn" aria-label="Show where I am" title="Show where I am" onClick={locate}>
+        <button type="button" class="map-btn" aria-label="Show where I am" title="Show where I am" onClick={locateMe}>
           <Icon name="locate" size={20} />
         </button>
         <button type="button" class="map-btn" aria-label="Save this part of the map for offline use" title="Save this area for offline"
@@ -122,6 +98,9 @@ function MapChrome() {
         {page === 'plan' && <span class="pill">Tap the map to add points</span>}
         {(mapOffline.value || !online.value) && <span class="pill pill-quiet">Offline: showing saved maps</span>}
         {area?.state === 'saving' && <span class="pill pill-quiet">Saving map… {Math.round((area.done / Math.max(1, area.total)) * 100)}%</span>}
+        {locationState.value === 'denied' && (
+          <button type="button" class="pill pill-quiet pill-button" onClick={turnOnLocation}>Turn on location</button>
+        )}
         {baseMap.value === 'plain' && <span class="pill pill-quiet">The map style couldn't be loaded. Trails still work.</span>}
       </div>
     </>
@@ -251,7 +230,10 @@ export function App() {
   // Escape goes back from a trail to the list
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && route.peek().page === 'trail' && !document.querySelector('dialog[open]')) go({ page: 'explore' });
+      if (e.key === 'Escape' && route.peek().page === 'trail' && !document.querySelector('dialog[open]')) {
+        if (isPhone()) sheet.value = 'half';
+        go({ page: 'explore' });
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -264,6 +246,7 @@ export function App() {
       if (isPhone() && sheet.peek() === 'full') { sheet.value = 'half'; return true; }
       const r = route.peek();
       if (r.page === 'explore') return false;
+      if (r.page === 'trail' && isPhone()) sheet.value = 'half';
       go(r.page === 'trail' ? { page: 'explore' } : r.page === 'plan' || r.page === 'help' ? { page: 'saved' } : r.page === 'walk' ? { page: 'activity' } : { page: 'explore' });
       return true;
     });

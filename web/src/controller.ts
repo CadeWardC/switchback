@@ -53,6 +53,8 @@ export function startController(): void {
     const r = route.value;
     if (r.page !== 'trail') {
       selectedState.value = 'idle';
+      // closing a trail (back, Escape, or a tap on the map away from it) lets go of it: the whole map and list again
+      if (selected.peek()) selected.value = null;
       return;
     }
     const key = `${r.region}/${r.id}`;

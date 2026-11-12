@@ -10,6 +10,7 @@ import { DIFFICULTIES, DIFFICULTY_TITLE, shortLoops, type Trail } from '../lib/t
 import { regionName, search, type SearchHit } from '../data';
 import { Icon } from './Icon';
 import { Blazes, Empty, Note, ResultsList, Button } from './common';
+import { dismissLocationCard, locationState, startLocating } from '../locate';
 import { isPhone } from '../layout';
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -201,6 +202,13 @@ export function Explore() {
       </div>
 
       <div class="page-scroll">
+        {locationState.value === 'ask' && (
+          <div class="card locate-card">
+            <span>See the trails near you</span>
+            <Button kind="quiet" onClick={dismissLocationCard}>Not now</Button>
+            <Button kind="primary" onClick={() => startLocating(true, true)}>Use my location</Button>
+          </div>
+        )}
         {regionsError.value && <Note kind="warn">{regionsError.value}</Note>}
         {query.value.trim() ? <Results /> : zoomedOut.value ? (
           <>

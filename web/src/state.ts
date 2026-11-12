@@ -106,6 +106,8 @@ export const route = signal<Route>(first.route);
 /** Where the map starts: from the link, else where it was last time, else the whole of the US. */
 export const initialView: MapView = first.view ?? load<MapView | null>('view', null) ?? { lat: 39.5, lon: -98.35, zoom: 3.4 };
 export const hasSavedView = !!first.view || load<MapView | null>('view', null) != null;
+/** The app was opened on a link to a place or a trail (so it should not jump to where you are). */
+export const openedAt = !!first.view || first.route.page === 'trail';
 
 export function go(r: Route): void {
   const h = hashFor(r);
