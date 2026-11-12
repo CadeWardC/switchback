@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
   if (rel.startsWith('data/') || rel === 'sw.js') return;
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
-      const hit = await cache.match(req.mode === 'navigate' ? './' : req, { ignoreSearch: true });
+      const hit = await cache.match(req.mode === 'navigate' ? './' : req, { ignoreSearch: true, ignoreVary: true });
       if (hit) return hit;
       return fetch(req);
     }),
