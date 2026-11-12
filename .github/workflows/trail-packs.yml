@@ -26,8 +26,10 @@ on:
 permissions:
   contents: write
 
+# a run of named areas has its own queue, so it neither waits behind a full rebuild nor is dropped when another
+# full rebuild is queued
 concurrency:
-  group: trail-packs
+  group: trail-packs${{ inputs.only && format('-{0}', inputs.only) || '' }}
   cancel-in-progress: false
 
 jobs:
