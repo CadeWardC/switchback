@@ -682,6 +682,43 @@ def hikes(trails, adj, where, node_names, heads):
         closed_now += 1
     print(f"  loops: closed {closed_now} named loops along the trails that complete them")
 
+    # 1b. loops left open: a trail that comes back to within a few hundred metres of its start, where something says
+    # it is a loop (its name, a trailhead or car park beside both ends, or a gap that is tiny beside the trail).
+    # Closed along other trails where they lead back, else straight across (a car park, a road, a bit of pavement).
+    head_cells = defaultdict(list)
+    for _, _, c in heads:
+        head_cells[(round(c[0] * 250), round(c[1] * 250))].append(c)            # ~440 m cells
+    def head_by(p, q):
+        k = (round(p[0] * 250), round(p[1] * 250))
+        return any(dist(c, p) <= 300 and dist(c, q) <= 300
+                   for dy in (-1, 0, 1) for dx in (-1, 0, 1) for c in head_cells.get((k[0] + dy, k[1] + dx), ()))
+    opened = 0
+    for k, (t, _) in enumerate(trails):
+        main = t["_main"]
+        size = length(main)
+        gap = dist(main[0], main[-1]) if len(main) > 2 else 0
+        if is_unnamed(t) or closed(main) or SIDE_WORDS.search(t["name"]) or not 1 < gap <= NEAR_LOOP_M or size < 4 * gap:
+            continue
+        names = [t["name"]] + t.get("_names", [])
+        if not (any(re.search(r"\b(loop|circuit)\b", n, re.I) for n in names) or gap <= NEAR_LOOP_SHARE * size
+                or head_by(main[0], main[-1])):
+            continue
+        nodes = ids(main)
+        a, z = nodes[0], nodes[-1]
+        found = None
+        if a is not None and z is not None and a != z:
+            own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
+            found = shortest(adj, z, a, max(600, 3 * gap), own)
+        back = [where[n] for n in found[1]] if found else [main[-1], main[0]]
+        start = set_main(t, main + back[1:], [back])
+        tags = t.setdefault("tags", {})
+        tags["switchback:closed"] = "yes"
+        if not found:
+            tags["switchback:bridged"] = str(round(gap + float(tags.get("switchback:bridged", 0))))
+        trails[k] = (t, start)
+        opened += 1
+    print(f"  loops: closed {opened} more that ended within {NEAR_LOOP_M} m of their start")
+
     # 2. side trails: access trails, spurs, connectors and cutoffs aren't hikes of their own
     sides = 0
     for t, _ in trails:
@@ -905,9 +942,14 @@ def build(pbf):
     print(f"  named tracks: kept {kept_tracks}, dropped {dropped_tracks} (roads outside parks)")
 
     by_name = defaultdict(list)
+    # (a named path that isn't part of a route is kept even when a route somewhere has the same name: it is another
+    # trail, or a stretch the route leaves out; a true copy is dropped by drop_duplicates, a continuation joined by
+    # join_same_name)
+    shared = 0
     for wid, name, tags, nodes in ways.named:
-        if name.lower() not in relation_names:
-            by_name[name].append((wid, tags, nodes))
+        shared += name.lower() in relation_names
+        by_name[name].append((wid, tags, nodes))
+    print(f"  named paths: {shared} share a route's name without being part of it (kept)")
     # every trail line, so pieces of one named trail can be joined along the trails between them
     adj, where = network([n for n in ways.geom.values()] + [n for _, _, _, n in ways.named] +
                          [n for _, _, n in ways.unnamed])
@@ -995,6 +1037,7 @@ def build(pbf):
             park_named += 1
     print(f"  named {park_named} unnamed paths after the park they're in")
     trails = drop_duplicates(trails)
+    trails = join_same_name(trails)
     trails = hikes(trails, adj, where, node_names, rel.trailheads + [(1, n, c) for n, c in ways.parking])
     trails = networks(trails)
     for t, _ in trails:
@@ -1002,6 +1045,9 @@ def build(pbf):
             del t[k]
     pois = pois_near(trails, rel.pois)
     return trails, pois
+
+NEAR_LOOP_M = 400        # a trail that ends this close to its start may be a loop left open (see hikes, 1b)
+NEAR_LOOP_SHARE = 0.08   # ...it is one when the gap is this small beside the trail, with nothing else to say so
 
 BRIDGE_M = 5000        # the longest stretch of a route's own line that may join two pieces of one trail
 BRIDGE_SHARE = 0.4     # ...and all such stretches together, as a share of the pieces they join
@@ -1135,6 +1181,91 @@ def merge_pieces(run):
     tags.pop("switchback:hike", None)
     t["tags"] = tags
     return t, run["main"][0]
+
+def join_same_name(trails):
+    """A second pass at trails in pieces, over every kind of trail (routes, named paths, trails named after their
+    lake or park): pieces with one name whose free ends meet (within GAP_M), or nearly meet (within NEAR_GAP_M, the gap
+    small beside the two pieces), become one trail. The first pass only sees named paths of one kind, so a route
+    and a path that continue each other, or two halves of a lake walk, were left apart. Never joins generic names,
+    closed loops, or more than one piece at any end."""
+    groups = defaultdict(list)
+    for k, (t, _) in enumerate(trails):
+        main = t["_main"]
+        if is_unnamed(t) or len(main) < 2 or closed(main) or dist(main[0], main[-1]) <= 1:
+            continue
+        if SIDE_WORDS.search(t["name"]) or t["name"].lower() in NOT_SYSTEMS:
+            continue
+        groups[t["name"]].append(k)
+    gone, joined = set(), 0
+    for name, ks in groups.items():
+        if len(ks) < 2:
+            continue
+        cells = defaultdict(list)                       # ~550 m cells of the pieces' ends
+        end = lambda k, e: trails[k][0]["_main"][-1 if e else 0]
+        for k in ks:
+            for e in (0, 1):
+                c = end(k, e)
+                cells[(round(c[0] * 200), round(c[1] * 200))].append((k, e))
+        links = []
+        for k in ks:
+            for e in (0, 1):
+                c = end(k, e)
+                cell = (round(c[0] * 200), round(c[1] * 200))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        for j, f in cells.get((cell[0] + dy, cell[1] + dx), ()):
+                            if j <= k:
+                                continue
+                            d = dist(c, end(j, f))
+                            if d <= GAP_M or (d <= NEAR_GAP_M and d <= NEAR_GAP_SHARE *
+                                              (trails[k][0]["length"] + trails[j][0]["length"])):
+                                links.append((d, (k, e), (j, f)))
+        links.sort()
+        group = {k: k for k in ks}
+        def root(x):
+            while group[x] != x:
+                group[x] = group[group[x]]
+                x = group[x]
+            return x
+        linked = {}
+        for d, a, b in links:
+            if a in linked or b in linked or root(a[0]) == root(b[0]):
+                continue
+            group[root(a[0])] = root(b[0])
+            linked[a], linked[b] = (b, d), (a, d)
+        done = set()
+        for k in ks:
+            members = [m for m in ks if root(m) == root(k)]
+            if k in done or len(members) < 2:
+                continue
+            i, e_in = next((m, e) for m in members for e in (0, 1) if (m, e) not in linked)
+            walk, extra, bridged, chain = [], [], 0.0, []
+            while True:
+                done.add(i)
+                chain.append(i)
+                line = trails[i][0]["_main"] if e_in == 0 else trails[i][0]["_main"][::-1]
+                if walk and dist(walk[-1], line[0]) > 1:
+                    extra.append([walk[-1], line[0]])
+                walk += line if not walk or dist(walk[-1], line[0]) > 1 else line[1:]
+                nxt = linked.get((i, 1 - e_in))
+                if not nxt:
+                    break
+                (i, e_in), d = nxt
+                bridged += d if d > GAP_M else 0
+            base = max(chain, key=lambda m: trails[m][0]["length"])
+            t = trails[base][0]
+            for m in chain:
+                if m != base:
+                    extra += lines_of(trails[m][0])
+                    gone.add(m)
+            start = set_main(t, walk, extra)
+            if bridged:
+                tags = t.setdefault("tags", {})
+                tags["switchback:bridged"] = str(round(bridged + float(tags.get("switchback:bridged", 0))))
+            trails[base] = (t, start)
+            joined += len(chain) - 1
+    print(f"  joined {joined} more pieces of trails that share a name and meet end to end")
+    return [x for k, x in enumerate(trails) if k not in gone]
 
 def networks(trails):
     """A route whose lines form a web of loops (a relation drawn over a whole trail system) is not one walk: its

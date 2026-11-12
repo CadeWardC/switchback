@@ -147,6 +147,41 @@ def stitch(lines, gap=30):
         out.append(run)
     return sorted(out, key=official.length, reverse=True)
 
+def same_trail(entries, near=400, share=0.15):
+    """A list's pieces of one trail (same name and number) whose ends nearly meet, as one entry: the list often cuts
+    a trail at a road or a stream crossing. The gap must be small beside the pieces it joins."""
+    out, groups = [], defaultdict(list)
+    for m in entries:
+        key = (official.norm_name(m.get("name") or ""), str(m.get("no") or ""))
+        if key[0] and m.get("lines"):
+            groups[key].append(m)
+        else:
+            out.append(m)
+    for key, group in groups.items():
+        group = [dict(m) for m in group]
+        merged = True
+        while merged and len(group) > 1:
+            merged = False
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    a, b = group[i], group[j]
+                    gap = min(official.dist(p, q) for la in a["lines"] for p in (la[0], la[-1])
+                              for lb in b["lines"] for q in (lb[0], lb[-1]))
+                    size = sum(official.length(l) for l in a["lines"] + b["lines"])
+                    if gap <= near and gap <= max(30, share * size):
+                        a.update(lines=a["lines"] + b["lines"], miles=a.get("miles", 0) + b.get("miles", 0),
+                                 gap=near, sure=bool(a.get("sure") and b.get("sure")),
+                                 accepted=bool(a.get("accepted") and b.get("accepted")),
+                                 motor=bool(a.get("motor") or b.get("motor")), shut=bool(a.get("shut") or b.get("shut")),
+                                 use="hike" if a["use"] == b["use"] == "hike" else "?")
+                        group.pop(j)
+                        merged = True
+                        break
+                if merged:
+                    break
+        out += group
+    return out
+
 def add_federal(missing, trails, counts):
     """Trails the Forest Service and the National Park Service publish (public domain) that our data has no line
     for, added as trails of their own: only ones the list itself says are for people on foot, existing and open,
@@ -163,7 +198,7 @@ def add_federal(missing, trails, counts):
             near[(round(p[0] * 20), round(p[1] * 20))].append((p, a))
     added = []
     for label, source in ADD_FROM.items():
-        for m in missing.get(label, []):
+        for m in same_trail(missing.get(label, [])):
             # for hikers: the list manages it for them, or accepts them on a trail with no motor use at all
             # (the horse and pack trails of the backcountry, which walkers use)
             why = ("for motor vehicles" if m.get("motor") else
@@ -173,7 +208,7 @@ def add_federal(missing, trails, counts):
             if not why and (not name or official.norm_name(name) in official.GENERIC):
                 name = f"Forest Trail {m['no']}" if label == "Forest Service" and m.get("no") else ""
                 why = None if name else "no name"
-            lines = stitch(m.get("lines", [])) if not why else []
+            lines = stitch(m.get("lines", []), m.get("gap", 30)) if not why else []
             if not why and (not lines or official.length(lines[0]) < ADD_MIN_M):
                 why = "too short"
             if not why and added and official.match(lines, grid)[0] >= 0.3:
