@@ -244,6 +244,49 @@ def add_federal(missing, trails, counts):
             counts["miles added"] += official.length(lines[0]) / 1609.344
     return added
 
+def wanted_trails(region_id, parks, trails):
+    """Trails a park's own list or map names that the pack has no line for: the ones worth walking and sending
+    in (docs/SUBMISSIONS.md) or mapping in OpenStreetMap. Each says which park, where the park is (the middle of
+    the trails we do have there), and the manager's page or map to find it by. Facts only: no line is taken
+    from anyone's map. [{park, trail, miles?, source?, map?, lat?, lon?, have?}]"""
+    middles = defaultdict(list)
+    for t in trails:
+        a = official.norm_name(t.get("tags", {}).get("switchback:area", ""))
+        if a and t.get("_lines"):
+            middles[a].append(t["_lines"][0][0])
+    def where(names):
+        pts = [p for n in names for p in middles.get(official.norm_name(n), ())]
+        if not pts:
+            return {}
+        return {"lat": round(sum(p[0] for p in pts) / len(pts), 4), "lon": round(sum(p[1] for p in pts) / len(pts), 4)}
+    out, done = {}, set()
+    for rec in parks.values():
+        if id(rec) in done:
+            continue
+        done.add(id(rec))
+        at = where([rec["park"]] + rec.get("also_known_as", []))
+        for x in rec.get("trails", []):
+            if x["name"] in rec.get("_found", ()) or WATER.search(x["name"]) or MOTOR.search(x["name"]):
+                continue
+            if re.search(r"\b(paddl|canoe|kayak|orv|atv|motor)", str(x.get("uses", "")), re.I):
+                continue
+            row = {"park": rec["park"], "trail": x["name"], **at}
+            if x.get("miles"):
+                row["miles"] = x["miles"]
+            if rec.get("source"):
+                row["source"] = rec["source"]
+            out[(official.norm_name(rec["park"]), official.norm_name(x["name"]))] = row
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "park-maps", f"{region_id}-missing.json")
+    if os.path.exists(path):
+        for m in json.load(open(path)).get("trails", []):
+            if WATER.search(m["trail"]) or MOTOR.search(m["trail"]) or m.get("share_in_our_data", 0) >= 0.5:
+                continue
+            key = (official.norm_name(m["park"]), official.norm_name(m["trail"]))
+            row = out.setdefault(key, {"park": m["park"], "trail": m["trail"], **where([m["park"]])})
+            row["map"] = m["map"]
+            row["have"] = m.get("share_in_our_data", 0)
+    return sorted(out.values(), key=lambda r: (r["park"], r["trail"]))
+
 COMMUNITY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "submissions", "verified")
 
 def add_community(region_id, trails, counts, folder=COMMUNITY):
@@ -458,10 +501,21 @@ def main():
             tags["switchback:hike"] = "no"
         counts["hikes" if hike else "not listed as hikes"] += 1
 
+    seen_parks = set()
     for rec in parks.values():
+        if id(rec) in seen_parks:      # a park is in the table once for each of its names
+            continue
+        seen_parks.add(id(rec))
         absent = [x["name"] for x in rec.get("trails", []) if x["name"] not in rec.get("_found", ())]
         if absent:
             print(f"  {rec['park']}: in its trail list but not found in the pack: {', '.join(absent)}")
+    try:
+        wanted = wanted_trails(region_id, parks, inside)
+        json.dump({"region": region_id, "wanted": wanted}, open(os.path.join(out, f"{region_id}.wanted.json"), "w"),
+                  ensure_ascii=False, separators=(",", ":"))
+        counts["trails wanted (on a park's list or map, no line yet)"] = len(wanted)
+    except Exception as ex:
+        print(f"  the list of trails wanted couldn't be written ({ex})")
     # federal trails our data has no line for
     try:
         added = add_federal(missing, trails, counts) if region["country"] == "US" else []

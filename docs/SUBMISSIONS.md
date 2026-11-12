@@ -76,3 +76,14 @@ from: `switchback:origin` = `Community`.
 
 The checks cannot know whether the land is open to the public, or whether the name is the one on the sign. The
 maintainer looks at the line over aerial photos, the park's own map and the land's ownership before approving.
+
+## Trails wanted
+
+Each region's build also writes `<region>.wanted.json` (in the `trails-us` release beside the trail file): trails
+that a park's own list or map names but the file has no line for, with the park, roughly where it is, and the
+manager's page or map. These are the trails most worth walking and sending in.
+
+Lines are never traced from Google Maps, Apple Maps or a park's drawn map: their terms do not allow it, and
+neither does OpenStreetMap. What may be used to place a trail: a walk recorded on the ground, public-domain
+aerial photos and lidar (USGS NAIP and 3DEP), imagery whose owners allow tracing into OpenStreetMap (Esri World
+Imagery, Bing), and GPS traces already published on OpenStreetMap (`scripts/gps_traces.py`).
