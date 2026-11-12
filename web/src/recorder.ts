@@ -262,7 +262,7 @@ export async function finish(): Promise<Walk | null> {
   const part = when.getHours() < 12 ? 'Morning' : when.getHours() < 17 ? 'Afternoon' : 'Evening';
   const f = following.peek();
   const walk: Walk = {
-    id: newId(), name: f && f.id ? f.name : `${part} walk`, started, ended: points[points.length - 1].t,
+    id: newId(), name: f && f.id ? f.name : `${part} hike`, started, ended: points[points.length - 1].t,
     seconds: Math.round(recSeconds.peek()), length: track.length, segments,
     ...(recMarkers.peek().length ? { markers: recMarkers.peek() } : {}),
     ...(f && f.id ? { trail: { region: f.region, id: f.id, name: f.name } } : {}),

@@ -121,9 +121,6 @@ export const mapColors = {
   marker: '#ffffff',
 } as const;
 
-/** Kept for code that still asks for a colour by difficulty: every trail is green unless very hard. */
-export const difficultyColors = { easy: light.green, moderate: light.green, hard: light.green, veryHard: light.hard } as const;
-
 export const radius = { card: 14, control: 12, chip: 999, sheet: 20, blaze: 2 } as const;
 /** A 4px scale. */
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const;

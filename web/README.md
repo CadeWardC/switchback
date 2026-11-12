@@ -34,7 +34,8 @@ developing with one state.
 
 ```sh
 npm run build:app          # builds the site, leaves out the development trail files, copies it into android/ and ios/
-cd android && ./gradlew assembleDebug      # app/build/outputs/apk/debug/app-debug.apk (needs the Android SDK and Java 21)
+cd android && ./gradlew assembleRelease    # app/build/outputs/apk/release/app-release.apk, about 2 MB (needs the Android SDK and Java 21)
+./gradlew assembleDebug                    # app/build/outputs/apk/debug/app-debug.apk, about 7 MB, unshrunk
 npx cap open ios           # on a Mac: opens ios/App/App.xcodeproj in Xcode
 ```
 
@@ -43,7 +44,8 @@ an extension target (a widget, a Live Activity) can be added to the Xcode projec
 (`android/app/src/main/assets/public`, `ios/App/App/public`) are not in git: `npx cap sync` puts them there.
 
 Two workflows build them on every push that touches `web/`:
-`.github/workflows/build-android-apk.yml` (a debug APK, release `switchback-android-build-N`) and
+`.github/workflows/build-android-apk.yml` (`Switchback.apk`, the release build, and `Switchback-debug.apk`; release
+`switchback-android-build-N`) and
 `.github/workflows/build-web-ios-ipa.yml` (an unsigned IPA on a Mac runner, release `switchback-app-build-N`).
 
 What differs in the apps (all in `src/platform/capacitor.ts`):
@@ -58,8 +60,16 @@ What differs in the apps (all in `src/platform/capacitor.ts`):
 | Links, directions | a new tab | the system browser, the maps app |
 | Android back | (the browser's) | closes a dialog, lowers the sheet, goes back a page, then leaves |
 
-App icon and splash screen come from `assets/` (made from the iPhone app's icon); regenerate with
-`npx capacitor-assets generate --ios --android`.
+**Keeping the apps small.** The release APK is shrunk by R8 (`minifyEnabled` and `shrinkResources` in
+`android/app/build.gradle`, keep rules for Capacitor and its plugins in `android/app/proguard-rules.pro`); the
+workflow checks that no plugin class was lost. **The release build is signed with the debug key for now** so it
+installs for testing: replace `signingConfig signingConfigs.debug` with the owner's keystore before a store
+release. There are no full-screen launch pictures: Android shows the system launch screen (the stone background
+and the icon as a vector, `res/drawable/splash_icon.xml`), iOS a launch storyboard with a background colour and
+the icon as one SVG. Only plugins that are used are installed (`npx cap ls`).
+
+The app icon comes from `assets/` (made from the iPhone app's icon); regenerate with
+`npx capacitor-assets generate --ios --android` (and delete the splash pictures it also writes).
 
 **Before a store release** the owner still has to: set up signing (an Apple developer team in Xcode; a release
 keystore for Android), raise `versionCode`/`MARKETING_VERSION`, and fill in the stores' location-permission
@@ -86,6 +96,18 @@ address. A region's file is downloaded the first time the map shows it, kept in 
 The file format and the rules shared with the apps (what counts as a hike, difficulty, estimated time) are in
 `src/lib/pack.ts` and `src/lib/trail.ts`, mirroring `Switchback/Services/TrailPacks.swift` and
 `Switchback/Model/Trail.swift`.
+
+## The look: Waymark
+
+The design is `../docs/design/` (the decisions in `README.md`, the approved mock-ups in `waymark-mockups.html`).
+Every colour, type size, radius and shape is in `src/tokens.ts`; the stylesheet and the map read only those.
+Sign yellow is kept for you (your position, the next thing ahead, the off-trail card); dusk is for daylight
+running out. The two typefaces, Figtree and Bricolage Grotesque, are in `src/fonts/`, cut down to the letters
+and weights the app uses (47 KB together; `src/fonts.css` says how they were made).
+
+Phones (under 700 px) get a sheet over the map and four words at the bottom, Explore, Hike, Saved, Log, which
+step away while a hike is recorded. From 700 px a panel sits over the left of the map (wider from 1024 px) with
+the same four words at its top; opening a trail replaces the list in that panel.
 
 ## Offline
 
@@ -114,7 +136,7 @@ connection or the tab comes back. Trailhead pins, numbered groups and region lab
 
 | | |
 | --- | --- |
-| `src/tokens.ts` | Every design value: colours (light and dark), difficulty colours, radii, spacing, type sizes. The CSS custom properties are generated from it at startup; the map reads it too. |
+| `src/tokens.ts` | Every design value (Waymark): colours in light and dark, blaze paint colours, radii, spacing, type sizes, fonts. The CSS custom properties are generated from it at startup; the map reads it too. |
 | `src/platform/` | The device interface (`types.ts`) and the browser's version of it (`browser.ts`): location and recording, keep-awake, file export, small values, large files, links and directions, haptics, where trail files come from. A Capacitor version goes beside it and is picked in `index.ts`. |
 | `src/lib/` | No browser needed: polylines, the trail-file parser, trail rules, geometry, units, GPX, submissions, storage. |
 | `src/filters.ts` | The filters and sort order as one small store, with a plain-words summary ("Loops under 5 mi, closest first"). Any layout can read and write it. |
@@ -125,10 +147,10 @@ connection or the tab comes back. Trailhead pins, numbered groups and region lab
 | `src/controller.ts` | Loads trails when the map moves; opens the trail named in the address. |
 | `src/recorder.ts` | Recording a walk. |
 | `src/map/` | The map, its layers and its canvas-painted pictures. |
-| `src/ui/` | The screens: Explore, Trail, Record, Saved, Plan, Activity, Settings, Help map trails, and the submit dialog. `ResultsList` and `TrailView` take data and callbacks only, so another layout can replace them. |
+| `src/ui/` | The screens: Explore, Trail, Hike (`Record.tsx`), Saved, Plan, Log (`Activity.tsx`), Settings, Help map trails, and the submit dialog. `ResultsList` and `TrailView` take data and callbacks only, so another layout can replace them. |
 
-Addresses: `#/` (map), `#/@lat,lon,zoom` (a place), `#/trail/<region>/<id>`, `#/record`, `#/saved`, `#/plan`,
-`#/activity`, `#/activity/<id>`, `#/settings`, `#/help`.
+Addresses: `#/` (map), `#/@lat,lon,zoom` (a place), `#/trail/<region>/<id>`, `#/saved`, `#/plan`,
+`#/hike`, `#/log`, `#/log/<id>`, `#/settings`, `#/help` (the older `#/record` and `#/activity` still work).
 
 ## Submitting a trail
 

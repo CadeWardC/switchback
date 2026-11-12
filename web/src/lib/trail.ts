@@ -7,10 +7,6 @@ export const DIFFICULTIES: Difficulty[] = ['easy', 'moderate', 'hard', 'veryHard
 export const DIFFICULTY_TITLE: Record<Difficulty, string> = {
   easy: 'Easy', moderate: 'Moderate', hard: 'Hard', veryHard: 'Very hard',
 };
-export const DIFFICULTY_COLOR: Record<Difficulty, string> = {
-  easy: '#2E9E5B', moderate: '#2B7FD9', hard: '#D9482B', veryHard: '#7B4BC9',
-};
-
 export interface Profile {
   distances: number[];
   elevations: number[];

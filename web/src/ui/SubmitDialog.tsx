@@ -6,7 +6,7 @@ import type { GpxPoint } from '../lib/gpx';
 import { platform } from '../platform';
 import { Button, Note, dist } from './common';
 
-const PLACEHOLDERS = /^(trail|my hike|my walk|untitled|walk|hike|route|morning walk|afternoon walk|evening walk|my route)$/i;
+const PLACEHOLDERS = /^(trail|my hike|my walk|untitled|walk|hike|route|morning walk|afternoon walk|evening walk|morning hike|afternoon hike|evening hike|my route)$/i;
 
 export interface SubmitWhat { name: string; kind: 'walked' | 'placed'; points: GpxPoint[]; length: number }
 

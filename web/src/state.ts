@@ -27,7 +27,7 @@ effect(() => { save('theme', themePref.value); });
 effect(() => {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = dark.value ? 'dark' : 'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark.value ? '#111A15' : '#1F6B45');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark.value ? '#0d1512' : '#edf0ec');
 });
 
 // ── Signal ──
