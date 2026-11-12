@@ -141,6 +141,11 @@ jobs:
           export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
           python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
 
+      - name: Check the hikes are cohesive (pieces of one trail, webs, loops left open)
+        # counts go into the area's summary so each build can be compared with the last; the worst are listed here
+        continue-on-error: true
+        run: python3 scripts/trail_quality.py out "${{ matrix.region.id }}" --list 15
+
       - name: Write the open file (GeoJSON) anyone can download
         continue-on-error: true
         run: python3 scripts/export_open_data.py out "${{ matrix.region.id }}" open
