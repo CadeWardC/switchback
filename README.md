@@ -41,7 +41,7 @@ subscription and no API keys.
   duplicate names). Each trail also carries detailed elevation (`scripts/elevation.py`): sampled every 10 m from AWS
   Terrain Tiles (zoom 13, ~15 m), with gain, descent, lowest and highest worked out from those samples, and the chart
   reduced to the points it can't redraw within 1.5 m (typically a tenth to a third), stored as small deltas — about
-  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, and a downloaded
+  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, Settings › Reset and download again replaces every trail file on the phone with the current one, and a downloaded
   offline map area can be updated with a swipe (only changed pieces are fetched for our own map).
   `scripts/build_trail_pack.py` uses the same rules (and trail ids) as the live search, and also: puts every trail in
   its area (the smallest named park, nature reserve or protected area it lies in); names unnamed paths from the map
