@@ -114,6 +114,24 @@ export interface PlatformHaptics {
   success(): void;
 }
 
+/** Map tiles, fonts and terrain kept on the device, so anywhere already looked at works with no signal.
+ *  Keys are short strings ("v/14/3912/6304", "g/Noto Sans Regular/0-255", "d/11/…"). The store is bounded:
+ *  past its cap the tiles unused for longest go first. A second source is planned behind the same reads:
+ *  one base-map file per state (PMTiles), see src/map/tilesource.ts. */
+export interface PlatformTiles {
+  get(key: string): Promise<ArrayBuffer | null>;
+  put(key: string, data: ArrayBuffer): Promise<void>;
+  has(key: string): Promise<boolean>;
+  /** Bytes kept. */
+  size(): Promise<number>;
+  clear(): Promise<void>;
+}
+
+export interface PlatformNetwork {
+  /** What the device is connected by, as far as it can tell. */
+  kind(): Promise<'wifi' | 'cellular' | 'none' | 'unknown'>;
+}
+
 export interface PlatformTrailFiles {
   /** Where "regions.json" and "<region>.trails" are fetched from. Browser: beside the site (release
    *  downloads send no CORS headers). Native: the GitHub release itself. */
@@ -137,4 +155,6 @@ export interface Platform {
   links: PlatformLinks;
   haptics: PlatformHaptics;
   trailFiles: PlatformTrailFiles;
+  tiles: PlatformTiles;
+  network: PlatformNetwork;
 }

@@ -3,6 +3,7 @@ import { App } from './ui/App';
 import { startController } from './controller';
 import { restoreDraft } from './recorder';
 import { hydrate } from './state';
+import { startOffline } from './offline';
 
 void (async () => {
   // saved trails, routes and hikes are read from the device before the first screen (it is quick)
@@ -10,4 +11,5 @@ void (async () => {
   startController();
   render(<App />, document.getElementById('app')!);
   void restoreDraft();
+  startOffline();
 })();

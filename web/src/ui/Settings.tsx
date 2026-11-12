@@ -1,6 +1,7 @@
 // Settings, and about: units, theme, the trail files on this device, the open data, credits and the apps.
 import { useEffect, useState } from 'preact/hooks';
-import { regions, themePref, units, type ThemePref } from '../state';
+import { mapsOverCellular, regions, themePref, units, type ThemePref } from '../state';
+import { platform } from '../platform';
 import { regionName, resetTrailFiles, trailFilesOnDevice, type TrailFilesInfo } from '../data';
 import { APP_VERSION } from '../lib/submit';
 import type { Units } from '../lib/format';
@@ -18,7 +19,11 @@ export function Settings() {
   const [files, setFiles] = useState<TrailFilesInfo | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const refresh = () => void trailFilesOnDevice().then(setFiles, () => setFiles({ regions: [], bytes: 0 }));
+  const [mapBytes, setMapBytes] = useState<number | null>(null);
+  const refresh = () => {
+    void trailFilesOnDevice().then(setFiles, () => setFiles({ regions: [], bytes: 0 }));
+    void platform.tiles.size().then(setMapBytes);
+  };
   useEffect(refresh, []);
 
   const reset = async () => {
@@ -66,15 +71,31 @@ export function Settings() {
           {result && <p class="result" role="status">{result}</p>}
         </section>
 
-        <h2 class="section-title">Get the app</h2>
+        <h2 class="section-title">Maps on this {platform.name === 'web' ? 'device' : 'phone'}</h2>
         <section class="card pad">
+          <div class="setting">
+            <span>Maps on this {platform.name === 'web' ? 'device' : 'phone'}: {mapBytes == null ? '…' : mapBytes < 1e6 ? 'under 1 MB' : `${Math.round(mapBytes / 1e6)} MB`}</span>
+            <Button disabled={!mapBytes} onClick={() => { void platform.tiles.clear().then(refresh); }}>Clear</Button>
+          </div>
+          <p class="fine">
+            Every part of the map you look at is kept, so it works with no signal. The map around you, and around trails you open,
+            save or start, is saved by itself. The oldest unused parts make room when space runs low.
+          </p>
+          <label class="check">
+            <input type="checkbox" checked={mapsOverCellular.value} onChange={(e) => (mapsOverCellular.value = (e.currentTarget as HTMLInputElement).checked)} />
+            <span>Download maps over cellular (mobile data). Off: larger map downloads wait for Wi-Fi.</span>
+          </label>
+        </section>
+
+        {platform.name === 'web' && <h2 class="section-title">Get the app</h2>}
+        {platform.name === 'web' && <section class="card pad">
           <p>Switchback for iPhone and Android records in your pocket and works offline. No account, no subscription.</p>
           <div class="actions">
             <Button icon="download" href={`${REPO}/releases`}>iPhone (IPA)</Button>
             <Button icon="download" href={`${REPO}/releases`}>Android (APK)</Button>
           </div>
           <p class="fine">Both are on the project's Releases page. The iPhone file is unsigned: install it with AltStore, SideStore or Sideloadly.</p>
-        </section>
+        </section>}
 
         <h2 class="section-title">Download the trails</h2>
         <section class="card pad">

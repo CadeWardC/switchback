@@ -4,5 +4,8 @@ import { rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-rmSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'data'), { recursive: true, force: true });
+const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+rmSync(join(dist, 'data'), { recursive: true, force: true });
+// (the apps carry their own files: no service worker)
+rmSync(join(dist, 'sw.js'), { force: true });
 console.log('dist/data removed for the app build');

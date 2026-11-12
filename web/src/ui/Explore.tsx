@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
 import {
-  difficultyFilter, filtersOn, flyTo, go, hikesInView, lengthBands, lengthFilter, loading, loadNote, loopsOnly, MIN_TRAIL_ZOOM, query,
-  regions, regionsError, sheet, sort, units, view, type LengthBand, type Sort,
+  climbBands, climbFilter, clearFilters, difficultyFilter, dogsOnly, filters, filterSummary, filtersOn, flyTo, go, hikesInView, lengthBands,
+  lengthFilter, loading, loadNote, loopsOnly, MIN_TRAIL_ZOOM, query, regions, regionsError, sheet, sort, sorted, units, view,
+  type ClimbBand, type LengthBand, type Sort,
 } from '../state';
 import { DIFFICULTIES, DIFFICULTY_TITLE, type Trail } from '../lib/trail';
 import { regionName, search, type SearchHit } from '../data';
@@ -22,7 +23,7 @@ const SORTS: { value: Sort; label: string }[] = [
 const PAGE = 120;
 
 function Filters() {
-  const bands = lengthBands(units.value);
+  const bands = lengthBands(units.value), climbs = climbBands(units.value);
   const toggle = (d: (typeof DIFFICULTIES)[number]) => {
     const now = difficultyFilter.value;
     difficultyFilter.value = now.includes(d) ? now.filter((x) => x !== d) : [...now, d];
@@ -42,6 +43,12 @@ function Filters() {
             {(Object.keys(bands.labels) as LengthBand[]).map((b) => <option value={b}>{bands.labels[b]}</option>)}
           </select>
         </label>
+        <label class="select">
+          <span class="visually-hidden">Climb</span>
+          <select value={climbFilter.value} onChange={(e) => (climbFilter.value = (e.currentTarget as HTMLSelectElement).value as ClimbBand)}>
+            {(Object.keys(climbs.labels) as ClimbBand[]).map((b) => <option value={b}>{climbs.labels[b]}</option>)}
+          </select>
+        </label>
       </div>
       <div class="chips" role="group" aria-label="Show only">
         {DIFFICULTIES.map((d) => (
@@ -52,25 +59,10 @@ function Filters() {
         <button type="button" class="chip" aria-pressed={loopsOnly.value} onClick={() => (loopsOnly.value = !loopsOnly.value)}>
           <Icon name="loop" size={15} />Loops
         </button>
+        <button type="button" class="chip" aria-pressed={dogsOnly.value} onClick={() => (dogsOnly.value = !dogsOnly.value)}>Dogs welcome</button>
       </div>
     </div>
   );
-}
-
-function sorted(trails: Trail[], by: Sort, center: [number, number] | null): Trail[] {
-  const out = trails.slice();
-  const climb = (t: Trail) => t.profile?.gain ?? 0;
-  if (by === 'shortest') out.sort((a, b) => a.length - b.length);
-  else if (by === 'longest') out.sort((a, b) => b.length - a.length);
-  else if (by === 'leastClimb') out.sort((a, b) => climb(a) - climb(b) || a.length - b.length);
-  else if (by === 'mostClimb') out.sort((a, b) => climb(b) - climb(a) || b.length - a.length);
-  else if (center) {
-    const k = Math.cos(center[0] * Math.PI / 180);
-    const d = (t: Trail) => (t.start[0] - center[0]) ** 2 + ((t.start[1] - center[1]) * k) ** 2;
-    const ds = new Map(out.map((t) => [t, d(t)]));
-    out.sort((a, b) => ds.get(a)! - ds.get(b)!);
-  }
-  return out;
 }
 
 /** Groups keep the order their first trail has in the sorted list. */
@@ -213,11 +205,12 @@ export function Explore() {
         ) : (
           <>
             {filtersOpen && <Filters />}
+            {(filtersOn.value || sort.value !== 'closest') && <p class="quiet-line filter-summary">{filterSummary(filters.value, units.value)}</p>}
             {loadNote.value && <Note kind="warn">{loadNote.value}</Note>}
             {!loading.value && !hikes.length && (
               <Empty icon="peak" title={filtersOn.value ? 'No hikes match' : 'No hikes here'}>
                 {filtersOn.value
-                  ? <>Nothing on this part of the map passes your filters. <button type="button" class="link" onClick={() => { difficultyFilter.value = []; lengthFilter.value = 'any'; loopsOnly.value = false; }}>Clear filters</button></>
+                  ? <>Nothing on this part of the map passes your filters. <button type="button" class="link" onClick={clearFilters}>Clear filters</button></>
                   : 'Move or zoom the map to look somewhere else.'}
               </Empty>
             )}

@@ -142,3 +142,30 @@ describe('following a trail', () => {
     expect(sunTimes(new Date(Date.UTC(2026, 5, 21, 12)), [80, 20])).toBeNull();
   });
 });
+
+import { DEFAULT_FILTERS, filterSummary, passes } from '../src/filters';
+import type { Trail } from '../src/lib/trail';
+
+describe('filters', () => {
+  const trail = (over: Partial<Trail>): Trail => ({
+    key: 'm/x', region: 'm', id: 'x', name: 'X', source: 'osmWay', segments: [], path: [], length: 3000, tags: {}, profile: null,
+    start: [0, 0], bbox: [0, 0, 0, 0], difficulty: 'easy', isLoop: false, isHike: true, area: null, ...over,
+  });
+  it('says the choice in plain words', () => {
+    expect(filterSummary(DEFAULT_FILTERS, 'imperial')).toBe('All hikes, closest first');
+    expect(filterSummary({ ...DEFAULT_FILTERS, loopsOnly: true, length: 'short' }, 'metric')).toBe('Loops under 5 km, closest first');
+    expect(filterSummary({ ...DEFAULT_FILTERS, difficulty: ['hard', 'easy'], sort: 'shortest', dogs: true }, 'imperial')).toBe('Easy or hard hikes, dogs welcome, shortest first');
+    expect(filterSummary({ ...DEFAULT_FILTERS, climb: 'low' }, 'imperial')).toBe('Hikes, under 500 ft climb, closest first');
+  });
+  it('filters by length, climb, loops, difficulty and dogs', () => {
+    const f = DEFAULT_FILTERS;
+    expect(passes(trail({}), f, 'metric')).toBe(true);
+    expect(passes(trail({}), { ...f, length: 'short' }, 'metric')).toBe(true);
+    expect(passes(trail({ length: 9000 }), { ...f, length: 'short' }, 'metric')).toBe(false);
+    expect(passes(trail({}), { ...f, loopsOnly: true }, 'metric')).toBe(false);
+    expect(passes(trail({ difficulty: 'hard' }), { ...f, difficulty: ['easy'] }, 'metric')).toBe(false);
+    expect(passes(trail({}), { ...f, dogs: true }, 'metric')).toBe(false);
+    expect(passes(trail({ tags: { dog: 'leashed' } }), { ...f, dogs: true }, 'metric')).toBe(true);
+    expect(passes(trail({ profile: { distances: [], elevations: [], gain: 300, loss: 0, min: 0, max: 0 } }), { ...f, climb: 'low' }, 'metric')).toBe(false);
+  });
+});

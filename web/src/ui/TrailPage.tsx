@@ -6,6 +6,7 @@ import {
 } from '../lib/trail';
 import { go, isSaved, recState, route, say, selected, selectedState, shownTrail, toggleSaved, units } from '../state';
 import { start } from '../recorder';
+import { areaReady, mapJobs, trailParts } from '../map/tilesource';
 import { Note, Segmented } from './common';
 import { fmtDistance, fmtDuration } from '../lib/format';
 import { buildGpx, exportGpx, type GpxPoint } from '../lib/gpx';
@@ -48,6 +49,22 @@ async function share(t: Trail): Promise<void> {
   const how = await platform.files.shareLink(t.name, trailLink(t));
   if (how === 'copied') say('Link copied');
   else if (how === 'failed' && platform.name === 'web') say('Copy the address of this page to share it');
+}
+
+/** One plain line: is this trail's map on the device? */
+function OfflineTick({ t }: { t: Trail }) {
+  const job = mapJobs.value[`trail:${t.key}`];
+  const [ready, setReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    setReady(null);
+    void areaReady(trailParts(t.bbox).slice(0, 1)).then((r) => { if (live) setReady(r); });
+    return () => { live = false; };
+  }, [t.key, job?.state]);
+  if (job?.state === 'saving') return <p class="status-tick"><span class="spinner" />Saving map… {Math.round((job.done / Math.max(1, job.total)) * 100)}%</p>;
+  if (ready) return <p class="status-tick ok"><Icon name="check" size={16} />Ready offline</p>;
+  if (ready === false) return <p class="status-tick">Map not saved yet</p>;
+  return null;
 }
 
 /** Starts recording while following a trail's line. */
@@ -125,6 +142,7 @@ export function TrailPage() {
             {unwalked && <span class="tag tag-warn">Not yet walked</span>}
             {!t.isHike && !unverified && <span class="tag">{t.tags['switchback:unnamed'] === 'yes' ? 'Unnamed path' : t.tags['switchback:roadwalk'] === 'yes' ? 'Road walk' : 'Side trail'}</span>}
           </div>
+          <OfflineTick t={whole} />
         </div>
 
         {unwalked && (

@@ -1,9 +1,11 @@
 // The frame: the map behind, a panel beside it (wide screens) or a sheet over it with a tab bar (phones).
 import { useEffect, useRef } from 'preact/hooks';
 import {
-  baseMap, dark, flyTo, go, loading, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
+  baseMap, dark, flyTo, go, loading, online, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
 } from '../state';
 import { createMap, myLocation, resizeMap, zoomBy } from '../map/map';
+import { mapJobs, mapOffline } from '../map/tilesource';
+import { saveView } from '../offline';
 import { isPhone, sheetVisible } from '../layout';
 import { isNativeApp, platform } from '../platform';
 import { Icon } from './Icon';
@@ -81,12 +83,17 @@ function MapChrome() {
   const zoomedOut = (view.value?.zoom ?? 99) < MIN_TRAIL_ZOOM;
   const page = route.value.page;
   const exploring = page === 'explore' || page === 'trail';
+  const area = mapJobs.value.area;
   return (
     <>
       <div class="map-buttons">
         <a class="map-btn only-phone" href="#/settings" aria-label="Settings"><Icon name="gear" size={20} /></a>
         <button type="button" class="map-btn" aria-label="Show where I am" title="Show where I am" onClick={locate}>
           <Icon name="locate" size={20} />
+        </button>
+        <button type="button" class="map-btn" aria-label="Save this part of the map for offline use" title="Save this area for offline"
+          onClick={() => { void saveView().then(say); }}>
+          <Icon name="download" size={20} />
         </button>
         <div class="zoom only-wide">
           <button type="button" class="map-btn" aria-label="Zoom in" onClick={() => zoomBy(1)}><Icon name="plus" size={20} /></button>
@@ -97,7 +104,9 @@ function MapChrome() {
         {exploring && zoomedOut && <span class="pill">Zoom in to see trails</span>}
         {exploring && !zoomedOut && loading.value && <span class="pill"><span class="spinner" />Loading trails</span>}
         {page === 'plan' && <span class="pill">Tap the map to add points</span>}
-        {baseMap.value === 'plain' && <span class="pill pill-quiet">The background map can't be reached. Trails still work.</span>}
+        {(mapOffline.value || !online.value) && <span class="pill pill-quiet">Offline: showing saved maps</span>}
+        {area?.state === 'saving' && <span class="pill pill-quiet">Saving map… {Math.round((area.done / Math.max(1, area.total)) * 100)}%</span>}
+        {baseMap.value === 'plain' && <span class="pill pill-quiet">The map style couldn't be loaded. Trails still work.</span>}
       </div>
     </>
   );

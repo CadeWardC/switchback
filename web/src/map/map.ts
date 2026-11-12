@@ -12,6 +12,7 @@ import {
 } from '../state';
 import { dark as darkTokens, difficultyColors, light as lightTokens, mapColors, size } from '../tokens';
 import { makeImage } from './images';
+import { mapProtocol, throughStore } from './tilesource';
 import { save } from '../lib/storage';
 import type { Coord } from '../lib/polyline';
 import type { BBox } from '../lib/geo';
@@ -20,7 +21,6 @@ import { highlightsIn, regionName, type Highlight } from '../data';
 import { platform } from '../platform';
 import { coveredBottom, isPhone } from '../layout';
 
-const BASE_PROBE = 'https://tiles.openfreemap.org/planet';
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 /** Where the device is, once the locate button has been used (or a recording is running). */
@@ -156,21 +156,14 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
   };
 }
 
-async function baseReachable(): Promise<boolean> {
-  try {
-    const res = await fetch(BASE_PROBE, { signal: AbortSignal.timeout(6000) });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
+/** The outdoor style that comes with the site, with its tiles, fonts and terrain going through the
+ *  device's store first (src/map/tilesource.ts). The plain style only if that file can't be read. */
 async function buildStyle(full: boolean, isDark: boolean): Promise<{ style: StyleSpecification; full: boolean }> {
   let base: StyleSpecification | null = null;
   if (full) {
     try {
       const res = await fetch(`./styles/${isDark ? 'dark' : 'light'}.json`);
-      if (res.ok) base = (await res.json()) as StyleSpecification;
+      if (res.ok) base = throughStore((await res.json()) as StyleSpecification);
     } catch { /* fall back to the plain map */ }
   }
   const o = overlay(isDark, !!base);
@@ -357,6 +350,7 @@ function showHighlight(h: { kind: string; name?: string; elevation?: number }, a
 
 export function createMap(container: HTMLElement): void {
   maplibregl.setWorkerUrl(new URL(workerUrl, document.baseURI).href);
+  maplibregl.addProtocol('sb', mapProtocol);
   const m = new maplibregl.Map({
     container,
     style: plainStyle(dark.peek()),
@@ -378,23 +372,12 @@ export function createMap(container: HTMLElement): void {
   m.on('error', (e) => console.warn('map:', e.error?.message ?? e));
   m.setMissingStyleImageResolver((id) => makeImage(m, id, dark.peek()));
 
-  // Trails draw at once on a plain background; the outdoor base map replaces it when it can be reached.
-  let wantFull = false;
-  const settle = async () => {
-    wantFull = await baseReachable();
-    await applyStyle(wantFull);
-  };
-  void applyStyle(false).then(settle);
-  // came back online, or back to the tab: try the base map again
-  const retry = () => { if (baseMap.peek() === 'plain') void settle(); };
-  window.addEventListener('online', retry);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') retry(); });
-
+  void applyStyle(true);
   let firstTheme = true;
   effect(() => {
     dark.value;
     if (firstTheme) { firstTheme = false; return; }
-    void applyStyle(wantFull);
+    void applyStyle(true);
   });
 
   // ── Where the map is ──

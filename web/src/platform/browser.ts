@@ -1,5 +1,5 @@
 // The browser's version of the device interface.
-import type { Fix, FixHandler, Platform, PlatformDocuments, ProblemHandler } from './types';
+import type { Fix, FixHandler, Platform, PlatformDocuments, PlatformTiles, ProblemHandler } from './types';
 
 const PREFIX = 'switchback:';
 const CACHE = 'switchback-trail-files-v1';
@@ -59,6 +59,7 @@ function db(): Promise<IDBDatabase> {
       open.result.createObjectStore('docs');
       open.result.createObjectStore('logs', { autoIncrement: true }).createIndex('log', 'log');
     };
+    open.onblocked = () => reject(new Error('blocked'));
     open.onsuccess = () => resolve(open.result);
     open.onerror = () => reject(open.error);
   });
@@ -101,6 +102,115 @@ export const browserDocuments: PlatformDocuments = {
         cursor.onsuccess = () => { const c = cursor.result; if (c) { s.delete(c.primaryKey); c.continue(); } };
       });
     } catch { /* nothing to remove */ }
+  },
+};
+
+// ── Map tiles, in IndexedDB (a database of its own, so clearing maps never touches the person's things) ─
+interface TileRow { k: string; d: ArrayBuffer; n: number; t: number }
+const DAY = 86_400_000;
+let tileDb: Promise<IDBDatabase> | null = null;
+let tileBytes: number | null = null;
+let tileCap = 400 * 1024 * 1024;
+let evicting = false;
+
+function tdb(): Promise<IDBDatabase> {
+  tileDb ??= new Promise((resolve, reject) => {
+    const open = indexedDB.open('switchback-tiles', 1);
+    open.onupgradeneeded = () => {
+      open.result.createObjectStore('tiles', { keyPath: 'k' }).createIndex('t', 't');
+      open.result.createObjectStore('meta');
+    };
+    open.onsuccess = () => resolve(open.result);
+    open.onerror = () => reject(open.error);
+  });
+  tileDb.catch(() => (tileDb = null));
+  return tileDb;
+}
+
+const req = <T>(r: IDBRequest<T>) => new Promise<T>((resolve, reject) => { r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+
+async function tileTotal(): Promise<number> {
+  if (tileBytes == null) {
+    const d = await tdb();
+    tileBytes = Number(await req(d.transaction('meta').objectStore('meta').get('bytes'))) || 0;
+    // as much as the browser is likely to allow, up to 1.5 GB (the phone apps' cap)
+    try {
+      const est = await navigator.storage?.estimate?.();
+      if (est?.quota) tileCap = Math.max(100 * 1024 * 1024, Math.min(1.5 * 1024 ** 3, est.quota * 0.4));
+    } catch { /* keep the default */ }
+  }
+  return tileBytes;
+}
+
+/** Past the cap, the tiles unused for longest go, down to nine tenths of it. */
+async function evict(): Promise<void> {
+  if (evicting) return;
+  evicting = true;
+  try {
+    const d = await tdb();
+    await new Promise<void>((resolve) => {
+      const t = d.transaction(['tiles', 'meta'], 'readwrite');
+      const cursor = t.objectStore('tiles').index('t').openCursor();
+      cursor.onsuccess = () => {
+        const c = cursor.result;
+        if (!c || (tileBytes ?? 0) <= tileCap * 0.9) { t.objectStore('meta').put(tileBytes ?? 0, 'bytes'); return; }
+        tileBytes = Math.max(0, (tileBytes ?? 0) - ((c.value as TileRow).n || 0));
+        c.delete();
+        c.continue();
+      };
+      t.oncomplete = t.onerror = t.onabort = () => resolve();
+    });
+  } finally {
+    evicting = false;
+  }
+}
+
+export const browserTiles: PlatformTiles = {
+  async get(key) {
+    try {
+      const d = await tdb();
+      const row = (await req(d.transaction('tiles').objectStore('tiles').get(key))) as TileRow | undefined;
+      if (!row) return null;
+      // note that it was used, at most once a day (a write on every read would be wasteful)
+      if (Date.now() - row.t > DAY) d.transaction('tiles', 'readwrite').objectStore('tiles').put({ ...row, t: Date.now() });
+      return row.d;
+    } catch {
+      return null;
+    }
+  },
+  async put(key, data) {
+    try {
+      const d = await tdb();
+      await tileTotal();
+      const t = d.transaction(['tiles', 'meta'], 'readwrite');
+      const store = t.objectStore('tiles');
+      const old = (await req(store.get(key))) as TileRow | undefined;
+      store.put({ k: key, d: data, n: data.byteLength, t: Date.now() } satisfies TileRow);
+      tileBytes = Math.max(0, (tileBytes ?? 0) - (old?.n ?? 0) + data.byteLength);
+      t.objectStore('meta').put(tileBytes, 'bytes');
+      if (tileBytes > tileCap) void evict();
+    } catch { /* storage full or blocked: the map still works from the network */ }
+  },
+  async has(key) {
+    try {
+      const d = await tdb();
+      return (await req(d.transaction('tiles').objectStore('tiles').count(key))) > 0;
+    } catch {
+      return false;
+    }
+  },
+  async size() {
+    try { return await tileTotal(); } catch { return 0; }
+  },
+  async clear() {
+    try {
+      const d = await tdb();
+      const t = d.transaction(['tiles', 'meta'], 'readwrite');
+      t.objectStore('tiles').clear();
+      t.objectStore('meta').put(0, 'bytes');
+      tileBytes = 0;
+      await new Promise<void>((resolve) => { t.oncomplete = t.onerror = () => resolve(); });
+    } catch { /* nothing to clear */ }
   },
 };
 
@@ -244,6 +354,18 @@ export const browserPlatform: Platform = {
   haptics: {
     tap() {},
     success() {},
+  },
+
+  tiles: browserTiles,
+
+  network: {
+    async kind() {
+      if (navigator.onLine === false) return 'none';
+      const c = (navigator as any).connection;
+      if (c?.type === 'cellular' || c?.saveData) return 'cellular';
+      if (c?.type === 'wifi' || c?.type === 'ethernet') return 'wifi';
+      return 'unknown';
+    },
   },
 
   trailFiles: {

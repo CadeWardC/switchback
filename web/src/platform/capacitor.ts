@@ -14,6 +14,8 @@ import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { KeepAwake } from '@capacitor-community/keep-awake';
+import { Network } from '@capacitor/network';
+import { browserTiles } from './browser';
 import type { BackgroundGeolocationPlugin, Location } from '@capacitor-community/background-geolocation';
 import type { Fix, FixHandler, LocationProblem, Platform, ProblemHandler } from './types';
 
@@ -319,6 +321,22 @@ export const capacitorPlatform: Platform = {
     },
     success() {
       quiet(Haptics.notification({ type: NotificationType.Success }));
+    },
+  },
+
+  // Map tiles are kept in the web view's own database for now (the same code as the website). It is behind
+  // platform.tiles so that app files, or one base-map file per state, can take over without other changes.
+  tiles: browserTiles,
+
+  network: {
+    async kind() {
+      try {
+        const s = await Network.getStatus();
+        if (!s.connected) return 'none';
+        return s.connectionType === 'wifi' ? 'wifi' : s.connectionType === 'cellular' ? 'cellular' : 'unknown';
+      } catch {
+        return 'unknown';
+      }
     },
   },
 
