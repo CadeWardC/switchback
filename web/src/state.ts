@@ -9,6 +9,7 @@ import { platform } from './platform';
 import { filters, passes } from './filters';
 import type { Coord } from './lib/polyline';
 import type { Profile, Trail } from './lib/trail';
+import type { Stop } from './lib/follow';
 import type { BBox } from './lib/geo';
 import type { Region } from './lib/pack';
 
@@ -65,19 +66,24 @@ export function parseHash(hash: string): { route: Route; view?: MapView } {
     if (parts[0] === 'trail' && parts.length >= 3) {
       return { route: { page: 'trail', region: decodeURIComponent(parts[1]), id: decodeURIComponent(parts.slice(2).join('/')) } };
     }
-    if (parts[0] === 'activity' && parts[1]) return { route: { page: 'walk', id: decodeURIComponent(parts[1]) } };
+    if ((parts[0] === 'activity' || parts[0] === 'log') && parts[1]) return { route: { page: 'walk', id: decodeURIComponent(parts[1]) } };
   } catch { /* a broken link: fall through to the map */ }
   if (parts[0] === 'record' || parts[0] === 'saved' || parts[0] === 'plan' || parts[0] === 'activity' || parts[0] === 'settings' || parts[0] === 'help') {
     return { route: { page: parts[0] } };
   }
   if (parts[0] === 'about') return { route: { page: 'settings' } };
+  // the words on the row: Hike is where a hike is recorded, Log is the hikes you have recorded
+  if (parts[0] === 'hike') return { route: { page: 'record' } };
+  if (parts[0] === 'log') return { route: { page: 'activity' } };
   return { route: { page: 'explore' } };
 }
 
 export function hashFor(r: Route): string {
   switch (r.page) {
     case 'trail': return `#/trail/${encodeURIComponent(r.region)}/${encodeURIComponent(r.id)}`;
-    case 'walk': return `#/activity/${encodeURIComponent(r.id)}`;
+    case 'walk': return `#/log/${encodeURIComponent(r.id)}`;
+    case 'record': return '#/hike';
+    case 'activity': return '#/log';
     case 'explore': return '#/';
     default: return `#/${r.page}`;
   }
@@ -142,6 +148,8 @@ export const unverifiedInView = signal<Trail[]>([]);
 export const shownTrail = signal<Trail | null>(null);
 export const loading = signal(false);
 export const loadNote = signal<string | null>(null);
+/** The short loop to show when a trail page opens (set by tapping that line in the list). */
+export const openShort = signal<string | null>(null);
 /** The trail whose page is open. */
 export const selected = signal<Trail | null>(null);
 export const selectedState = signal<'idle' | 'loading' | 'missing'>('idle');
@@ -177,13 +185,22 @@ export const recState = signal<RecState>('idle');
 export const recSegments = signal<WalkPoint[][]>([]);
 export const recLength = signal(0);
 export const recSeconds = signal(0);
+/** When the hike began (ms), for "time on the trail" (pauses included). */
+export const recStarted = signal(0);
+/** Set when the end of the trail being followed is reached: the question "finish this hike?" is showing. */
+export const endReached = signal<'start' | 'end' | null>(null);
 export const recAccuracy = signal<number | null>(null);
 export const recError = signal<string | null>(null);
 export const recWakeLock = signal<'on' | 'off' | 'unsupported'>('off');
 /** Places marked during the recording. */
 export const recMarkers = signal<Marker[]>([]);
 /** The trail being followed while recording. */
-export interface Following { region: string; id: string; name: string; path: Coord[]; profile: Profile | null }
+export interface Following {
+  region: string; id: string; name: string; path: Coord[]; profile: Profile | null;
+  /** The things on the way, for the ridge. */
+  stops?: Stop[];
+  loop?: boolean;
+}
 export const following = signal<Following | null>(null);
 /** True while the walker is more than 60 m from the trail being followed. */
 export const offTrail = signal(false);

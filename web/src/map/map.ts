@@ -10,7 +10,7 @@ import {
   baseMap, chartPoint, dark, flyTo, hikesInView, hoverKey, initialView, MIN_TRAIL_ZOOM, planPoints, recSegments,
   regions, route, selected, sheet, shownTrail, trailsInView, unverifiedInView, following, recMarkers, units, view, go, type Route,
 } from '../state';
-import { dark as darkTokens, difficultyColors, light as lightTokens, mapColors, size } from '../tokens';
+import { dark as darkTokens, light as lightTokens, mapColors, trailColor } from '../tokens';
 import { makeImage } from './images';
 import { mapProtocol, throughStore } from './tilesource';
 import { save } from '../lib/storage';
@@ -19,7 +19,7 @@ import type { BBox } from '../lib/geo';
 import type { Trail } from '../lib/trail';
 import { highlightsIn, regionName, type Highlight } from '../data';
 import { platform } from '../platform';
-import { coveredBottom, isPhone } from '../layout';
+import { coveredBottom, isPhone, panelWidth } from '../layout';
 
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -30,6 +30,8 @@ export const shownLines = signal<Coord[][]>([]);
 /** The places marked on that walk. */
 export const shownMarkers = signal<Coord[]>([]);
 /** Called when the map is tapped while planning a route. */
+/** While off the trail being followed: from where you are to the nearest point on it. */
+export const backLine = signal<[Coord, Coord] | null>(null);
 export const planTap = signal<((c: Coord) => void) | null>(null);
 
 let map: MlMap | null = null;
@@ -41,7 +43,7 @@ const phone = isPhone;
 
 /** The part of the map not covered by the panel (desktop) or the sheet and tab bar (phones), in pixels. */
 function padding(): { top: number; bottom: number; left: number; right: number } {
-  if (!phone()) return { top: 0, bottom: 0, left: size.panel + 24, right: 0 };
+  if (!phone()) return { top: 0, bottom: 0, left: panelWidth() + 24, right: 0 };
   return { top: 0, bottom: coveredBottom(sheet.peek()), left: 0, right: 0 };
 }
 
@@ -62,13 +64,12 @@ function plainStyle(isDark: boolean): StyleSpecification {
   return {
     version: 8, name: 'Plain',
     sources: {},
-    layers: [{ id: 'background', type: 'background', paint: { 'background-color': (isDark ? darkTokens : lightTokens).mapPlain } }],
+    layers: [{ id: 'background', type: 'background', paint: { 'background-color': (isDark ? darkTokens : lightTokens).mapLand } }],
   };
 }
 
-const diffColor: any = ['match', ['get', 'd'],
-  'moderate', difficultyColors.moderate, 'hard', difficultyColors.hard, 'veryHard', difficultyColors.veryHard,
-  difficultyColors.easy];
+/** Every trail feature carries its own colour (`c`): the park's blaze colour where known, green otherwise. */
+const diffColor: any = ['coalesce', ['get', 'c'], lightTokens.green];
 const HIGHLIGHT_COLORS: Record<string, string> = {
   water: '#2B7FD9', waterfall: '#2B7FD9', viewpoint: '#E8A33D', peak: '#8A5A2B', parking: '#5C6B7A',
   campsite: '#2E9E5B', shelter: '#8A5A2B', picnic: '#2E9E5B', toilets: '#5C6B7A', cave: '#55635B',
@@ -81,7 +82,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
   const width = (a: number, b: number): any => ['interpolate', ['linear'], ['zoom'], 8, a, 14, b];
   const layers: LayerSpecification[] = [
     { id: 'sb-region-fill', type: 'fill', source: 'sb-regions', maxzoom: MIN_TRAIL_ZOOM,
-      paint: { 'fill-color': p.mapRegion, 'fill-opacity': 0.12, 'fill-antialias': false } },
+      paint: { 'fill-color': p.green, 'fill-opacity': 0.12, 'fill-antialias': false } },
     // paths that are not hikes of their own: thinner, and dashed when they have no name
     { id: 'sb-side-casing', type: 'line', source: 'sb-trails', filter: ['==', ['get', 'h'], 0], layout: line,
       paint: { 'line-color': p.mapCasing, 'line-width': width(2, 4.5), 'line-opacity': 0.8 } },
@@ -107,8 +108,11 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     { id: 'sb-selected', type: 'line', source: 'sb-selected', layout: line,
       paint: { 'line-color': diffColor, 'line-width': width(4, 6) } },
     // a planned route, a recording, or a recorded hike being looked at
-    { id: 'sb-draw-casing', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': mapColors.marker, 'line-width': 8 } },
-    { id: 'sb-draw', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': mapColors.route, 'line-width': 4.5 } },
+    { id: 'sb-draw-casing', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': p.mapCasing, 'line-width': 8 } },
+    { id: 'sb-draw', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': isDark ? p.green : p.primary, 'line-width': 4.5 } },
+    // off the trail: dots leading back to it
+    { id: 'sb-back-casing', type: 'line', source: 'sb-back', layout: line, paint: { 'line-color': mapColors.meRing, 'line-width': 6, 'line-opacity': 0.35 } },
+    { id: 'sb-back', type: 'line', source: 'sb-back', layout: line, paint: { 'line-color': mapColors.me, 'line-width': 4, 'line-dasharray': [0.1, 2] } },
     { id: 'sb-highlights', type: 'circle', source: 'sb-highlights', minzoom: 12.5,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 6],
@@ -117,22 +121,23 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
       } },
     { id: 'sb-ends', type: 'circle', source: 'sb-ends',
       paint: {
-        'circle-radius': 6.5, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#FFFFFF',
-        'circle-color': ['match', ['get', 'kind'], 'start', mapColors.start, 'end', mapColors.end, mapColors.route] as any,
+        'circle-radius': 6.5, 'circle-stroke-width': 2.5,
+        'circle-stroke-color': ['match', ['get', 'kind'], 'marker', p.ink, p.mapCasing] as any,
+        'circle-color': ['match', ['get', 'kind'], 'start', isDark ? p.green : p.primary, 'end', p.ink, p.card] as any,
       } },
     { id: 'sb-heads', type: 'symbol', source: 'sb-heads', filter: ['!', ['has', 'point_count']],
-      layout: { 'icon-image': ['concat', 'pin-', ['get', 'd']], 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
+      layout: { 'icon-image': ['concat', 'pin-', ['get', 'c']], 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
     { id: 'sb-clusters', type: 'symbol', source: 'sb-heads', filter: ['has', 'point_count'],
       layout: { 'icon-image': ['concat', 'cluster-', ['to-string', ['get', 'point_count_abbreviated']]], 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
     { id: 'sb-region-labels', type: 'symbol', source: 'sb-region-labels', maxzoom: MIN_TRAIL_ZOOM,
       layout: { 'icon-image': ['concat', 'label-', ['get', 'label']], 'symbol-sort-key': ['-', 0, ['get', 'trails']], 'icon-padding': 4 } },
     { id: 'sb-chart-point', type: 'circle', source: 'sb-chart-point',
-      paint: { 'circle-radius': 7, 'circle-color': mapColors.route, 'circle-stroke-color': mapColors.marker, 'circle-stroke-width': 3 } },
-    { id: 'sb-me-halo', type: 'circle', source: 'sb-me', paint: { 'circle-radius': 16, 'circle-color': mapColors.me, 'circle-opacity': 0.18 } },
+      paint: { 'circle-radius': 6, 'circle-color': p.card, 'circle-stroke-color': p.ink, 'circle-stroke-width': 2.5 } },
+    { id: 'sb-me-halo', type: 'circle', source: 'sb-me', paint: { 'circle-radius': 17, 'circle-color': mapColors.me, 'circle-opacity': 0.3 } },
     { id: 'sb-me-heading', type: 'symbol', source: 'sb-me', filter: ['has', 'heading'],
       layout: { 'icon-image': 'me-heading', 'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
     { id: 'sb-me', type: 'circle', source: 'sb-me',
-      paint: { 'circle-radius': 7, 'circle-color': mapColors.me, 'circle-stroke-color': mapColors.marker, 'circle-stroke-width': 3 } },
+      paint: { 'circle-radius': 7.5, 'circle-color': mapColors.me, 'circle-stroke-color': p.mapCasing, 'circle-stroke-width': 3 } },
   ];
   if (withText) {
     // names along the trails need the base map's fonts
@@ -142,7 +147,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
         'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 11.5,
         'symbol-spacing': 320, 'text-max-angle': 35, 'text-offset': [0, 0.9], 'text-letter-spacing': 0.02,
       },
-      paint: { 'text-color': diffColor, 'text-halo-color': p.mapCasing, 'text-halo-width': 1.6 },
+      paint: { 'text-color': isDark ? p.green : p.primary, 'text-halo-color': p.mapCasing, 'text-halo-width': 1.6 },
     });
   }
   const geo = () => ({ type: 'geojson' as const, data: EMPTY });
@@ -150,7 +155,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     sources: {
       'sb-regions': geo(), 'sb-region-labels': geo(), 'sb-trails': { ...geo(), tolerance: 0.3 },
       'sb-heads': { ...geo(), cluster: true, clusterRadius: 42, clusterMaxZoom: 13 },
-      'sb-unverified': geo(), 'sb-selected': geo(), 'sb-ends': geo(), 'sb-draw': geo(), 'sb-highlights': geo(), 'sb-chart-point': geo(), 'sb-me': geo(),
+      'sb-unverified': geo(), 'sb-selected': geo(), 'sb-ends': geo(), 'sb-draw': geo(), 'sb-back': geo(), 'sb-highlights': geo(), 'sb-chart-point': geo(), 'sb-me': geo(),
     },
     layers,
   };
@@ -209,6 +214,12 @@ function thin(line: Coord[], min: number): [number, number][] {
   return out;
 }
 
+/** The colour a trail is drawn in: its park's blaze colour where known (white would not show: green then). */
+function lineColor(t: Trail): string {
+  const c = trailColor(t.tags, t.difficulty, dark.peek());
+  return c.toLowerCase() === '#ffffff' ? (dark.peek() ? darkTokens : lightTokens).green : c;
+}
+
 function trailFeatures(trails: Trail[], zoom: number): GeoJSON.FeatureCollection {
   // far out, only the hikes, with coarser lines: a whole state stays quick
   const hikesOnly = zoom < 10.5;
@@ -219,7 +230,7 @@ function trailFeatures(trails: Trail[], zoom: number): GeoJSON.FeatureCollection
     features.push({
       type: 'Feature',
       properties: {
-        k: t.key, d: t.difficulty, h: t.isHike ? 1 : 0, u: t.tags['switchback:unnamed'] === 'yes' ? 1 : 0,
+        k: t.key, c: lineColor(t), h: t.isHike ? 1 : 0, u: t.tags['switchback:unnamed'] === 'yes' ? 1 : 0,
         ...(t.tags['switchback:unnamed'] === 'yes' ? {} : { name: t.name }),
       },
       geometry: { type: 'MultiLineString', coordinates: (hikesOnly ? [t.path] : t.segments).map((s) => thin(s, min)) },
@@ -417,6 +428,7 @@ export function createMap(container: HTMLElement): void {
     redraw.value;
     const zoom = view.value?.zoom ?? 0;
     // (the zoom only matters in steps: where the amount of detail changes)
+    dark.value; // colours follow the theme
     const step = zoom < MIN_TRAIL_ZOOM ? 0 : zoom < 9 ? 1 : zoom < 10.5 ? 2 : zoom < 12 ? 3 : 4;
     setData('sb-trails', step === 0 ? EMPTY : trailFeatures(trailsInView.value, zoom));
   });
@@ -428,7 +440,7 @@ export function createMap(container: HTMLElement): void {
     const show = zoom >= MIN_TRAIL_ZOOM && (route.value.page === 'explore' || route.value.page === 'trail');
     setData('sb-heads', {
       type: 'FeatureCollection',
-      features: show ? hikesInView.value.filter((t) => t.key !== open).map((t) => point(t.start, { k: t.key, d: t.difficulty })) : [],
+      features: show ? hikesInView.value.filter((t) => t.key !== open).map((t) => point(t.start, { k: t.key, c: lineColor(t) })) : [],
     });
   });
 
@@ -448,12 +460,12 @@ export function createMap(container: HTMLElement): void {
     const f = page === 'record' ? following.value : null;
     if (t) {
       setData('sb-selected', {
-        type: 'Feature', properties: { d: t.difficulty },
+        type: 'Feature', properties: { c: lineColor(t) },
         geometry: { type: 'MultiLineString', coordinates: t.segments.map((s) => s.map(lngLat)) },
       });
     } else if (f) {
       // the trail being followed, under the recorded line
-      setData('sb-selected', { type: 'Feature', properties: { d: 'moderate' }, geometry: { type: 'LineString', coordinates: f.path.map(lngLat) } });
+      setData('sb-selected', { type: 'Feature', properties: { c: (dark.value ? darkTokens : lightTokens).green }, geometry: { type: 'LineString', coordinates: f.path.map(lngLat) } });
     } else {
       setData('sb-selected', EMPTY);
     }
@@ -485,6 +497,12 @@ export function createMap(container: HTMLElement): void {
     setData('sb-draw', lines(drawn));
     setData('sb-ends', { type: 'FeatureCollection', features: ends });
     syncPlanMarkers(planPoints.value, page === 'plan');
+  });
+
+  effect(() => {
+    redraw.value;
+    const b = route.value.page === 'record' ? backLine.value : null;
+    setData('sb-back', b ? lines([b]) : EMPTY);
   });
 
   effect(() => {

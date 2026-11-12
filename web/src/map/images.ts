@@ -2,7 +2,7 @@
 // They are painted here on a canvas, so they need no icon files and no map fonts (which come from the
 // base map's server and may not be reachable).
 import type { Map as MlMap } from 'maplibre-gl';
-import { dark, difficultyColors, font, light, mapColors } from '../tokens';
+import { dark, font, fontNum, light, mapColors } from '../tokens';
 
 const RATIO = 2;
 
@@ -29,29 +29,19 @@ function shadowed(ctx: CanvasRenderingContext2D, draw: () => void): void {
   ctx.restore();
 }
 
-/** A trailhead: a dot in the trail's difficulty colour with a small white peak. */
-function pin(map: MlMap, id: string, color: string): void {
-  const s = 30, r = 11;
+/** A trailhead: a dot in the trail's colour with a ring in the map's ground colour. */
+function pin(map: MlMap, id: string, color: string, isDark: boolean): void {
+  const s = 26, r = 7.5;
   const [c, ctx] = canvas(s, s);
   shadowed(ctx, () => {
     ctx.beginPath();
-    ctx.arc(s / 2, s / 2, r + 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.arc(s / 2, s / 2, r + 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = (isDark ? dark : light).mapCasing;
     ctx.fill();
   });
   ctx.beginPath();
   ctx.arc(s / 2, s / 2, r, 0, Math.PI * 2);
   ctx.fillStyle = color;
-  ctx.fill();
-  // two peaks
-  ctx.beginPath();
-  ctx.moveTo(8.5, 19.5);
-  ctx.lineTo(13, 11.5);
-  ctx.lineTo(15.6, 15.6);
-  ctx.lineTo(17.6, 13);
-  ctx.lineTo(21.5, 19.5);
-  ctx.closePath();
-  ctx.fillStyle = '#FFFFFF';
   ctx.fill();
   add(map, id, c, ctx);
 }
@@ -64,7 +54,7 @@ function cluster(map: MlMap, id: string, text: string, isDark: boolean): void {
   shadowed(ctx, () => {
     ctx.beginPath();
     ctx.arc(s / 2, s / 2, r + 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = p.mapCasing;
     ctx.fill();
   });
   ctx.beginPath();
@@ -72,7 +62,7 @@ function cluster(map: MlMap, id: string, text: string, isDark: boolean): void {
   ctx.fillStyle = p.primary;
   ctx.fill();
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `700 13px ${font}`;
+  ctx.font = `700 13px ${fontNum}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, s / 2, s / 2 + 0.5);
@@ -84,7 +74,7 @@ function label(map: MlMap, id: string, text: string, isDark: boolean): void {
   const p = isDark ? dark : light;
   const [title, sub] = text.split('\n');
   const [, measure] = canvas(1, 1);
-  measure.font = `650 13px ${font}`;
+  measure.font = `700 13px ${fontNum}`;
   const w1 = measure.measureText(title).width;
   measure.font = `500 11px ${font}`;
   const w2 = sub ? measure.measureText(sub).width : 0;
@@ -99,7 +89,7 @@ function label(map: MlMap, id: string, text: string, isDark: boolean): void {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = p.ink;
-  ctx.font = `650 13px ${font}`;
+  ctx.font = `700 13px ${fontNum}`;
   ctx.fillText(title, 3 + w / 2, sub ? 14 : 2 + h / 2 + 0.5);
   if (sub) {
     ctx.fillStyle = p.muted;
@@ -115,7 +105,7 @@ function heading(map: MlMap, id: string): void {
   const [c, ctx] = canvas(s, s);
   const g = ctx.createRadialGradient(s / 2, s / 2, 6, s / 2, s / 2, 27);
   g.addColorStop(0, mapColors.me);
-  g.addColorStop(1, 'rgba(43,127,217,0)');
+  g.addColorStop(1, 'rgba(244,196,48,0)');
   ctx.beginPath();
   ctx.moveTo(s / 2, s / 2);
   ctx.arc(s / 2, s / 2, 27, -Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5);
@@ -129,7 +119,7 @@ function heading(map: MlMap, id: string): void {
 /** Makes the picture a layer asked for ("pin-easy", "cluster-12", "label-Missouri\n3,156 trails"). */
 export function makeImage(map: MlMap, id: string, isDark: boolean): void {
   try {
-    if (id.startsWith('pin-')) pin(map, id, (difficultyColors as Record<string, string>)[id.slice(4)] ?? difficultyColors.easy);
+    if (id.startsWith('pin-')) pin(map, id, /^#[0-9a-f]{6}$/i.test(id.slice(4)) ? id.slice(4) : (isDark ? dark : light).green, isDark);
     else if (id.startsWith('cluster-')) cluster(map, id, id.slice(8), isDark);
     else if (id === 'me-heading') heading(map, id);
     else if (id.startsWith('label-')) label(map, id, id.slice(6), isDark);
