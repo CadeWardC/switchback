@@ -636,12 +636,13 @@ GENERIC = {"trail", "trails", "path", "paths", "informal trail", "unnamed", "unn
 TRAIL_WORDS = re.compile(r"\b(trail|trails|path|loop|greenway|way|route|rail|traverse|trace|walk|promenade|sentier|piste|"
                          r"boardwalk|circuit|ridge|portage)\b", re.I)
 STREETY = re.compile(r"\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|boulevard|blvd|court|ct|place|pl|highway|hwy|"
-                     r"sidewalk|alley|parking|driveway|crosswalk|overpass|underpass|plaza|mall)\.?$|sidewalk|crosswalk", re.I)
+                     r"sidewalk|sidepath|alley|parking|driveway|crosswalk|overpass|underpass|plaza|mall)\.?$|sidewalk|crosswalk", re.I)
 # (a bridge isn't a street word: "Swinging Bridge", "Elm Spring Bridge" and "Natural Bridge" are walks. One that is
 # only a road's footway is still caught by its pavement.)
 PAVED = {"asphalt", "concrete", "paving_stones", "paved", "sett", "concrete:plates", "bricks"}
 NATURAL = {"ground", "dirt", "earth", "grass", "gravel", "fine_gravel", "rock", "pebblestone", "mud", "sand", "unpaved",
            "wood", "woodchips", "compacted"}
+LONG_PAVED_M = 1609   # a paved, named path this long isn't hidden for its pavement
 REAL_TAGS = ("sac_scale", "trail_visibility", "operator", "network", "website", "wikidata", "wikimedia_commons", "ref", "symbol")
 
 def evidence(t):
@@ -660,7 +661,9 @@ def evidence(t):
     junk = []
     if name and STREETY.search(name) and not TRAIL_WORDS.search(name):
         junk.append("a street-style name")
-    if surface in PAVED and not (name and TRAIL_WORDS.search(name)):
+    # pavement alone doesn't make a mile of named path a street: a bridge or old rail line closed to cars, a creek
+    # or levee path ("Old Chain of Rocks Bridge", "Foster City Levee") is somewhere people go to walk
+    if surface in PAVED and not (name and TRAIL_WORDS.search(name)) and t["length"] < LONG_PAVED_M:
         junk.append("paved")
     if t["length"] < 400:
         junk.append("under ¼ mi")
