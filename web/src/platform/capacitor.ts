@@ -314,7 +314,9 @@ export const capacitorPlatform: Platform = {
   trailFiles: {
     url: (file) => RELEASE + file,
     async getJson(file) {
-      const res = await CapacitorHttp.get({ url: RELEASE + file, responseType: 'json', headers: { Accept: 'application/json' } });
+      const res = await CapacitorHttp.get({
+        url: RELEASE + file, responseType: 'json', headers: { Accept: 'application/json' }, connectTimeout: 8000, readTimeout: 15_000,
+      });
       if (res.status === 404) return null;
       if (res.status < 200 || res.status >= 300) throw new Error(`${file}: ${res.status}`);
       return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;

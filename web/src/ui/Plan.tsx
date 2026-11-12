@@ -5,7 +5,7 @@ import { planEditing, planName, planPoints, plannedRoutes, say, sheet, go } from
 import { planTap } from '../map/map';
 import { lineLength } from '../lib/geo';
 import { buildGpx, exportGpx } from '../lib/gpx';
-import { APP_VERSION } from '../lib/submit';
+import { APP_VERSION, platformLabel } from '../lib/submit';
 import { newId } from '../lib/storage';
 import { platform } from '../platform';
 import { isPhone } from '../layout';
@@ -30,7 +30,7 @@ export function Plan() {
 
   const name = planName.value.trim() || 'My route';
   const gpx = () => buildGpx({
-    creator: `Switchback Web ${APP_VERSION}`, name,
+    creator: `Switchback ${platformLabel} ${APP_VERSION}`, name,
     desc: 'A route drawn on the map with Switchback (straight lines between points).',
     tracks: [{ name, segments: [points.map((c) => ({ lat: c[0], lon: c[1] }))] }],
   });
@@ -91,7 +91,7 @@ export function Plan() {
       </div>
       {submitting && (
         <SubmitDialog onClose={() => setSubmitting(false)}
-          what={{ name, kind: 'drawn', length: length.value, points: points.map((c) => ({ lat: c[0], lon: c[1] })) }} />
+          what={{ name, kind: 'placed', length: length.value, points: points.map((c) => ({ lat: c[0], lon: c[1] })) }} />
       )}
     </div>
   );

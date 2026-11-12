@@ -11,15 +11,31 @@ import { platform } from './platform';
 let regionList: Promise<Region[]> | null = null;
 
 async function fetchRegions(): Promise<Region[]> {
-  const res = await fetch(platform.trailFiles.url('regions.json'), { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`The list of regions could not be loaded (${res.status})`);
-  const json = (await res.json()) as { regions: Record<string, Region> };
-  return Object.values(json.regions).filter((r) => Array.isArray(r.bbox) && r.bbox.length === 4);
+  const json = (await platform.trailFiles.getJson('regions.json')) as { regions?: Record<string, Region> } | null;
+  if (!json?.regions) throw new Error('The list of regions could not be loaded');
+  const list = Object.values(json.regions).filter((r) => Array.isArray(r.bbox) && r.bbox.length === 4);
+  // kept for the next time there is no signal
+  platform.keyValue.set('regions', JSON.stringify(list));
+  return list;
+}
+
+/** The list as it was last time, for when it can't be fetched. */
+function keptRegions(): Region[] | null {
+  try {
+    const list = JSON.parse(platform.keyValue.get('regions') ?? 'null');
+    return Array.isArray(list) && list.length ? list : null;
+  } catch {
+    return null;
+  }
 }
 
 export function loadRegions(): Promise<Region[]> {
   if (!regionList) {
-    const p = fetchRegions();
+    const p = fetchRegions().catch((e) => {
+      const kept = keptRegions();
+      if (!kept) throw e;
+      return kept;
+    });
     regionList = p;
     p.catch(() => { if (regionList === p) regionList = null; });
   }
@@ -37,6 +53,25 @@ const stored = (r: Region) => `${r.region}@${r.version}.trails`;
 const regionOfStored = (name: string) => name.slice(0, name.lastIndexOf('@'));
 
 async function fetchPack(r: Region): Promise<Pack | null> {
+  try {
+    return await fetchCurrentPack(r);
+  } catch (e) {
+    // no signal, or the download failed: an older copy of this region is far better than nothing
+    for (const old of await platform.fileStore.list()) {
+      if (regionOfStored(old) !== r.region) continue;
+      const kept = await platform.fileStore.read(old);
+      if (!kept) continue;
+      try {
+        const pack = openPack(kept);
+        openedPacks.set(r.region, pack);
+        return pack;
+      } catch { /* broken: keep looking */ }
+    }
+    throw e;
+  }
+}
+
+async function fetchCurrentPack(r: Region): Promise<Pack> {
   const name = stored(r);
   const kept = await platform.fileStore.read(name);
   if (kept) {
@@ -46,16 +81,31 @@ async function fetchPack(r: Region): Promise<Pack | null> {
       return pack;
     } catch { /* a broken copy: download it again */ }
   }
-  const res = await fetch(`${platform.trailFiles.url(`${r.region}.trails`)}?v=${encodeURIComponent(r.version)}`);
-  if (!res.ok) throw new Error(`${regionName(r)} trails could not be loaded (${res.status})`);
-  const data = await res.arrayBuffer();
-  const pack = openPack(data);
+  const url = `${platform.trailFiles.url(`${r.region}.trails`)}?v=${encodeURIComponent(r.version)}`;
+  let data: ArrayBuffer | null;
+  if (platform.fileStore.download) {
+    // the phone apps download straight to a file
+    await platform.fileStore.download(url, name);
+    data = await platform.fileStore.read(name);
+    if (!data) throw new Error(`${regionName(r)} trails could not be read after downloading`);
+  } else {
+    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) throw new Error(`${regionName(r)} trails could not be loaded (${res.status})`);
+    data = await res.arrayBuffer();
+  }
+  let pack: Pack;
+  try {
+    pack = openPack(data);
+  } catch (e) {
+    await platform.fileStore.remove(name);
+    throw e;
+  }
   openedPacks.set(r.region, pack);
+  if (!platform.fileStore.download) await platform.fileStore.write(name, data); // if it can't be kept, it still works from memory
   // older versions of this region's file are not needed any more
   for (const old of await platform.fileStore.list()) {
     if (old !== name && regionOfStored(old) === r.region) await platform.fileStore.remove(old);
   }
-  await platform.fileStore.write(name, data); // if it can't be kept, the file still works from memory
   return pack;
 }
 

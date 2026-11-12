@@ -89,9 +89,9 @@ describe('GPX', () => {
     expect(text).toContain('<desc>Rocky near the top.</desc>');
     expect(text).toContain('<trkpt lat="38.8712345" lon="-92.3212345"><ele>231.4</ele><time>2026-11-12T14:01:02Z</time></trkpt>');
     expect(text).toContain('<trkpt lat="38.8713000" lon="-92.3213000"><time>2026-11-12T14:01:07Z</time></trkpt>');
-    const drawn = submissionGpx({ name: 'X', notes: '', kind: 'drawn', publicAccess: true, lengthMetres: 20, points: [{ lat: 1, lon: 2, time: t }] }, t);
-    expect(drawn).toContain('<sb:kind>drawn</sb:kind>');
-    expect(drawn).toContain('<trkpt lat="1.0000000" lon="2.0000000"/>');
+    const placed = submissionGpx({ name: 'X', notes: '', kind: 'placed', publicAccess: true, lengthMetres: 20, points: [{ lat: 1, lon: 2, time: t }] }, t);
+    expect(placed).toContain('<sb:kind>placed</sb:kind>');
+    expect(placed).toContain('<trkpt lat="1.0000000" lon="2.0000000"/>');
   });
 });
 

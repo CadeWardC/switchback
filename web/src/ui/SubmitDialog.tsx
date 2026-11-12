@@ -8,7 +8,7 @@ import { Button, Note, dist } from './common';
 
 const PLACEHOLDERS = /^(trail|my hike|my walk|untitled|walk|hike|route|morning walk|afternoon walk|evening walk|my route)$/i;
 
-export interface SubmitWhat { name: string; kind: 'walked' | 'drawn'; points: GpxPoint[]; length: number }
+export interface SubmitWhat { name: string; kind: 'walked' | 'placed'; points: GpxPoint[]; length: number }
 
 export function SubmitDialog({ what, onClose }: { what: SubmitWhat; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -51,8 +51,9 @@ export function SubmitDialog({ what, onClose }: { what: SubmitWhat; onClose: () 
           </p>
           {!walked && (
             <Note kind="warn">
-              This route was drawn on the map, not walked. A drawn trail is not added until someone walks it and
-              records it. You can still send it as a suggestion.
+              This route was placed on the map, not walked. A placed trail is only added when the park's own list
+              names it and the ground (lidar) shows it. Otherwise it goes on the "needs verification" list until
+              someone walks it or the maintainer accepts it.
             </Note>
           )}
           {walked && short && (
@@ -98,7 +99,7 @@ export function SubmitDialog({ what, onClose }: { what: SubmitWhat; onClose: () 
               so it ends in <code>.gpx.txt</code>. Then press "Create".
             </li>
           </ol>
-          <p class="fine">Your trail is checked before it is added{walked ? '' : ', and a drawn trail waits until someone walks it'}. You'll get replies on the GitHub page.</p>
+          <p class="fine">Your trail is checked before it is added{walked ? '' : '. A placed trail that can\'t be proved from the park\'s list and the lidar waits on the "needs verification" list'}. You'll get replies on the GitHub page.</p>
           <div class="dialog-actions">
             <Button kind="quiet" onClick={() => ref.current?.close()}>Done</Button>
             <Button kind="primary" icon="external" href={done.issueUrl}>Open the GitHub form</Button>

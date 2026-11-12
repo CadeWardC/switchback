@@ -4,7 +4,7 @@ import * as maplibregl from 'maplibre-gl';
 import { type GeoJSONSource, type LayerSpecification, type Map as MlMap, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 // the map's background worker is a file of its own: have the bundler copy it and tell the map where it is
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
+import workerUrl from '../generated/maplibre-worker.js?url';
 import { effect, signal, untracked } from '@preact/signals';
 import {
   baseMap, chartPoint, dark, flyTo, hikesInView, hoverKey, initialView, MIN_TRAIL_ZOOM, planPoints, recSegments,

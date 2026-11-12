@@ -240,7 +240,7 @@ export const browserPlatform: Platform = {
   trailFiles: {
     url: (file) => new URL(`data/${file}`, document.baseURI).href,
     async getJson(file) {
-      const res = await fetch(new URL(`data/${file}`, document.baseURI).href, { cache: 'no-cache' });
+      const res = await fetch(new URL(`data/${file}`, document.baseURI).href, { cache: 'no-cache', signal: AbortSignal.timeout(8000) });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error(`${file}: ${res.status}`);
       // a static host may answer a missing file with its own page

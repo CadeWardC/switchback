@@ -6,7 +6,7 @@ import { isSaved, route, say, selected, selectedState, toggleSaved, units } from
 import { fmtDistance, fmtDuration } from '../lib/format';
 import { buildGpx, exportGpx, type GpxPoint } from '../lib/gpx';
 import { lineLength, distance } from '../lib/geo';
-import { APP_VERSION } from '../lib/submit';
+import { APP_VERSION, platformLabel } from '../lib/submit';
 import { platform } from '../platform';
 import { Badge, Button, dist, elev, Empty, PageHeader, Stat } from './common';
 import { ElevationChart } from './ElevationChart';
@@ -27,24 +27,23 @@ export function trailGpx(t: Trail): string {
   const tracks = [{ name: t.name, segments: [main] }];
   if (others.length) tracks.push({ name: `${t.name} (other sections)`, segments: others.map((s) => s.map((c) => ({ lat: c[0], lon: c[1], ele: null }))) });
   return buildGpx({
-    creator: `Switchback Web ${APP_VERSION}`,
+    creator: `Switchback ${platformLabel} ${APP_VERSION}`,
     name: t.name,
     desc: [t.area, 'Trail data © OpenStreetMap contributors, ODbL. From Switchback.'].filter(Boolean).join('. '),
     tracks,
   });
 }
 
+/** The address of a trail's page on the website (the phone apps share that, not their own inside address). */
+export function trailLink(t: Trail): string {
+  const base = platform.name === 'web' ? location.href.split('#')[0] : 'https://cadewardc.github.io/switchback/';
+  return `${base}#/trail/${encodeURIComponent(t.region)}/${encodeURIComponent(t.id)}`;
+}
+
 async function share(t: Trail): Promise<void> {
-  const url = location.href;
-  try {
-    if (navigator.share && platform.name !== 'web') await navigator.share({ title: t.name, url });
-    else {
-      await navigator.clipboard.writeText(url);
-      say('Link copied');
-    }
-  } catch {
-    say('Copy the address of this page to share it');
-  }
+  const how = await platform.files.shareLink(t.name, trailLink(t));
+  if (how === 'copied') say('Link copied');
+  else if (how === 'failed' && platform.name === 'web') say('Copy the address of this page to share it');
 }
 
 export function TrailPage() {
@@ -75,7 +74,7 @@ export function TrailPage() {
   return (
     <div class="page">
       <PageHeader back={{ page: 'explore' }} backLabel="Trails">
-        <Button kind="quiet" icon="link" aria-label="Copy a link to this trail" title="Copy link" onClick={() => void share(t)} />
+        <Button kind="quiet" icon="link" aria-label={platform.name === 'web' ? 'Copy a link to this trail' : 'Share this trail'} title={platform.name === 'web' ? 'Copy link' : 'Share'} onClick={() => void share(t)} />
         <button type="button" class={`btn btn-quiet btn-icon${saved ? ' saved-on' : ''}`} aria-pressed={saved}
           aria-label={saved ? 'Remove from saved trails' : 'Save this trail'} title={saved ? 'Saved' : 'Save'}
           onClick={() => { toggleSaved(t); platform.haptics.tap(); say(saved ? 'Removed from Saved' : 'Saved'); }}>
@@ -106,7 +105,7 @@ export function TrailPage() {
         {p && p.distances.length > 1 && <div class="card pad"><ElevationChart profile={p} path={t.path} /></div>}
 
         <div class="actions stack">
-          <Button kind="primary" icon="directions" href={platform.links.directionsUrl(to[0], to[1])}>Directions to trailhead</Button>
+          <Button kind="primary" icon="directions" href={platform.links.directionsUrl(to[0], to[1])} data-directions={`${to[0]},${to[1]}`}>Directions to trailhead</Button>
           <Button icon="download" onClick={() => void exportGpx(t.name, trailGpx(t))}>Download GPX</Button>
         </div>
 
@@ -118,7 +117,7 @@ export function TrailPage() {
             <ul class="list card">
               {heads.slice(0, 4).map((h) => (
                 <li>
-                  <a class="row" href={platform.links.directionsUrl(h.point[0], h.point[1])} target="_blank" rel="noopener">
+                  <a class="row" href={platform.links.directionsUrl(h.point[0], h.point[1])} data-directions={`${h.point[0]},${h.point[1]}`} target="_blank" rel="noopener">
                     <span class="row-icon"><Icon name="flag" size={18} /></span>
                     <span class="row-main">
                       <span class="row-title">{h.name}</span>

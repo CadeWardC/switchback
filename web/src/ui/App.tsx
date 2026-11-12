@@ -1,11 +1,11 @@
 // The frame: the map behind, a panel beside it (wide screens) or a sheet over it with a tab bar (phones).
 import { useEffect, useRef } from 'preact/hooks';
 import {
-  baseMap, flyTo, go, loading, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
+  baseMap, dark, flyTo, go, loading, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
 } from '../state';
 import { createMap, myLocation, resizeMap, zoomBy } from '../map/map';
 import { isPhone, sheetVisible } from '../layout';
-import { platform } from '../platform';
+import { isNativeApp, platform } from '../platform';
 import { Icon } from './Icon';
 import { Explore } from './Explore';
 import { TrailPage } from './TrailPage';
@@ -226,6 +226,34 @@ export function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  // Android's back: close a dialog, lower the sheet, go back a page; only then leave the app
+  useEffect(() => {
+    platform.app.onBack(() => {
+      const dialog = document.querySelector<HTMLDialogElement>('dialog[open]');
+      if (dialog) { dialog.close(); return true; }
+      if (isPhone() && sheet.peek() === 'full') { sheet.value = 'half'; return true; }
+      const r = route.peek();
+      if (r.page === 'explore') return false;
+      go(r.page === 'trail' ? { page: 'explore' } : r.page === 'plan' || r.page === 'help' ? { page: 'saved' } : r.page === 'walk' ? { page: 'activity' } : { page: 'explore' });
+      return true;
+    });
+  }, []);
+  // system bars follow the theme
+  useEffect(() => { platform.app.setTheme(dark.value); }, [dark.value]);
+  // in the phone apps, links to other sites open outside the app (directions in the maps app)
+  useEffect(() => {
+    if (!isNativeApp) return;
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || !/^https?:/.test(a.getAttribute('href') ?? '') || a.origin === location.origin) return;
+      e.preventDefault();
+      const d = a.dataset.directions?.split(',').map(Number);
+      if (d && d.length === 2) platform.links.directions(d[0], d[1]);
+      else platform.links.open(a.href);
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
   }, []);
   const page = route.value.page;
   return (

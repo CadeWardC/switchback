@@ -37,7 +37,8 @@ export type Route =
   | { page: 'plan' }
   | { page: 'activity' }
   | { page: 'walk'; id: string }
-  | { page: 'settings' };
+  | { page: 'settings' }
+  | { page: 'help' };
 
 export interface MapView { lat: number; lon: number; zoom: number }
 
@@ -54,7 +55,7 @@ export function parseHash(hash: string): { route: Route; view?: MapView } {
     }
     if (parts[0] === 'activity' && parts[1]) return { route: { page: 'walk', id: decodeURIComponent(parts[1]) } };
   } catch { /* a broken link: fall through to the map */ }
-  if (parts[0] === 'record' || parts[0] === 'saved' || parts[0] === 'plan' || parts[0] === 'activity' || parts[0] === 'settings') {
+  if (parts[0] === 'record' || parts[0] === 'saved' || parts[0] === 'plan' || parts[0] === 'activity' || parts[0] === 'settings' || parts[0] === 'help') {
     return { route: { page: parts[0] } };
   }
   if (parts[0] === 'about') return { route: { page: 'settings' } };
@@ -76,6 +77,7 @@ export function tabOf(r: Route): Tab {
   switch (r.page) {
     case 'trail': return 'explore';
     case 'plan': return 'saved';
+    case 'help': return 'saved';
     case 'walk': return 'activity';
     default: return r.page;
   }

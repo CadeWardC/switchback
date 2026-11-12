@@ -13,6 +13,8 @@ export interface GpxDoc {
   /** Extra attributes on <gpx> (namespaces) and raw XML for <metadata><extensions>. */
   namespaces?: Record<string, string>;
   metadataExtensions?: string;
+  /** Ready-made <wpt> elements (places marked on the way). */
+  waypoints?: string[];
   tracks: GpxTrack[];
 }
 
@@ -35,6 +37,7 @@ export function buildGpx(doc: GpxDoc): string {
   out.push(`    <time>${iso(doc.time ?? Date.now())}</time>`);
   if (doc.metadataExtensions) out.push('    <extensions>', doc.metadataExtensions, '    </extensions>');
   out.push('  </metadata>');
+  if (doc.waypoints?.length) out.push(...doc.waypoints);
   for (const track of doc.tracks) {
     out.push('  <trk>', `    <name>${xml(track.name)}</name>`);
     for (const seg of track.segments) {

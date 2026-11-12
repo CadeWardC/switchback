@@ -3,7 +3,7 @@
 // The iPhone app draws the point-of-interest icons ("sb-…") itself at runtime; the website has no such
 // pictures, so icon layers are dropped or reduced to their text. The peak labels come in two layers
 // (feet and metres): both are kept, and the site shows the one matching the units setting.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,3 +32,10 @@ for (const [from, to] of [['switchback-style.json', 'light.json'], ['switchback-
   writeFileSync(join(out, to), JSON.stringify(style));
   console.log(`styles/${to}: ${layers.length} layers`);
 }
+
+// The map's worker ships as ".mjs". Some web views (iOS inside the app) do not serve that ending as
+// JavaScript, and a module worker must be: keep a copy ending in ".js" for the bundler to pick up.
+const generated = join(here, '..', 'src', 'generated');
+mkdirSync(generated, { recursive: true });
+copyFileSync(join(here, '..', 'node_modules', 'maplibre-gl', 'dist', 'maplibre-gl-worker.mjs'), join(generated, 'maplibre-worker.js'));
+console.log('src/generated/maplibre-worker.js');

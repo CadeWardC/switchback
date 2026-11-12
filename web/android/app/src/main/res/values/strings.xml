@@ -4,4 +4,8 @@
     <string name="title_activity_main">Switchback</string>
     <string name="package_name">com.cadewardc.switchback</string>
     <string name="custom_url_scheme">com.cadewardc.switchback</string>
+    <!-- The notification shown while a hike is being recorded (background location plugin) -->
+    <string name="capacitor_background_geolocation_notification_channel_name">Recording a hike</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_switchback</string>
+    <string name="capacitor_background_geolocation_notification_color">#1F6B45</string>
 </resources>

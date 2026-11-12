@@ -1,13 +1,14 @@
 // Activity: the walks you have recorded, and one walk with its map, numbers and files.
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { go, route, say, sheet, storageFailed, units, walks, flyTo } from '../state';
+import { deleteWalk, go, loadWalk, renameWalk, route, say, sheet, storageFailed, units, walks, flyTo } from '../state';
 import { shownLines } from '../map/map';
 import { fmtClock, fmtDate, fmtDistance, fmtElevation } from '../lib/format';
 import { buildGpx, exportGpx, type GpxPoint } from '../lib/gpx';
-import { APP_VERSION } from '../lib/submit';
+import { APP_VERSION, platformLabel } from '../lib/submit';
 import { bboxOf, distance } from '../lib/geo';
 import { profileOf } from '../lib/trail';
 import type { Walk } from '../lib/storage';
+import { xml } from '../lib/gpx';
 import type { Coord } from '../lib/polyline';
 import { isPhone } from '../layout';
 import { Button, Empty, Note, PageHeader, Stat, dist } from './common';
@@ -50,19 +51,31 @@ export function Activity() {
   );
 }
 
-function walkGpx(w: Walk): string {
+export function walkGpx(w: Walk): string {
+  // places marked on the way are waypoints
+  const waypoints = (w.markers ?? []).map((m) =>
+    `  <wpt lat="${m.lat.toFixed(7)}" lon="${m.lon.toFixed(7)}">${m.ele != null ? `<ele>${m.ele.toFixed(1)}</ele>` : ''}<time>${new Date(m.t).toISOString().replace(/\.\d{3}Z$/, 'Z')}</time><name>${xml(m.name)}</name></wpt>`);
   return buildGpx({
-    creator: `Switchback Web ${APP_VERSION}`, name: w.name, time: w.started,
+    creator: `Switchback ${platformLabel} ${APP_VERSION}`, name: w.name, time: w.started, waypoints,
     tracks: [{ name: w.name, segments: w.segments.map((s) => s.map((p): GpxPoint => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: p.t }))) }],
   });
 }
 
 export function WalkPage() {
   const r = route.value;
-  const w = walks.value.find((x) => r.page === 'walk' && x.id === r.id);
+  const id = r.page === 'walk' ? r.id : '';
+  const summary = walks.value.find((x) => x.id === id);
+  // the points are a document of their own: read it when the page opens
+  const [full, setFull] = useState<Walk | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    setFull(undefined);
+    void loadWalk(id).then((x) => { if (live) setFull(x); });
+    return () => { live = false; };
+  }, [id]);
+  const w = full && summary ? { ...full, name: summary.name } : full === undefined && summary ? undefined : null;
   const [confirm, setConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const flat = useMemo(() => (w ? w.segments.flat() : []), [w?.id]);
   const path = useMemo(() => flat.map((p) => [p.lat, p.lon] as Coord), [flat]);
   // heights, when the device gave them for most points
@@ -89,6 +102,14 @@ export function WalkPage() {
     return () => { shownLines.value = []; };
   }, [w?.id]);
 
+  if (w === undefined) {
+    return (
+      <div class="page">
+        <PageHeader back={{ page: 'activity' }} backLabel="Activity" />
+        <div class="page-scroll"><p class="quiet-line">Loading…</p></div>
+      </div>
+    );
+  }
   if (!w) {
     return (
       <div class="page">
@@ -97,7 +118,7 @@ export function WalkPage() {
       </div>
     );
   }
-  const rename = (name: string) => { walks.value = walks.value.map((x) => (x.id === w.id ? { ...x, name } : x)); };
+  const rename = (name: string) => { void renameWalk(w.id, name); };
   const imperial = units.value === 'imperial';
   const per = w.length > 50 ? w.seconds / (w.length / (imperial ? 1609.344 : 1000)) : 0;
   return (
@@ -131,7 +152,7 @@ export function WalkPage() {
             <div class="confirm" role="alertdialog" aria-label="Confirm">
               <span>Delete this walk for good?</span>
               <Button kind="quiet" onClick={() => setConfirm(false)}>Keep</Button>
-              <Button kind="danger" onClick={() => { walks.value = walks.value.filter((x) => x.id !== w.id); say('Walk deleted'); go({ page: 'activity' }); }}>Delete</Button>
+              <Button kind="danger" onClick={() => { void deleteWalk(w.id); say('Walk deleted'); go({ page: 'activity' }); }}>Delete</Button>
             </div>
           )}
       </div>
