@@ -52,8 +52,8 @@ workflow "Check submitted trails".
 
 ## The checks
 
-`python3 scripts/verify_submission.py <file.gpx> [--pack <region>.trails]` prints a report and exits 0 only when
-every check passes.
+`python3 scripts/verify_submission.py <file.gpx> [--pack <region>.trails] [--wanted <region>.wanted.json]
+[--out data/submissions]` prints a report and exits 0 when every check passes, 2 for needs verification, 1 otherwise.
 
 | Check | Fails when |
 | --- | --- |
@@ -72,6 +72,20 @@ is kept, never its times. The pack builder (`scripts/enrich_trail_pack.py`) only
 whose `"approved_by"` a maintainer has filled in, and skips a trail the pack has gained a line for since
 (from OpenStreetMap or an official list). In the pack and the open files such a trail says where its line came
 from: `switchback:origin` = `Community`.
+
+## Three outcomes
+
+| Outcome | When | Where it goes |
+| --- | --- | --- |
+| Verified | every check passes | `data/submissions/verified/<region>/`, waiting for a maintainer's approval |
+| Needs verification | likely a trail, but something is unsure: a walk whose recording is messy; or a trail placed on a map that has one of its two proofs (the park names it, or the lidar shows it) but not both | `data/submissions/needs-verification/<region>/`, with what is unsure |
+| Not passed | anything else (too short, not on foot, no name, already in the file, a line with no proof at all) | nowhere |
+
+A trail on the needs-verification list is not in the trail files. Each build publishes the list beside the trail
+file as `<region>.needs-verification.geojson`, and the apps show those trails apart from the hikes, dashed, with
+"I walked this". It gets into the trail files one of two ways: a maintainer accepts it (fills in `"approved_by"`
+in its file), or someone walks it and sends that in, and the walk is verified and approved. Once the pack has a
+line there, the entry drops off the list by itself.
 
 ## What a person still decides
 

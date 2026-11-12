@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Checks a trail someone sent in before any pack may take it (docs/SUBMISSIONS.md).
 
-    verify_submission.py <file.gpx|.gpx.txt|.gz|.zip> [--pack <region>.trails] [--region <id>] [--out data/submissions/verified]
+    verify_submission.py <file.gpx|.gpx.txt|.gz|.zip> [--pack <region>.trails] [--region <id>]
+                         [--wanted <region>.wanted.json] [--out data/submissions]
 
-Prints a report and exits 0 only when every check passes. With --out, a passing trail is cleaned (stops and GPS
-scatter removed, simplified to 4 m, an out-and-back walked twice folded into one line) and written as
-<out>/<region>/<name>.geojson, with what was checked and an empty "approved_by" for a maintainer to fill in.
+Prints a report. Exits 0 when every check passes (verified), 2 when the trail is likely real but something is
+unsure (needs verification), 1 otherwise. With --out, the trail is cleaned (stops and GPS scatter removed,
+simplified to 4 m, an out-and-back walked twice folded into one line) and written as
+<out>/verified/<region>/<name>.geojson or <out>/needs-verification/<region>/<name>.geojson, with what was checked
+and an empty "approved_by" for a maintainer to fill in.
 The times of the walk are not kept: only its date.
 
 Needs nothing but Python. The file is read as data: no entity or network lookups.
@@ -422,7 +425,8 @@ def main():
     ap.add_argument("--pack", help="the region's trail file, to check the trail is in the region and is new")
     ap.add_argument("--region", help="the region's id (default: the pack's file name)")
     ap.add_argument("--wanted", help="the region's wanted list (<region>.wanted.json), for a trail placed on a map")
-    ap.add_argument("--out", help="where to write a passing trail (data/submissions/verified)")
+    ap.add_argument("--out", help="the submissions folder (data/submissions): a trail is written to verified/ or "
+                                  "needs-verification/ under it")
     a = ap.parse_args()
     try:
         sub = read_gpx(raw_bytes(a.file))
@@ -434,7 +438,7 @@ def main():
     checks, trail = verify(sub, pack, wanted)
     for name, ok, found in checks:
         print(f"{'ok  ' if ok else 'FAIL'}  {name}: {found}")
-    passed = all(ok for _, ok, _ in checks)
+    verdict = tier(checks, trail)
     if trail:
         if trail["kind"] == "placed":
             print("      Placed on a map, not walked: it is marked so until someone walks it")
@@ -442,19 +446,42 @@ def main():
         print(f"      Cleaned line: {trail['length_m']} m, {len(trail['line'])} points, {shape}")
     if not a.pack:
         print("      (no --pack given: not checked against the region's file)")
-    print("PASSED: ready for a maintainer to look at" if passed else "NOT PASSED")
-    if passed and a.out:
+    print({"verified": "PASSED: ready for a maintainer to approve",
+           "needs-verification": "NEEDS VERIFICATION: likely a trail, but not sure. A maintainer can accept it, or someone can walk it",
+           "rejected": "NOT PASSED"}[verdict])
+    if verdict != "rejected" and a.out:
         region = a.region or (os.path.basename(a.pack).split(".")[0].split("-2")[0] if a.pack else "unsorted")
-        folder = os.path.join(a.out, region)
+        folder = os.path.join(a.out, verdict, region)
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, slug(trail["name"]) + ".geojson")
         n = 2
         while os.path.exists(path):
             path = os.path.join(folder, f"{slug(trail['name'])}-{n}.geojson")
             n += 1
-        json.dump(geojson(trail, checks), open(path, "w"), indent=1, ensure_ascii=False)
+        feature = geojson(trail, checks)
+        if verdict == "needs-verification":
+            feature["properties"]["unsure"] = [f"{name}: {found}" for name, ok, found in checks if not ok]
+        json.dump(feature, open(path, "w"), indent=1, ensure_ascii=False)
         print(f"wrote {path}")
-    return 0 if passed else 1
+    return {"verified": 0, "needs-verification": 2, "rejected": 1}[verdict]
+
+# What may be unsure in a trail that is still worth keeping on the "needs verification" list. Everything else
+# (not readable, too short, not on foot, no name, already in the file, outside the region) is a plain no.
+SOFT = {"Clean recording", "Named by the park", "The ground shows it"}
+
+def tier(checks, trail):
+    """verified: every check passed. needs-verification: likely a trail, but something is unsure; it is kept on
+    its own list until a maintainer accepts it or someone walks it. rejected: anything else."""
+    failed = {name for name, ok, _ in checks if not ok}
+    if not failed:
+        return "verified"
+    if not trail or failed - SOFT:
+        return "rejected"
+    if trail["kind"] == "placed":
+        # one of the two has to hold: the park's own list names it, or the ground shows it. A line with
+        # neither is only a drawing
+        return "needs-verification" if len(failed & {"Named by the park", "The ground shows it"}) < 2 else "rejected"
+    return "needs-verification"
 
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

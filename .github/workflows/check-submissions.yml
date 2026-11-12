@@ -1,8 +1,8 @@
 name: Check submitted trails
 
 # Runs the checks in docs/SUBMISSIONS.md on every file in data/submissions/inbox and reports what passed.
-# Nothing is added to a pack here: a passing trail is written to data/submissions/verified/<region>/ in the
-# run's artifact, for a maintainer to look at, approve and commit.
+# Nothing is added to a pack here: a trail is written to verified/<region>/ or needs-verification/<region>/ in
+# the run's artifact, for a maintainer to look at, approve and commit under data/submissions/.
 
 on:
   workflow_dispatch:
@@ -27,7 +27,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REGION: ${{ inputs.region }}
-        run: gh release download trails-us --pattern "$REGION.trails" --dir packs
+        run: |
+          gh release download trails-us --pattern "$REGION.trails" --dir packs
+          gh release download trails-us --pattern "$REGION.wanted.json" --dir packs || echo '{"wanted":[]}' > "packs/$REGION.wanted.json"
+          pip install -q numpy pillow
       - name: Check each file
         env:
           REGION: ${{ inputs.region }}
@@ -39,15 +42,15 @@ jobs:
             echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             if [ -n "$REGION" ] && [ -f "packs/$REGION.trails" ]; then
-              python3 scripts/verify_submission.py "$f" --pack "packs/$REGION.trails" --region "$REGION" --out verified >> "$GITHUB_STEP_SUMMARY" 2>&1 || failed=$((failed + 1))
+              python3 scripts/verify_submission.py "$f" --pack "packs/$REGION.trails" --region "$REGION" --wanted "packs/$REGION.wanted.json" --out checked >> "$GITHUB_STEP_SUMMARY" 2>&1 || failed=$((failed + 1))
             else
               python3 scripts/verify_submission.py "$f" >> "$GITHUB_STEP_SUMMARY" 2>&1 || failed=$((failed + 1))
             fi
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           done
-          echo "$failed file(s) did not pass" >> "$GITHUB_STEP_SUMMARY"
+          echo "$failed file(s) were not verified (needs verification, or not passed)" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: hashFiles('verified/**') != ''
+        if: hashFiles('checked/**') != ''
         with:
-          name: verified-trails
-          path: verified
+          name: checked-trails
+          path: checked

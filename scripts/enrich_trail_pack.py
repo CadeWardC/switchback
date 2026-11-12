@@ -287,21 +287,23 @@ def wanted_trails(region_id, parks, trails):
             row["have"] = m.get("share_in_our_data", 0)
     return sorted(out.values(), key=lambda r: (r["park"], r["trail"]))
 
-COMMUNITY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "submissions", "verified")
+COMMUNITY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "submissions")
 
 def add_community(region_id, trails, counts, folder=COMMUNITY):
     """Trails people walked and sent in (docs/SUBMISSIONS.md): only files that passed scripts/verify_submission.py
     and that a maintainer approved (a name in "approved_by"), and only where the pack still has no line there
     (OpenStreetMap or an official list may have gained the trail since). Returns [(trail, start)]."""
     import build_trail_pack as builder
-    files = sorted(glob.glob(os.path.join(folder, region_id, "*.geojson")))
+    # verified first, so a walk of a trail on the needs-verification list is the line that gets added
+    files = sorted(glob.glob(os.path.join(folder, "verified", region_id, "*.geojson"))) + \
+        sorted(glob.glob(os.path.join(folder, "needs-verification", region_id, "*.geojson")))
     if not files:
         return []
     grid = official.Grid()
     for i, t in enumerate(trails):
         for l in t["_lines"]:
             grid.add(l, i)
-    added = []
+    added, waiting = [], []
     for f in files:
         try:
             feature = json.load(open(f))
@@ -311,13 +313,14 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
             print(f"  {os.path.basename(f)}: couldn't be read ({ex})")
             continue
         if not str(p.get("approved_by") or "").strip():
-            counts["sent in by walkers: waiting for approval"] += 1
+            counts["sent in by walkers: needs verification" if os.sep + "needs-verification" + os.sep in f
+                   else "sent in by walkers: waiting for approval"] += 1
+            waiting.append((f, p, line))
             continue
         placed = p.get("kind") == "placed"
-        # walked, or placed on a map where a park's own list names the trail and the lidar shows it
-        sound = p.get("kind") == "walked" or (placed and p.get("park") and (p.get("lidar_z") or 0) >= 2)
-        if not sound or len(line) < 2 or official.length(line) < ADD_MIN_M:
-            counts["sent in by walkers: not added, not a sound trail of a quarter mile"] += 1
+        # the checks decided which list it is on; the maintainer's name is what lets it in from either
+        if p.get("kind") not in ("walked", "placed") or len(line) < 2 or official.length(line) < ADD_MIN_M:
+            counts["sent in by walkers: not added, not a trail of a quarter mile"] += 1
             continue
         if official.match([line], grid)[0] >= 0.8:
             counts["sent in by walkers: not added, the pack has the trail now"] += 1
@@ -332,10 +335,12 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
         t, at = made
         tags = t.setdefault("tags", {})
         if placed:
-            tags["switchback:origin"] = "USGS lidar"
+            shown = (p.get("lidar_z") or 0) >= 2
+            tags["switchback:origin"] = "USGS lidar" if shown else "Placed on a map"
             tags["switchback:unwalked"] = "yes"
-            tags["description"] = ("Placed from USGS lidar where the park's own list names this trail. "
-                                   "Nobody has sent in a walk of it yet, so the line may be a little off.")
+            tags["description"] = (("Placed from USGS lidar, which shows a trail here" if shown else "Placed on a map")
+                                   + (f"; {p['park']} lists this trail. " if p.get("park") else ". ")
+                                   + "Nobody has sent in a walk of it yet, so the line may be a little off.")
             if p.get("park_source"):
                 tags["official:url"] = p["park_source"]
         else:
@@ -349,6 +354,18 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
         grid.add(line, len(trails) + len(added))
         added.append((t, at))
         counts["sent in by walkers: added"] += 1
+    # what is left on the needs-verification list, for the apps to show apart from the trails ("walk this one"):
+    # not the ones the pack has a line for now
+    unsure = []
+    for f, p, line in waiting:
+        if os.sep + "needs-verification" + os.sep not in f or len(line) < 2 or official.match([line], grid)[0] >= 0.8:
+            continue
+        props = {"name": p.get("name"), "kind": p.get("kind"), "length_m": p.get("length_m"),
+                 "why": "; ".join(p.get("unsure") or []), "park": p.get("park"), "lidar_z": p.get("lidar_z"),
+                 "loop": p.get("loop")}
+        unsure.append({"type": "Feature", "properties": {k: v for k, v in props.items() if v not in (None, "")},
+                       "geometry": {"type": "LineString", "coordinates": [[round(c[1], 6), round(c[0], 6)] for c in line]}})
+    add_community.unsure = unsure
     return added
 
 LEVELS = ["easy", "moderate", "hard", "veryHard"]
@@ -547,6 +564,12 @@ def main():
             builder.add_elevation(walked, os.environ.get("TERRAIN_CACHE", "terrain"))
         place(walked, trails_by_cell, header, info)
         counts["hikes"] += len(walked)
+        # the needs-verification list, published beside the trail file (never part of it)
+        json.dump({"type": "FeatureCollection", "name": f"{info.get('name', region_id)}: trails that need verification",
+                   "note": "Likely trails that are not yet sure: not in the trail files. Walk one and send it in, "
+                           "or a maintainer can accept it. See docs/SUBMISSIONS.md.",
+                   "features": getattr(add_community, "unsure", [])},
+                  open(os.path.join(out, f"{region_id}.needs-verification.geojson"), "w"), ensure_ascii=False, separators=(",", ":"))
     except Exception as ex:
         print(f"  trails sent in by walkers couldn't be added ({ex})")
     for k, ts in trails_by_cell.items():

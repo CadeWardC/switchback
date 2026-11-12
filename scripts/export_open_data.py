@@ -22,6 +22,7 @@ def feature(t):
         "licence": ("CC BY 4.0, USDA Forest Service" if origin == "Forest Service" else
                     "ODbL, walked and sent in by a Switchback user" if origin == "Community" else
                     "ODbL, placed from USGS 3DEP lidar (public domain) by a Switchback user" if origin == "USGS lidar" else
+                    "ODbL, placed on a map by a Switchback user and accepted by a maintainer" if origin == "Placed on a map" else
                     "public domain (U.S. federal data)" if origin else "ODbL, © OpenStreetMap contributors"),
     }
     if not origin and t.get("osmId"):
