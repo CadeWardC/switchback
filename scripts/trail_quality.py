@@ -8,7 +8,7 @@ Counts, and with --list names the worst of:
   split     a name carried by two or more hikes whose ends are within a mile of each other: likely one trail in pieces
   tangled   a hike whose lines add up to much more than its main line: a web or a trail with big side branches
   near_loop a one-way hike that ends within a quarter mile of where it starts: likely a loop left open
-Also counts what the build already repaired: routes turned into system overviews, trails joined along their route.
+Also counts what the build already repaired: routes turned into system overviews, trails with a bridged stretch (joined pieces, closed loops).
 Adds the counts to <region-id>.json under "cohesion" and prints one line.
 """
 import json, os, sys
@@ -32,7 +32,7 @@ def check(trails):
         if tags.get("switchback:network") == "yes":
             counts["overviews" if tags.get("switchback:hike") == "no" else "networks"] += 1
         if "switchback:bridged" in tags:
-            counts["joined_along_route"] += 1
+            counts["bridged"] += 1
         if tags.get("switchback:hike") == "no" or any(tags.get(k) == "yes" for k in
                 ("switchback:informal", "switchback:side", "switchback:unnamed", "switchback:roadwalk", "switchback:network")):
             continue

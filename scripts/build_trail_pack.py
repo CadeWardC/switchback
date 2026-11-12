@@ -44,6 +44,12 @@ LINK_M = 1000   # pieces of one named trail this close along other trails are on
 GAP_M = 30      # a straight jump allowed between pieces where the map has a small gap
 NEAR_GAP_M = 400     # ...or a longer one (a road crossing, a bridge, a stretch of pavement that isn't mapped as trail)
 NEAR_GAP_SHARE = 0.15  # when it is this small beside the two pieces it joins
+FAR_GAP_M = 1609       # ...or up to a mile, between pieces more than thirty times as long as the gap (a long trail
+FAR_GAP_SHARE = 0.03   # broken at a road walk or a river crossing)
+
+def small_gap(d, size):
+    """Is a straight jump of d metres small enough to join two pieces of one trail that are `size` metres together?"""
+    return d <= GAP_M or (d <= NEAR_GAP_M and d <= NEAR_GAP_SHARE * size) or (d <= FAR_GAP_M and d <= FAR_GAP_SHARE * size)
 
 # ---------------------------------------------------------------- geometry
 
@@ -267,12 +273,12 @@ def link_pieces(pieces, adj, where, parks=None, near=True):
                     walk = (0.0, [a])
                 elif n in walks:
                     walk = walks[n]
-                elif dist(where[a], where[n]) <= (NEAR_GAP_M if near else GAP_M):
+                elif dist(where[a], where[n]) <= (FAR_GAP_M if near else GAP_M):
                     walk = (dist(where[a], where[n]), [a, n])
                 else:
                     continue
                 for j, f in ends[n]:
-                    if len(walk[1]) == 2 and walk[0] > GAP_M and walk[0] > NEAR_GAP_SHARE * (sizes[i] + sizes[j]):
+                    if len(walk[1]) == 2 and not small_gap(walk[0], sizes[i] + sizes[j]):
                         continue              # a longer straight jump only between pieces that dwarf it
                     if (j, f) > (i, e):       # each pair once
                         links.append((walk[0], (i, e), (j, f), [where[x] for x in walk[1]]))
@@ -289,7 +295,7 @@ def link_pieces(pieces, adj, where, parks=None, near=True):
             continue
         if d > 0 and (pieces[a[0]][0][0] == pieces[a[0]][-1][0] or pieces[b[0]][0][0] == pieces[b[0]][-1][0]):
             continue      # a piece that is already a closed loop is complete: nothing is hung on it across a gap
-        if d > LINK_M:
+        if d > LINK_M and not (len(coords) == 2 and small_gap(d, sizes[a[0]] + sizes[b[0]])):
             # a longer gap is joined only inside one park, and only when the trail's own pieces are most of the
             # result (the stretch between them is at most 40% of the two pieces it joins)
             same_park = parks and parks[a[0]] and parks[a[0]] == parks[b[0]]
@@ -1211,14 +1217,13 @@ def join_same_name(trails):
             for e in (0, 1):
                 c = end(k, e)
                 cell = (round(c[0] * 200), round(c[1] * 200))
-                for dy in (-1, 0, 1):
-                    for dx in (-1, 0, 1):
+                for dy in range(-4, 5):
+                    for dx in range(-4, 5):
                         for j, f in cells.get((cell[0] + dy, cell[1] + dx), ()):
                             if j <= k:
                                 continue
                             d = dist(c, end(j, f))
-                            if d <= GAP_M or (d <= NEAR_GAP_M and d <= NEAR_GAP_SHARE *
-                                              (trails[k][0]["length"] + trails[j][0]["length"])):
+                            if small_gap(d, trails[k][0]["length"] + trails[j][0]["length"]):
                                 links.append((d, (k, e), (j, f)))
         links.sort()
         group = {k: k for k in ks}
