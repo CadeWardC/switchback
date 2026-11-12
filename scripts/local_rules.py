@@ -42,11 +42,13 @@ CH = {
         r"passeggiata|percorso|trail|trails|path|loop|parcours|vita)\b", re.I),
     # …or says street: "Bahnhofstrasse", "Rue du Lac", "Quai Ernest Ansermet", "Piazza Grande"
     "street": re.compile(
-        r"(strasse|straße|str\.|gasse|gässli|gaessli|platz|allee|steg|brücke|bruecke|passerelle)$|"
-        r"^(rue|ruelle|avenue|av\.|boulevard|bd|place|impasse|quai|route|rte|passage|pont|"
-        r"viale|piazza|piazzale|vicolo|strada|corso|salita|ponte)\b|\b(trottoir|parkplatz|parking|sidewalk)\b", re.I),
+        r"(strasse|straße|str\.|gasse|gässli|gaessli|platz|allee)$|"
+        r"^(rue|ruelle|avenue|av\.|boulevard|bd|place|impasse|quai|route|rte|passage|"
+        r"viale|piazza|piazzale|vicolo|strada|corso|salita)\b|\b(trottoir|parkplatz|parking|sidewalk)\b", re.I),
+    # (a bridge isn't a street: "Bibersteg", "Pont Bleu" and "Saltinabrücke" stay on the map; a paved one is still
+    # caught as a lane below)
     # …or could be either, and is a street when it is paved: "Kapellenweg", "Chemin des Vignes", "Via Cantonale"
-    "lane": re.compile(r"(weg|wäg|wegli)$|^(chemin|ch\.|via|vea)\b", re.I),
+    "lane": re.compile(r"(weg|wäg|wegli|steg|brücke|bruecke|passerelle)$|^(chemin|ch\.|via|vea|pont|ponte)\b", re.I),
     "informal": "On no signposted hiking route, and named like a street.",
 }
 RULES = {"CH": CH}

@@ -636,7 +636,9 @@ GENERIC = {"trail", "trails", "path", "paths", "informal trail", "unnamed", "unn
 TRAIL_WORDS = re.compile(r"\b(trail|trails|path|loop|greenway|way|route|rail|traverse|trace|walk|promenade|sentier|piste|"
                          r"boardwalk|circuit|ridge|portage)\b", re.I)
 STREETY = re.compile(r"\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|boulevard|blvd|court|ct|place|pl|highway|hwy|"
-                     r"sidewalk|alley|parking|driveway|crosswalk|overpass|underpass|bridge|plaza|mall)\.?$|sidewalk|crosswalk", re.I)
+                     r"sidewalk|alley|parking|driveway|crosswalk|overpass|underpass|plaza|mall)\.?$|sidewalk|crosswalk", re.I)
+# (a bridge isn't a street word: "Swinging Bridge", "Elm Spring Bridge" and "Natural Bridge" are walks. One that is
+# only a road's footway is still caught by its pavement.)
 PAVED = {"asphalt", "concrete", "paving_stones", "paved", "sett", "concrete:plates", "bricks"}
 NATURAL = {"ground", "dirt", "earth", "grass", "gravel", "fine_gravel", "rock", "pebblestone", "mud", "sand", "unpaved",
            "wood", "woodchips", "compacted"}
