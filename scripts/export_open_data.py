@@ -29,6 +29,8 @@ def ways_in(t):
                  "trail": t["name"], "walk_m": e["d"], "trailhead_lat": lat, "trailhead_lon": lon,
                  # the walk follows paths on the map, whatever the trail's own line came from
                  "licence": licence(None)}
+        if e.get("v"):
+            props["via"] = e["v"]            # the named trails the walk follows, in the order walked
         chart = e.get("e") or {}
         for key, k in (("climb_m", "g"), ("descent_m", "l"), ("lowest_m", "mn"), ("highest_m", "mx")):
             if isinstance(chart.get(k), (int, float)):

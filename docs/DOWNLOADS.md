@@ -31,6 +31,7 @@ A `way_in` is the walk from a trailhead or car park to a trail, along the trails
 | `trailhead`, `trailhead_lat`, `trailhead_lon` | The trailhead or car park, and where it is |
 | `trail_id`, `trail` | The trail it leads to (the `id` and `name` of a `trail` feature) |
 | `walk_m` | The walk from the trailhead to the trail, one way, in metres |
+| `via` | The named trails the walk follows, in the order walked (at most two; absent for a short walk or one on no named trail) |
 | `climb_m`, `descent_m`, `lowest_m`, `highest_m` | Elevation along the walk |
 
 ## Licence

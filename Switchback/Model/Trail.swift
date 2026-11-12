@@ -235,7 +235,8 @@ struct Trail: Codable, Identifiable, Hashable {
                   let p = r["p"] as? [NSNumber], p.count == 2 else { return nil }
             let point = Coord(lat: p[0].doubleValue, lon: p[1].doubleValue)
             return TrailAccess(name: name, distance: d, point: point, line: (r["l"] as? String).map(Polyline.decode) ?? [],
-                               profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
+                               profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) },
+                               via: (r["v"] as? [String]) ?? [])
         }
     }
 
@@ -416,8 +417,22 @@ struct TrailAccess: Hashable, Identifiable {
     let line: [Coord]
     /// Elevation along the way in.
     var profile: ElevationProfile? = nil
+    /// The named trails the way in follows, in the order walked (at most two; trail files say which).
+    var via: [String] = []
 
     var id: String { "\(name)|\(point.lat)|\(point.lon)" }
+
+    /// "via Ridge Trail and Creek Trail", when the way in follows named trails.
+    var viaText: String? { via.isEmpty ? nil : "via " + via.joined(separator: " and ") }
+
+    /// A trailhead with a name of its own, not a car park named after the trail beside it ("Parking on …").
+    var isNamed: Bool { name != "Parking" && !name.hasPrefix("Parking on ") }
+
+    /// The line under a hike's title: "From Camp Five Pond Trailhead via Ridge Trail" (either half alone, or nothing).
+    var startLine: String? {
+        let line = [isNamed ? "from \(name)" : nil, viaText].compactMap { $0 }.joined(separator: " ")
+        return line.isEmpty ? nil : line.prefix(1).uppercased() + String(line.dropFirst())
+    }
 }
 
 /// A loop that hangs off another loop and can be added to it.

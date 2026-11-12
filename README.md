@@ -54,6 +54,12 @@ subscription and no API keys.
   can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
   off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
   trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
+- **The way in:** each trailhead a hike can be started from says which named trails the walk to it follows
+  (`scripts/ways_in.py`, run on each finished pack: at most two, never unnamed paths or the hike itself, nothing for a
+  walk under 150 m). The start picker shows it ("Camp Five Pond Trailhead · 3.4 mi · via Ridge Trail"), a quiet line
+  under the hike's title says where it starts and how you get in, driving directions go to the trailhead picked by
+  its own name, and tapping a trail on the main map draws its way in from the nearest trailhead. Search, lists and
+  the title keep just the hike's name.
 - **Regions:** `data/trail-regions.json` lists the areas the pack job builds (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map

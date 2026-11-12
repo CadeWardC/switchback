@@ -21,6 +21,7 @@ on:
       - "scripts/check_official_trails.py"
       - "scripts/elevation.py"
       - "scripts/export_open_data.py"
+      - "scripts/ways_in.py"
       - "data/parks/**"
 
 permissions:
@@ -105,6 +106,11 @@ jobs:
         run: |
           export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
           python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
+
+      - name: Say which trails each way in follows ("via Ridge Trail")
+        # after the official names are in, so the names are the ones the app shows; never blocks publishing
+        continue-on-error: true
+        run: python3 scripts/ways_in.py out "${{ matrix.region.id }}"
 
       - name: Check the hikes are cohesive (pieces of one trail, webs, loops left open)
         # counts go into the area's summary so each build can be compared with the last; the worst are listed here
