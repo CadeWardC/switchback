@@ -20,6 +20,7 @@ def feature(t):
         "id": t["id"], "name": t["name"], "length_m": round(t["length"]),
         "line_from": origin or "OpenStreetMap",
         "licence": ("CC BY 4.0, USDA Forest Service" if origin == "Forest Service" else
+                    "ODbL, walked and sent in by a Switchback user" if origin == "Community" else
                     "public domain (U.S. federal data)" if origin else "ODbL, © OpenStreetMap contributors"),
     }
     if not origin and t.get("osmId"):
@@ -61,7 +62,8 @@ def main():
                 feats.append(feature(t))
     doc = {"type": "FeatureCollection", "name": info.get("name", region), "version": header.get("version"),
            "attribution": "Trails © OpenStreetMap contributors (ODbL); some lines from the USDA Forest Service "
-                          "(CC BY 4.0) and the National Park Service (public domain). See each feature's line_from and licence.",
+                          "(CC BY 4.0) and the National Park Service (public domain), and some walked and sent in by "
+                          "Switchback users (ODbL). See each feature's line_from and licence.",
            "features": feats}
     path = os.path.join(out, f"{region}.geojson.gz")
     with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as f:

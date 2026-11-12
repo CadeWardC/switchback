@@ -244,6 +244,75 @@ def add_federal(missing, trails, counts):
             counts["miles added"] += official.length(lines[0]) / 1609.344
     return added
 
+COMMUNITY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "submissions", "verified")
+
+def add_community(region_id, trails, counts, folder=COMMUNITY):
+    """Trails people walked and sent in (docs/SUBMISSIONS.md): only files that passed scripts/verify_submission.py
+    and that a maintainer approved (a name in "approved_by"), and only where the pack still has no line there
+    (OpenStreetMap or an official list may have gained the trail since). Returns [(trail, start)]."""
+    import build_trail_pack as builder
+    files = sorted(glob.glob(os.path.join(folder, region_id, "*.geojson")))
+    if not files:
+        return []
+    grid = official.Grid()
+    for i, t in enumerate(trails):
+        for l in t["_lines"]:
+            grid.add(l, i)
+    added = []
+    for f in files:
+        try:
+            feature = json.load(open(f))
+            p = feature["properties"]
+            line = [(c[1], c[0]) for c in feature["geometry"]["coordinates"]]
+        except Exception as ex:
+            print(f"  {os.path.basename(f)}: couldn't be read ({ex})")
+            continue
+        if not str(p.get("approved_by") or "").strip():
+            counts["sent in by walkers: waiting for approval"] += 1
+            continue
+        if p.get("kind") != "walked" or len(line) < 2 or official.length(line) < ADD_MIN_M:
+            counts["sent in by walkers: not added, not a walked trail of a quarter mile"] += 1
+            continue
+        if official.match([line], grid)[0] >= 0.8:
+            counts["sent in by walkers: not added, the pack has the trail now"] += 1
+            continue
+        if p.get("loop") and line[0] != line[-1]:
+            line.append(line[0])
+        name = official.tidy_name(p.get("name") or "")
+        tid = f"c{name}-{line[0][0]:.3f},{line[0][1]:.3f}"
+        made = builder.make_trail(tid, None, "osmWay", name, [line], {}, ADD_MIN_M, main=line)
+        if not made:
+            continue
+        t, at = made
+        tags = t.setdefault("tags", {})
+        tags["switchback:origin"] = "Community"
+        tags["switchback:walked"] = str(p.get("walked_on") or "")
+        if p.get("area"):
+            tags["switchback:area"] = p["area"]
+        if p.get("notes"):
+            tags["description"] = str(p["notes"])[:400]
+        t["_lines"] = [line]
+        grid.add(line, len(trails) + len(added))
+        added.append((t, at))
+        counts["sent in by walkers: added"] += 1
+    return added
+
+def place(added, trails_by_cell, header, info):
+    """Puts added trails in their cells and widens the area's summary to hold them."""
+    for t, at in added:
+        trails_by_cell.setdefault(f"{math.floor(at[0] / header['cell'])}_{math.floor(at[1] / header['cell'])}", []).append(t)
+        t.pop("_main", None)
+        info.setdefault("coverage", [])
+        sq = f"{math.floor(at[0])}_{math.floor(at[1])}"
+        if sq not in info["coverage"]:
+            info["coverage"] = sorted(info["coverage"] + [sq])
+        b = info.get("bbox")
+        if b:
+            info["bbox"] = [min(b[0], at[0]), min(b[1], at[1]), max(b[2], at[0]), max(b[3], at[1])]
+    if added:
+        header["bbox"] = info.get("bbox", header.get("bbox"))
+        info["trails"] = info.get("trails", 0) + len(added)
+
 def main():
     out, region_id = sys.argv[1], sys.argv[2]
     pack_path, info_path = os.path.join(out, f"{region_id}.trails"), os.path.join(out, f"{region_id}.json")
@@ -376,23 +445,22 @@ def main():
         if added and os.environ.get("ELEVATION", "1") != "0":
             import build_trail_pack as builder
             builder.add_elevation(added, os.environ.get("TERRAIN_CACHE", "terrain"))
-        for t, at in added:
-            trails_by_cell.setdefault(f"{math.floor(at[0] / header['cell'])}_{math.floor(at[1] / header['cell'])}", []).append(t)
-            t.pop("_main", None)
-            info.setdefault("coverage", [])
-            sq = f"{math.floor(at[0])}_{math.floor(at[1])}"
-            if sq not in info["coverage"]:
-                info["coverage"] = sorted(info["coverage"] + [sq])
-            b = info.get("bbox")
-            if b:
-                info["bbox"] = [min(b[0], at[0]), min(b[1], at[1]), max(b[2], at[0]), max(b[3], at[1])]
+        place(added, trails_by_cell, header, info)
         if added:
-            header["bbox"] = info.get("bbox", header.get("bbox"))
-            info["trails"] = info.get("trails", 0) + len(added)
             counts["hikes"] += len(added)
             counts["miles added"] = round(counts["miles added"])
     except Exception as ex:
         print(f"  federal trails couldn't be added ({ex})")
+    # trails people walked and sent in, once checked and approved
+    try:
+        walked = add_community(region_id, [t for ts in trails_by_cell.values() for t in ts], counts)
+        if walked and os.environ.get("ELEVATION", "1") != "0":
+            import build_trail_pack as builder
+            builder.add_elevation(walked, os.environ.get("TERRAIN_CACHE", "terrain"))
+        place(walked, trails_by_cell, header, info)
+        counts["hikes"] += len(walked)
+    except Exception as ex:
+        print(f"  trails sent in by walkers couldn't be added ({ex})")
     for k, ts in trails_by_cell.items():
         for t in ts:
             t.pop("_lines", None)
