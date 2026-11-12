@@ -1,7 +1,7 @@
 // What the whole site shares: settings, where the map is, the trails in view, and which page is open.
 import { computed, effect, signal } from '@preact/signals';
 import { defaultUnits, type Units } from './lib/format';
-import { load, save, type PlannedRoute, type Walk, type WalkPoint } from './lib/storage';
+import { load, save, type PlannedRoute, type SavedTrail, type Walk, type WalkPoint } from './lib/storage';
 import type { Coord } from './lib/polyline';
 import type { Difficulty, Trail } from './lib/trail';
 import type { BBox } from './lib/geo';
@@ -28,32 +28,52 @@ effect(() => {
 export type Route =
   | { page: 'explore' }
   | { page: 'trail'; region: string; id: string }
-  | { page: 'plan' }
   | { page: 'record' }
-  | { page: 'about' };
+  | { page: 'saved' }
+  | { page: 'plan' }
+  | { page: 'activity' }
+  | { page: 'walk'; id: string }
+  | { page: 'settings' };
 
 export interface MapView { lat: number; lon: number; zoom: number }
 
-/** Reads "#/trail/<region>/<id>", "#/plan", "#/record", "#/about", or "#/@lat,lon,zoom" (a place on the map). */
+/** Reads "#/trail/<region>/<id>", "#/record", "#/saved", "#/plan", "#/activity", "#/activity/<id>",
+ *  "#/settings", or "#/@lat,lon,zoom" (a place on the map). */
 export function parseHash(hash: string): { route: Route; view?: MapView } {
   const h = hash.replace(/^#\/?/, '');
   const at = /^@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)z?$/.exec(h);
   if (at) return { route: { page: 'explore' }, view: { lat: +at[1], lon: +at[2], zoom: +at[3] } };
   const parts = h.split('/');
-  if (parts[0] === 'trail' && parts.length >= 3) {
-    try {
+  try {
+    if (parts[0] === 'trail' && parts.length >= 3) {
       return { route: { page: 'trail', region: decodeURIComponent(parts[1]), id: decodeURIComponent(parts.slice(2).join('/')) } };
-    } catch { /* a broken link: fall through to the map */ }
+    }
+    if (parts[0] === 'activity' && parts[1]) return { route: { page: 'walk', id: decodeURIComponent(parts[1]) } };
+  } catch { /* a broken link: fall through to the map */ }
+  if (parts[0] === 'record' || parts[0] === 'saved' || parts[0] === 'plan' || parts[0] === 'activity' || parts[0] === 'settings') {
+    return { route: { page: parts[0] } };
   }
-  if (parts[0] === 'plan' || parts[0] === 'record' || parts[0] === 'about') return { route: { page: parts[0] } };
+  if (parts[0] === 'about') return { route: { page: 'settings' } };
   return { route: { page: 'explore' } };
 }
 
 export function hashFor(r: Route): string {
   switch (r.page) {
     case 'trail': return `#/trail/${encodeURIComponent(r.region)}/${encodeURIComponent(r.id)}`;
+    case 'walk': return `#/activity/${encodeURIComponent(r.id)}`;
     case 'explore': return '#/';
     default: return `#/${r.page}`;
+  }
+}
+
+/** Which tab a page belongs to. */
+export type Tab = 'explore' | 'record' | 'saved' | 'activity' | 'settings';
+export function tabOf(r: Route): Tab {
+  switch (r.page) {
+    case 'trail': return 'explore';
+    case 'plan': return 'saved';
+    case 'walk': return 'activity';
+    default: return r.page;
   }
 }
 
@@ -165,6 +185,32 @@ export const recAccuracy = signal<number | null>(null);
 export const recError = signal<string | null>(null);
 export const recWakeLock = signal<'on' | 'off' | 'unsupported'>('off');
 export const walks = signal<Walk[]>(load<Walk[]>('walks', []));
-/** A saved walk or route being looked at (drawn on the map). */
-export const shownWalk = signal<Walk | null>(null);
 effect(() => { if (!save('walks', walks.value)) storageFailed.value = true; });
+
+// ── Saved trails ──────────────────────────────────────────────────────────────────────────────────────
+export const savedTrails = signal<SavedTrail[]>(load<SavedTrail[]>('saved-trails', []));
+effect(() => { if (!save('saved-trails', savedTrails.value)) storageFailed.value = true; });
+
+export function isSaved(t: Trail): boolean {
+  return savedTrails.value.some((s) => s.region === t.region && s.id === t.id);
+}
+
+export function toggleSaved(t: Trail): void {
+  if (isSaved(t)) {
+    savedTrails.value = savedTrails.value.filter((s) => !(s.region === t.region && s.id === t.id));
+  } else {
+    savedTrails.value = [{
+      region: t.region, id: t.id, name: t.name, area: t.area, length: t.length, gain: t.profile?.gain ?? 0,
+      difficulty: t.difficulty, loop: t.isLoop, start: t.start, saved: Date.now(),
+    }, ...savedTrails.value];
+  }
+}
+
+/** A short message that shows for a few seconds. */
+export const toast = signal<string | null>(null);
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+export function say(message: string): void {
+  toast.value = message;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.value = null), 4000);
+}
