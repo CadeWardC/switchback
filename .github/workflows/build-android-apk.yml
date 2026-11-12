@@ -1,8 +1,10 @@
 name: Build Android APK (Switchback app)
 
-# Builds the Switchback app for Android (the website in web/, wrapped with Capacitor) as a debug APK and
-# publishes it as a switchback-android-build-N release. A debug APK is signed with a throwaway debug key:
-# fine for installing by hand, not for a store.
+# Builds the Switchback app for Android (the website in web/, wrapped with Capacitor) and publishes it as a
+# switchback-android-build-N release:
+#   Switchback.apk        the release build (R8 removes unused code and resources: about 2 MB)
+#   Switchback-debug.apk  the debug build (unshrunk, about 7 MB), for looking into problems
+# Both are signed with a throwaway debug key for now: fine for installing by hand, not for a store.
 
 on:
   push:
@@ -49,33 +51,45 @@ jobs:
           node scripts/strip-app.mjs
           npx cap sync android
 
-      - name: Build the debug APK
+      - name: Build the release and debug APKs
         working-directory: web/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --console=plain
-          APK=app/build/outputs/apk/debug/app-debug.apk
-          test -f "$APK"
-          # the web app and the map's worker must be inside
-          unzip -l "$APK" | grep -q "assets/public/index.html"
-          unzip -l "$APK" | grep -q "assets/public/assets/maplibre-worker-.*\.js"
-          unzip -l "$APK" | grep -q "assets/public/styles/light.json"
-          cp "$APK" "$GITHUB_WORKSPACE/Switchback-debug.apk"
-          ls -lh "$GITHUB_WORKSPACE/Switchback-debug.apk"
+          ./gradlew assembleRelease assembleDebug --no-daemon --console=plain
+          for kind in release debug; do
+            APK=app/build/outputs/apk/$kind/app-$kind.apk
+            test -f "$APK"
+            # the web app and the map's worker must be inside
+            unzip -l "$APK" | grep -q "assets/public/index.html"
+            unzip -l "$APK" | grep -q "assets/public/assets/maplibre-worker-.*\.js"
+            unzip -l "$APK" | grep -q "assets/public/styles/light.json"
+          done
+          # shrinking must not have removed a plugin the web side calls by name
+          unzip -p app/build/outputs/apk/release/app-release.apk assets/capacitor.plugins.json \
+            | python3 -c "import json, sys; print('\n'.join(p['classpath'] for p in json.load(sys.stdin)))" > plugins.txt
+          mkdir -p dex && unzip -q -o app/build/outputs/apk/release/app-release.apk 'classes*.dex' -d dex
+          while read -r c; do
+            grep -qa "L$(echo "$c" | tr . /);" dex/classes*.dex || { echo "the release build lost $c"; exit 1; }
+          done < plugins.txt
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/Switchback.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/Switchback-debug.apk"
+          ls -lh "$GITHUB_WORKSPACE"/Switchback*.apk
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Switchback-debug-apk
-          path: Switchback-debug.apk
+          name: Switchback-apk
+          path: |
+            Switchback.apk
+            Switchback-debug.apk
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="switchback-android-build-${{ github.run_number }}"
-          gh release create "$TAG" Switchback-debug.apk \
+          gh release create "$TAG" Switchback.apk Switchback-debug.apk \
             --target "${{ github.sha }}" \
-            --title "Switchback for Android (debug) #${{ github.run_number }}" \
-            --notes "Switchback for Android, a debug build from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. Download Switchback-debug.apk on the phone and open it; Android asks you to allow installing from your browser or files app." \
+            --title "Switchback for Android #${{ github.run_number }}" \
+             --notes "Switchback for Android, built from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. Download Switchback.apk on the phone and open it; Android asks you to allow installing from your browser or files app. (Switchback-debug.apk is the same app unshrunk, for looking into problems.)" \
             --latest=false

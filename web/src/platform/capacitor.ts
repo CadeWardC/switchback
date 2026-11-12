@@ -3,7 +3,7 @@
 //   Recording: a background location service (an Android foreground service with a notification; iOS
 //   background location), so it carries on with the screen off.
 //   Files go to the share sheet; links and directions open outside the app.
-import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
+import { Capacitor, CapacitorHttp, registerPlugin, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Browser } from '@capacitor/browser';
@@ -12,8 +12,6 @@ import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { KeepAwake } from '@capacitor-community/keep-awake';
 import { Network } from '@capacitor/network';
 import { browserTiles } from './browser';
 import type { BackgroundGeolocationPlugin, Location } from '@capacitor-community/background-geolocation';
@@ -129,13 +127,10 @@ export const capacitorPlatform: Platform = {
     },
   },
 
+  // Recording runs in a background location service here, so the screen never needs to be held awake.
   keepAwake: {
-    async on() {
-      try { await KeepAwake.keepAwake(); return true; } catch { return false; }
-    },
-    async off() {
-      try { await KeepAwake.allowSleep(); } catch { /* was not on */ }
-    },
+    async on() { return false; },
+    async off() {},
   },
 
   files: {
@@ -306,8 +301,8 @@ export const capacitorPlatform: Platform = {
       }));
     },
     setTheme(dark) {
-      // Style.Dark means light text, for a dark background
-      quiet(StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }));
+      // "Dark" means light text and icons, for a dark background
+      quiet(SystemBars.setStyle({ style: dark ? SystemBarsStyle.Dark : SystemBarsStyle.Light }));
     },
     onResume(handler) {
       quiet(App.addListener('resume', handler));

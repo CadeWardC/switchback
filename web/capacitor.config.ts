@@ -12,13 +12,12 @@ const config: CapacitorConfig = {
   ios: {
     // the page handles the safe areas itself (env(safe-area-inset-*))
     contentInset: 'never',
-    backgroundColor: '#F7F6F2',
+    backgroundColor: '#EDF0EC',
   },
   plugins: {
     // trail files come straight from the GitHub release: native HTTP has no CORS limit
     // (fetch stays the browser's own; the app calls native HTTP itself where it needs to)
     CapacitorHttp: { enabled: false },
-    SplashScreen: { launchAutoHide: true, launchShowDuration: 600, backgroundColor: '#1F4D3A', showSpinner: false },
     LocalNotifications: { smallIcon: 'ic_stat_switchback', iconColor: '#1F6B45' },
   },
 };
