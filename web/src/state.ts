@@ -7,7 +7,7 @@ import {
 } from './lib/storage';
 import { platform } from './platform';
 import type { Coord } from './lib/polyline';
-import type { Difficulty, Trail } from './lib/trail';
+import type { Difficulty, Profile, Trail } from './lib/trail';
 import type { BBox } from './lib/geo';
 import type { Region } from './lib/pack';
 
@@ -124,6 +124,10 @@ export const regions = signal<Region[]>([]);
 export const regionsError = signal<string | null>(null);
 /** Every trail loaded for the part of the map on screen. */
 export const trailsInView = signal<Trail[]>([]);
+/** Trails on the "needs verification" list for the part of the map on screen. */
+export const unverifiedInView = signal<Trail[]>([]);
+/** The open trail as it is being looked at: the whole trail, a short loop of it, or with the walk in from a trailhead. */
+export const shownTrail = signal<Trail | null>(null);
 export const loading = signal(false);
 export const loadNote = signal<string | null>(null);
 /** The trail whose page is open. */
@@ -192,7 +196,7 @@ export const recWakeLock = signal<'on' | 'off' | 'unsupported'>('off');
 /** Places marked during the recording. */
 export const recMarkers = signal<Marker[]>([]);
 /** The trail being followed while recording. */
-export interface Following { region: string; id: string; name: string; path: Coord[] }
+export interface Following { region: string; id: string; name: string; path: Coord[]; profile: Profile | null }
 export const following = signal<Following | null>(null);
 /** True while the walker is more than 60 m from the trail being followed. */
 export const offTrail = signal(false);

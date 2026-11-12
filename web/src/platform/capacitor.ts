@@ -31,7 +31,10 @@ const values = new Map<string, string>();
 
 // ── Location ──────────────────────────────────────────────────────────────────────────────────────────
 function toFix(l: Location): Fix {
-  return { lat: l.latitude, lon: l.longitude, ele: l.altitude ?? null, accuracy: l.accuracy, time: l.time ?? Date.now() };
+  return {
+    lat: l.latitude, lon: l.longitude, ele: l.altitude ?? null, accuracy: l.accuracy, time: l.time ?? Date.now(),
+    heading: l.bearing != null && (l.speed ?? 0) > 0.3 ? l.bearing : null,
+  };
 }
 
 function problemOf(error: { code?: string } | undefined): LocationProblem {
@@ -143,6 +146,14 @@ export const capacitorPlatform: Platform = {
     async shareLink(title, url) {
       try {
         await Share.share({ title, url });
+        return 'shared';
+      } catch {
+        return 'failed';
+      }
+    },
+    async shareText(text) {
+      try {
+        await Share.share({ text });
         return 'shared';
       } catch {
         return 'failed';

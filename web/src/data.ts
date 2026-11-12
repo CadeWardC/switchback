@@ -2,7 +2,9 @@
 // A region's file is fetched once, kept in memory and in the browser's Cache Storage (so the next visit needs
 // no download), and only the cells the map shows are unpacked.
 import { cellKeyOf, cellKeys, openPack, readBlock, regionCovers, type Pack, type Region } from './lib/pack';
-import { makeTrail, type RawTrail, type Trail } from './lib/trail';
+import { difficultyOf, isLoopLine, makeTrail, type RawTrail, type Trail } from './lib/trail';
+import { bboxOf, lineLength } from './lib/geo';
+import { loadDoc, saveDoc } from './lib/storage';
 import { expand, intersects, type BBox } from './lib/geo';
 import type { Coord } from './lib/polyline';
 
@@ -152,6 +154,8 @@ export async function resetTrailFiles(): Promise<string> {
   cells.clear();
   highlightCells.clear();
   indexed.clear();
+  lists.clear();
+  unverified.clear();
   for (const n of names) await platform.fileStore.remove(n);
   // smallest first, so the most regions are back soonest
   const todo = fresh.filter((r) => had.has(r.region)).sort((a, b) => (a.bytes ?? 0) - (b.bytes ?? 0));
@@ -206,6 +210,8 @@ export interface ViewTrails {
   failed: string[];
   /** No region covers this part of the map. */
   uncovered: boolean;
+  /** Trails on the "needs verification" list here. */
+  unverified: Trail[];
 }
 
 /** Every trail that starts in (or just outside) a box. `alive` lets a newer request cancel this one. */
@@ -213,9 +219,10 @@ export async function trailsIn(box: BBox, alive: () => boolean = () => true): Pr
   const all = await loadRegions();
   const wide = expand(box, 0.12); // a trail is stored where it starts, which may be just off screen
   const covering = all.filter((r) => regionCovers(r, wide));
-  const out: Trail[] = [], failed: string[] = [];
+  const out: Trail[] = [], failed: string[] = [], pending: Trail[] = [];
   let tick = performance.now();
   await Promise.all(covering.map(async (r) => {
+    void needsVerificationFor(r.region).then((ts) => { for (const t of ts) if (intersects(t.bbox, wide)) pending.push(t); }, () => {});
     let pack: Pack | null = null;
     try { pack = await loadPack(r); } catch { /* reported below */ }
     if (!pack) { failed.push(regionName(r)); return; }
@@ -228,13 +235,16 @@ export async function trailsIn(box: BBox, alive: () => boolean = () => true): Pr
     }
   }));
   if (!alive()) return null;
-  return { trails: out, failed, uncovered: covering.length === 0 };
+  // (the list is small and usually already here; it is not worth holding the trails up for)
+  await Promise.race([Promise.allSettled(covering.map((r) => needsVerificationFor(r.region))), new Promise((r) => setTimeout(r, 1500))]);
+  return { trails: out, failed, uncovered: covering.length === 0, unverified: pending };
 }
 
 /** One trail by region and id (a shared link). Looks where its id says it starts first, then everywhere. */
 export async function findTrail(region: string, id: string): Promise<Trail | null> {
   const r = (await loadRegions()).find((x) => x.region === region);
   if (!r) return null;
+  if (id.startsWith('nv:')) return (await needsVerificationFor(region)).find((t) => t.id === id) ?? null;
   const pack = await loadPack(r);
   if (!pack) return null;
   const tried = new Set<string>();
@@ -260,6 +270,89 @@ export async function findTrail(region: string, id: string): Promise<Trail | nul
     if (hit) return hit;
   }
   return null;
+}
+
+// ── Trails wanted, and trails that need verification (lists published beside each region's trail file) ─
+export interface Wanted {
+  region: string;
+  park: string;
+  trail: string;
+  miles?: number;
+  /** The manager's page about the park or trail. */
+  source?: string;
+  /** The park's own map. */
+  map?: string;
+  lat?: number;
+  lon?: number;
+}
+
+const lists = new Map<string, Promise<unknown>>();
+
+/** A region's list, fresh when there is signal and from the last time otherwise. A missing file is an empty list. */
+function regionList_<T>(file: string, empty: T): Promise<T> {
+  let p = lists.get(file) as Promise<T> | undefined;
+  if (!p) {
+    p = platform.trailFiles.getJson(file).then(
+      (json) => {
+        const value = (json ?? empty) as T;
+        void saveDoc(`list-${file}`, value);
+        return value;
+      },
+      () => loadDoc<T>(`list-${file}`, empty),
+    );
+    lists.set(file, p);
+  }
+  return p;
+}
+
+export async function wantedFor(region: string): Promise<Wanted[]> {
+  const json = await regionList_<{ wanted?: unknown[] }>(`${region}.wanted.json`, {});
+  if (!Array.isArray(json?.wanted)) return [];
+  return json.wanted.flatMap((w: any) =>
+    typeof w?.trail === 'string' && typeof w.park === 'string'
+      ? [{
+        region, park: w.park, trail: w.trail,
+        ...(Number(w.miles) > 0 ? { miles: Number(w.miles) } : {}),
+        ...(typeof w.source === 'string' && /^https?:/.test(w.source) ? { source: w.source } : {}),
+        ...(typeof w.map === 'string' && /^https?:/.test(w.map) ? { map: w.map } : {}),
+        ...(Number.isFinite(w.lat) && Number.isFinite(w.lon) ? { lat: w.lat, lon: w.lon } : {}),
+      }] : []);
+}
+
+const unverified = new Map<string, Promise<Trail[]>>();
+
+/** Likely trails that are not in the trail files yet: drawn apart from the hikes, never listed with them. */
+export function needsVerificationFor(region: string): Promise<Trail[]> {
+  let p = unverified.get(region);
+  if (!p) {
+    p = regionList_<{ features?: unknown[] }>(`${region}.needs-verification.geojson`, {}).then((json) => {
+      const out: Trail[] = [];
+      for (const f of Array.isArray(json?.features) ? (json.features as any[]) : []) {
+        const g = f?.geometry, props = f?.properties ?? {};
+        const lines: number[][][] = g?.type === 'LineString' ? [g.coordinates] : g?.type === 'MultiLineString' ? g.coordinates : [];
+        const segments = lines.map((l) => (Array.isArray(l) ? l : []).filter((c) => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]))
+          .map((c) => [c[1], c[0]] as Coord)).filter((l) => l.length > 1);
+        if (!segments.length) continue;
+        const path = segments[0], name = typeof props.name === 'string' && props.name ? props.name : 'Unnamed trail';
+        const length = Number(props.length_m) > 0 ? Number(props.length_m) : lineLength(path);
+        const tags: Record<string, string> = {
+          'switchback:needs_verification': 'yes', 'switchback:hike': 'no',
+          ...(typeof props.why === 'string' ? { 'switchback:why': props.why } : {}),
+          ...(typeof props.kind === 'string' ? { 'switchback:kind': props.kind } : {}),
+          ...(typeof props.park === 'string' ? { 'switchback:area': props.park } : {}),
+        };
+        const id = `nv:${name}-${path[0][0].toFixed(4)},${path[0][1].toFixed(4)}`;
+        out.push({
+          key: `${region}/${id}`, region, id, name, source: 'submitted', segments, path, length, tags, profile: null,
+          start: path[0], bbox: bboxOf(segments)!, difficulty: difficultyOf(length, 0, tags), isLoop: isLoopLine(path, length),
+          isHike: false, area: tags['switchback:area'] ?? null,
+        });
+      }
+      return out;
+    });
+    unverified.set(region, p);
+  }
+  return p;
 }
 
 // ── Highlights (viewpoints, water, parking… near trails) ──────────────────────────────────────────────

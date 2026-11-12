@@ -99,3 +99,46 @@ describe('distance to a line', () => {
     expect(distanceToLine([38.87, -92.33], line)).toBeGreaterThan(800);
   });
 });
+
+import { climbLeft, progressOn, secondsLeft, sunTimes } from '../src/lib/follow';
+import { profileOf } from '../src/lib/trail';
+
+describe('following a trail', () => {
+  const path: [number, number][] = [[38.87, -92.32], [38.88, -92.32], [38.88, -92.31]];
+  it('finds how far along and how far off you are', () => {
+    const p = progressOn(path, [38.875, -92.3195]);
+    expect(p.along).toBeGreaterThan(540);
+    expect(p.along).toBeLessThan(570);
+    expect(p.off).toBeGreaterThan(38);
+    expect(p.off).toBeLessThan(48);
+    expect(p.total).toBeGreaterThan(1950);
+    expect(p.total).toBeLessThan(2000);
+    expect(progressOn(path, [38.88, -92.31]).along).toBeCloseTo(p.total, 0);
+  });
+  it('on a loop, takes the end when you have walked most of it', () => {
+    const loop: [number, number][] = [[38.87, -92.32], [38.88, -92.32], [38.88, -92.31], [38.87, -92.31], [38.87, -92.32]];
+    const total = progressOn(loop, [38.87, -92.32]).total;
+    expect(progressOn(loop, [38.87, -92.3201]).along).toBeLessThan(20);
+    expect(progressOn(loop, [38.87, -92.3201], total - 100).along).toBeGreaterThan(total - 20);
+  });
+  it('adds up the climb still to do', () => {
+    const p = profileOf([0, 1000, 2000, 3000], [100, 200, 150, 250]);
+    expect(p.gain).toBe(200);
+    expect(climbLeft(p, 0)).toBeCloseTo(200, 0);
+    expect(climbLeft(p, 1500)).toBeCloseTo(100, 0);
+    expect(climbLeft(p, 3000)).toBe(0);
+  });
+  it('estimates the time left from your own pace once there is one', () => {
+    expect(secondsLeft(4500, 0, 0, 0)).toBeCloseTo(3600, 0);
+    expect(secondsLeft(1000, 0, 1000, 500)).toBeCloseTo(500, 0);
+    expect(secondsLeft(0, 600, 0, 0)).toBeCloseTo(3600, 0);
+  });
+  it('works out sunset without a network', () => {
+    // Columbia, Missouri on 12 November 2026: sunrise about 6:49 and sunset about 4:57 pm Central (UTC-6)
+    const s = sunTimes(new Date(Date.UTC(2026, 10, 12, 18)), [38.95, -92.33])!;
+    const minutes = (d: Date) => ((d.getTime() / 60000) % 1440 + 1440) % 1440; // minutes after midnight UTC
+    expect(Math.abs(minutes(s.sunset) - (22 * 60 + 57))).toBeLessThan(6);
+    expect(Math.abs(minutes(s.sunrise) - (12 * 60 + 49))).toBeLessThan(6);
+    expect(sunTimes(new Date(Date.UTC(2026, 5, 21, 12)), [80, 20])).toBeNull();
+  });
+});

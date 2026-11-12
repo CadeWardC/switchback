@@ -4,7 +4,8 @@ name: Website (GitHub Pages)
 #
 # The site reads the trail files (regions.json and one <region>.trails per state or province) from the
 # "trails-us" release. Release downloads send no CORS headers, so a browser can't fetch them from another
-# address: this job copies them into the site (data/), where the site loads them from its own address.
+# address: this job copies them into the site (data/), with each region's "trails wanted" and "needs
+# verification" lists,, where the site loads them from its own address.
 # It runs again every week so the site picks up rebuilt trail files.
 #
 # One-time setup: Settings > Pages > Build and deployment > Source = "GitHub Actions".
@@ -62,6 +63,9 @@ jobs:
         run: |
           mkdir -p web/dist/data
           gh release download "$TAG" -R "$REPO" --pattern '*.trails' --pattern regions.json -D web/dist/data --clobber
+          # trails wanted, and trails that need verification: a region may have neither (the site treats a
+          # missing file as an empty list)
+          gh release download "$TAG" -R "$REPO" --pattern '*.wanted.json' --pattern '*.needs-verification.geojson' -D web/dist/data --clobber || echo "no wanted or needs-verification lists yet"
           # every region the list names must have its file, or the map would show an area it can't load
           python3 - <<'PY'
           import json, os, sys

@@ -8,9 +8,9 @@ import workerUrl from '../generated/maplibre-worker.js?url';
 import { effect, signal, untracked } from '@preact/signals';
 import {
   baseMap, chartPoint, dark, flyTo, hikesInView, hoverKey, initialView, MIN_TRAIL_ZOOM, planPoints, recSegments,
-  regions, route, selected, sheet, trailsInView, units, view, go, type Route,
+  regions, route, selected, sheet, shownTrail, trailsInView, unverifiedInView, following, recMarkers, units, view, go, type Route,
 } from '../state';
-import { dark as darkTokens, difficultyColors, light as lightTokens, size } from '../tokens';
+import { dark as darkTokens, difficultyColors, light as lightTokens, mapColors, size } from '../tokens';
 import { makeImage } from './images';
 import { save } from '../lib/storage';
 import type { Coord } from '../lib/polyline';
@@ -24,9 +24,11 @@ const BASE_PROBE = 'https://tiles.openfreemap.org/planet';
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 /** Where the device is, once the locate button has been used (or a recording is running). */
-export const myLocation = signal<{ at: Coord; accuracy: number } | null>(null);
+export const myLocation = signal<{ at: Coord; accuracy: number; ele?: number | null; heading?: number | null } | null>(null);
 /** The walk being looked at on the Activity page, as lines to draw. */
 export const shownLines = signal<Coord[][]>([]);
+/** The places marked on that walk. */
+export const shownMarkers = signal<Coord[]>([]);
 /** Called when the map is tapped while planning a route. */
 export const planTap = signal<((c: Coord) => void) | null>(null);
 
@@ -94,14 +96,19 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
       paint: { 'line-color': diffColor, 'line-width': width(1.6, 3.6) } },
     { id: 'sb-hover', type: 'line', source: 'sb-trails', filter: ['==', ['get', 'k'], ''], layout: line,
       paint: { 'line-color': diffColor, 'line-width': width(4, 7) } },
+    // likely trails that still need checking: dashed, apart from the hikes
+    { id: 'sb-unverified-casing', type: 'line', source: 'sb-unverified', layout: line,
+      paint: { 'line-color': p.mapCasing, 'line-width': width(3, 6), 'line-opacity': 0.85 } },
+    { id: 'sb-unverified', type: 'line', source: 'sb-unverified', layout: { 'line-join': 'round' },
+      paint: { 'line-color': mapColors.unverified, 'line-width': width(1.6, 3), 'line-dasharray': [1.2, 1.4] } },
     // the open trail
     { id: 'sb-selected-casing', type: 'line', source: 'sb-selected', layout: line,
       paint: { 'line-color': p.mapCasing, 'line-width': width(7, 11) } },
     { id: 'sb-selected', type: 'line', source: 'sb-selected', layout: line,
       paint: { 'line-color': diffColor, 'line-width': width(4, 6) } },
     // a planned route, a recording, or a recorded hike being looked at
-    { id: 'sb-draw-casing', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': '#FFFFFF', 'line-width': 8 } },
-    { id: 'sb-draw', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': '#E8A33D', 'line-width': 4.5 } },
+    { id: 'sb-draw-casing', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': mapColors.marker, 'line-width': 8 } },
+    { id: 'sb-draw', type: 'line', source: 'sb-draw', layout: line, paint: { 'line-color': mapColors.route, 'line-width': 4.5 } },
     { id: 'sb-highlights', type: 'circle', source: 'sb-highlights', minzoom: 12.5,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 6],
@@ -111,7 +118,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     { id: 'sb-ends', type: 'circle', source: 'sb-ends',
       paint: {
         'circle-radius': 6.5, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#FFFFFF',
-        'circle-color': ['match', ['get', 'kind'], 'start', '#1F6B45', 'end', '#14211A', '#E8A33D'] as any,
+        'circle-color': ['match', ['get', 'kind'], 'start', mapColors.start, 'end', mapColors.end, mapColors.route] as any,
       } },
     { id: 'sb-heads', type: 'symbol', source: 'sb-heads', filter: ['!', ['has', 'point_count']],
       layout: { 'icon-image': ['concat', 'pin-', ['get', 'd']], 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
@@ -120,10 +127,12 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     { id: 'sb-region-labels', type: 'symbol', source: 'sb-region-labels', maxzoom: MIN_TRAIL_ZOOM,
       layout: { 'icon-image': ['concat', 'label-', ['get', 'label']], 'symbol-sort-key': ['-', 0, ['get', 'trails']], 'icon-padding': 4 } },
     { id: 'sb-chart-point', type: 'circle', source: 'sb-chart-point',
-      paint: { 'circle-radius': 7, 'circle-color': '#E8A33D', 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 } },
-    { id: 'sb-me-halo', type: 'circle', source: 'sb-me', paint: { 'circle-radius': 16, 'circle-color': '#2B7FD9', 'circle-opacity': 0.18 } },
+      paint: { 'circle-radius': 7, 'circle-color': mapColors.route, 'circle-stroke-color': mapColors.marker, 'circle-stroke-width': 3 } },
+    { id: 'sb-me-halo', type: 'circle', source: 'sb-me', paint: { 'circle-radius': 16, 'circle-color': mapColors.me, 'circle-opacity': 0.18 } },
+    { id: 'sb-me-heading', type: 'symbol', source: 'sb-me', filter: ['has', 'heading'],
+      layout: { 'icon-image': 'me-heading', 'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
     { id: 'sb-me', type: 'circle', source: 'sb-me',
-      paint: { 'circle-radius': 7, 'circle-color': '#2B7FD9', 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 } },
+      paint: { 'circle-radius': 7, 'circle-color': mapColors.me, 'circle-stroke-color': mapColors.marker, 'circle-stroke-width': 3 } },
   ];
   if (withText) {
     // names along the trails need the base map's fonts
@@ -141,7 +150,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     sources: {
       'sb-regions': geo(), 'sb-region-labels': geo(), 'sb-trails': { ...geo(), tolerance: 0.3 },
       'sb-heads': { ...geo(), cluster: true, clusterRadius: 42, clusterMaxZoom: 13 },
-      'sb-selected': geo(), 'sb-ends': geo(), 'sb-draw': geo(), 'sb-highlights': geo(), 'sb-chart-point': geo(), 'sb-me': geo(),
+      'sb-unverified': geo(), 'sb-selected': geo(), 'sb-ends': geo(), 'sb-draw': geo(), 'sb-highlights': geo(), 'sb-chart-point': geo(), 'sb-me': geo(),
     },
     layers,
   };
@@ -442,14 +451,28 @@ export function createMap(container: HTMLElement): void {
 
   effect(() => {
     redraw.value;
-    const t = route.value.page === 'trail' ? selected.value : null;
-    if (!t) {
-      setData('sb-selected', EMPTY);
-    } else {
+    const page = route.value.page;
+    const zoom = view.value?.zoom ?? 0;
+    setData('sb-unverified', zoom >= MIN_TRAIL_ZOOM && (page === 'explore' || page === 'trail' || page === 'help')
+      ? { type: 'FeatureCollection', features: unverifiedInView.value.map((t) => ({ type: 'Feature', properties: { k: t.key }, geometry: { type: 'MultiLineString', coordinates: t.segments.map((s) => s.map(lngLat)) } })) }
+      : EMPTY);
+  });
+
+  effect(() => {
+    redraw.value;
+    const page = route.value.page;
+    const t = page === 'trail' ? (shownTrail.value ?? selected.value) : null;
+    const f = page === 'record' ? following.value : null;
+    if (t) {
       setData('sb-selected', {
         type: 'Feature', properties: { d: t.difficulty },
         geometry: { type: 'MultiLineString', coordinates: t.segments.map((s) => s.map(lngLat)) },
       });
+    } else if (f) {
+      // the trail being followed, under the recorded line
+      setData('sb-selected', { type: 'Feature', properties: { d: 'moderate' }, geometry: { type: 'LineString', coordinates: f.path.map(lngLat) } });
+    } else {
+      setData('sb-selected', EMPTY);
     }
   });
 
@@ -460,7 +483,7 @@ export function createMap(container: HTMLElement): void {
     const ends: GeoJSON.Feature[] = [];
     let drawn: Coord[][] = [];
     if (page === 'trail' && selected.value) {
-      const t = selected.value;
+      const t = shownTrail.value ?? selected.value;
       ends.push(point(t.path[0], { kind: 'start' }));
       if (!t.isLoop) ends.push(point(t.path[t.path.length - 1], { kind: 'end' }));
     } else if (page === 'plan') {
@@ -469,10 +492,12 @@ export function createMap(container: HTMLElement): void {
       drawn = recSegments.value.map((s) => s.map((p) => [p.lat, p.lon] as Coord));
       const firstPoint = drawn.find((s) => s.length)?.[0];
       if (firstPoint) ends.push(point(firstPoint, { kind: 'start' }));
+      for (const mk of recMarkers.value) ends.push(point([mk.lat, mk.lon], { kind: 'marker' }));
     } else if (page === 'walk') {
       drawn = shownLines.value;
       const flat = drawn.flat();
       if (flat.length) ends.push(point(flat[0], { kind: 'start' }), point(flat[flat.length - 1], { kind: 'end' }));
+      for (const mk of shownMarkers.value) ends.push(point(mk, { kind: 'marker' }));
     }
     setData('sb-draw', lines(drawn));
     setData('sb-ends', { type: 'FeatureCollection', features: ends });
@@ -488,7 +513,7 @@ export function createMap(container: HTMLElement): void {
   effect(() => {
     redraw.value;
     const me = myLocation.value;
-    setData('sb-me', me ? point(me.at) : EMPTY);
+    setData('sb-me', me ? point(me.at, me.heading != null ? { heading: me.heading } : {}) : EMPTY);
   });
 
   effect(() => {
@@ -553,7 +578,7 @@ export function createMap(container: HTMLElement): void {
       } else open(String(f.properties.k));
       return;
     }
-    const hit = m.queryRenderedFeatures(near(e.point, touch ? 12 : 5), { layers: ['sb-trail', 'sb-side', 'sb-unnamed'].filter(has) });
+    const hit = m.queryRenderedFeatures(near(e.point, touch ? 12 : 5), { layers: ['sb-trail', 'sb-side', 'sb-unnamed', 'sb-unverified'].filter(has) });
     if (hit.length) {
       // a hike before a side path, when both are under the finger
       const f = hit.find((x) => x.properties.h === 1) ?? hit[0];
@@ -575,7 +600,7 @@ export function createMap(container: HTMLElement): void {
   // pointing with a mouse: a hand over things that open, and the line under it thickens
   m.on('mousemove', (e) => {
     if (!ready || route.peek().page === 'plan') { m.getCanvas().style.cursor = route.peek().page === 'plan' ? 'crosshair' : ''; return; }
-    const layers = ['sb-heads', 'sb-clusters', 'sb-trail', 'sb-side', 'sb-unnamed', 'sb-highlights', 'sb-region-labels'].filter(has);
+    const layers = ['sb-heads', 'sb-clusters', 'sb-trail', 'sb-side', 'sb-unnamed', 'sb-unverified', 'sb-highlights', 'sb-region-labels'].filter(has);
     const f = m.queryRenderedFeatures(near(e.point, 4), { layers });
     m.getCanvas().style.cursor = f.length ? 'pointer' : '';
     const line = f.find((x) => x.layer.id === 'sb-trail' || x.layer.id === 'sb-side' || x.layer.id === 'sb-unnamed' || x.layer.id === 'sb-heads');

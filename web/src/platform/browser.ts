@@ -10,6 +10,7 @@ function toFix(p: GeolocationPosition): Fix {
     lat: c.latitude, lon: c.longitude,
     ele: c.altitude != null && Number.isFinite(c.altitude) ? c.altitude : null,
     accuracy: c.accuracy, time: p.timestamp || Date.now(),
+    heading: c.heading != null && Number.isFinite(c.heading) && (c.speed ?? 0) > 0.3 ? c.heading : null,
   };
 }
 
@@ -166,6 +167,14 @@ export const browserPlatform: Platform = {
     async shareLink(_title, url) {
       try {
         await navigator.clipboard.writeText(url);
+        return 'copied';
+      } catch {
+        return 'failed';
+      }
+    },
+    async shareText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
         return 'copied';
       } catch {
         return 'failed';

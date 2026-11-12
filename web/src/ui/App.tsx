@@ -14,6 +14,7 @@ import { Plan } from './Plan';
 import { Record } from './Record';
 import { Activity, WalkPage } from './Activity';
 import { Settings } from './Settings';
+import { Help } from './Help';
 
 const TABS: { tab: Tab; label: string; icon: string }[] = [
   { tab: 'explore', label: 'Explore', icon: 'map' },
@@ -59,7 +60,7 @@ function locate(): void {
     let moved = false;
     stopWatching = platform.location.watch(
       (fix) => {
-        myLocation.value = { at: [fix.lat, fix.lon], accuracy: fix.accuracy };
+        myLocation.value = { at: [fix.lat, fix.lon], accuracy: fix.accuracy, ele: fix.ele, heading: fix.heading };
         if (!moved) { moved = true; flyTo.value = { center: [fix.lat, fix.lon], zoom: Math.max(13, view.peek()?.zoom ?? 0) }; }
       },
       (problem) => {
@@ -210,6 +211,7 @@ function Page() {
     case 'activity': return <Activity />;
     case 'walk': return <WalkPage />;
     case 'settings': return <Settings />;
+    case 'help': return <Help />;
     default: return <Explore />;
   }
 }

@@ -2,7 +2,7 @@
 // They are painted here on a canvas, so they need no icon files and no map fonts (which come from the
 // base map's server and may not be reachable).
 import type { Map as MlMap } from 'maplibre-gl';
-import { dark, difficultyColors, font, light } from '../tokens';
+import { dark, difficultyColors, font, light, mapColors } from '../tokens';
 
 const RATIO = 2;
 
@@ -109,11 +109,29 @@ function label(map: MlMap, id: string, text: string, isDark: boolean): void {
   add(map, id, c, ctx);
 }
 
+/** A soft wedge pointing the way you are heading, drawn around the location dot. */
+function heading(map: MlMap, id: string): void {
+  const s = 56;
+  const [c, ctx] = canvas(s, s);
+  const g = ctx.createRadialGradient(s / 2, s / 2, 6, s / 2, s / 2, 27);
+  g.addColorStop(0, mapColors.me);
+  g.addColorStop(1, 'rgba(43,127,217,0)');
+  ctx.beginPath();
+  ctx.moveTo(s / 2, s / 2);
+  ctx.arc(s / 2, s / 2, 27, -Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5);
+  ctx.closePath();
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = g;
+  ctx.fill();
+  add(map, id, c, ctx);
+}
+
 /** Makes the picture a layer asked for ("pin-easy", "cluster-12", "label-Missouri\n3,156 trails"). */
 export function makeImage(map: MlMap, id: string, isDark: boolean): void {
   try {
     if (id.startsWith('pin-')) pin(map, id, (difficultyColors as Record<string, string>)[id.slice(4)] ?? difficultyColors.easy);
     else if (id.startsWith('cluster-')) cluster(map, id, id.slice(8), isDark);
+    else if (id === 'me-heading') heading(map, id);
     else if (id.startsWith('label-')) label(map, id, id.slice(6), isDark);
   } catch (e) {
     console.warn('map picture failed', id, e);

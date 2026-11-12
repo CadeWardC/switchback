@@ -1,0 +1,130 @@
+name: Build unsigned IPA (Switchback app, web-based)
+
+# Builds the Switchback app for iPhone from the website in web/ (wrapped with Capacitor), unsigned, and
+# publishes it as a switchback-app-build-N release. This is the app that will replace the Swift one; the
+# Swift app's own builds (build-switchback-ipa.yml, switchback-build-N) are separate.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "web/**"
+      - "Switchback/Resources/switchback-style*.json" # the map style the app is built from
+      - ".github/workflows/build-web-ios-ipa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: switchback-app-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Ensure the iOS platform is installed
+        run: |
+          xcodebuild -version
+          xcodebuild -downloadPlatform iOS || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web app and copy it into the iOS project
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          # the app downloads trail files itself; none are packed in
+          node scripts/strip-app.mjs
+          npx cap sync ios
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: web/ios/build/spm
+          key: switchback-app-spm-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Resolve Swift packages (with retries)
+        working-directory: web/ios/App
+        run: |
+          for i in 1 2 3 4 5; do
+            xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App \
+              -clonedSourcePackagesDirPath ../build/spm && exit 0
+            echo "Package download failed (attempt $i), retrying…"; sleep $((i * 20))
+          done
+          exit 1
+
+      - name: Build the app (no code signing)
+        working-directory: web/ios/App
+        run: |
+          mkdir -p ../build
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ../build/dd \
+            -clonedSourcePackagesDirPath ../build/spm \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build > ../build/xcodebuild.log 2>&1 || { grep -E "error:|Undefined symbol|ld: " ../build/xcodebuild.log | sort -u | head -60; tail -20 ../build/xcodebuild.log; exit 1; }
+          grep -q "BUILD SUCCEEDED" ../build/xcodebuild.log
+
+      - name: Package Switchback-app-unsigned.ipa
+        working-directory: web/ios
+        run: |
+          APP=build/dd/Build/Products/Release-iphoneos/App.app
+          test -f "$APP/App"
+          # the web app, the map's worker and the map styles must be inside
+          test -f "$APP/public/index.html"
+          ls "$APP"/public/assets/maplibre-worker-*.js > /dev/null
+          test -f "$APP/public/styles/light.json" && test -f "$APP/public/styles/dark.json"
+          test -f "$APP/Assets.car"
+          # recording with the screen off needs these in the app's Info.plist
+          plutil -extract UIBackgroundModes xml1 -o - "$APP/Info.plist" | grep -q location
+          plutil -extract NSLocationAlwaysAndWhenInUseUsageDescription xml1 -o - "$APP/Info.plist" > /dev/null
+          rm -rf build/ipa && mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../Switchback-app-unsigned.ipa Payload)
+          ls -lh build/Switchback-app-unsigned.ipa
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: switchback-app-xcodebuild-log
+          path: web/ios/build/xcodebuild.log
+          if-no-files-found: ignore
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Switchback-app-unsigned-ipa
+          path: web/ios/build/Switchback-app-unsigned.ipa
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="switchback-app-build-${{ github.run_number }}"
+          gh release create "$TAG" web/ios/build/Switchback-app-unsigned.ipa \
+            --target "${{ github.sha }}" \
+            --title "Switchback app (unsigned) #${{ github.run_number }}" \
+            --notes "Unsigned IPA of the new Switchback app (the website wrapped for iPhone) built from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. Sign it with your sideloading tool (AltStore, SideStore, Sideloadly, TrollStore) before installing." \
+            --latest=false

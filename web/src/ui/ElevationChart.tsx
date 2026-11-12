@@ -9,7 +9,8 @@ import type { Coord } from '../lib/polyline';
 
 const H = 150, PAD_L = 4, PAD_R = 4, PAD_T = 12, PAD_B = 22;
 
-export function ElevationChart({ profile, path }: { profile: Profile; path: Coord[] }) {
+/** `here`: metres along, to mark where you are while following the trail. */
+export function ElevationChart({ profile, path, here: youAt }: { profile: Profile; path: Coord[]; here?: number | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(340);
   const [at, setAt] = useState<number | null>(null); // metres along
@@ -97,6 +98,12 @@ export function ElevationChart({ profile, path }: { profile: Profile; path: Coor
           )}
           <text class="chart-label" x={PAD_L} y={H - 6}>{fmtDistance(0, u).replace(/^0 \w+$/, '0')}</text>
           <text class="chart-label" x={w - PAD_R} y={H - 6} text-anchor="end">{fmtDistance(total, u)}</text>
+          {youAt != null && (
+            <g>
+              <line class="chart-you-line" x1={x(Math.min(total, youAt))} x2={x(Math.min(total, youAt))} y1={y(heightAt(profile, youAt))} y2={H - PAD_B} />
+              <circle class="chart-you" cx={x(Math.min(total, youAt))} cy={y(heightAt(profile, youAt))} r="6" />
+            </g>
+          )}
           {at != null && (
             <g>
               <line class="chart-cross" x1={x(at)} x2={x(at)} y1={PAD_T - 6} y2={H - PAD_B} />

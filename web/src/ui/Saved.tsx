@@ -3,7 +3,9 @@ import { go, planEditing, planName, planPoints, plannedRoutes, savedTrails, stor
 import { Button, Empty, Note, TrailRow, dist } from './common';
 import { Icon } from './Icon';
 import { fmtDate } from '../lib/format';
-import type { PlannedRoute } from '../lib/storage';
+import { newId, type PlannedRoute } from '../lib/storage';
+import { readGpx } from '../lib/gpximport';
+import { say } from '../state';
 
 export function openPlanned(r: PlannedRoute): void {
   planPoints.value = r.points;
@@ -21,6 +23,17 @@ export function newPlan(): void {
   go({ page: 'plan' });
 }
 
+/** A GPX file from the device becomes one of your routes (to look at, follow or change). */
+async function importGpx(file: File | undefined): Promise<void> {
+  if (!file) return;
+  const got = readGpx(await file.text().catch(() => ''), file.name);
+  if (!got) { say("That file couldn't be read as GPX."); return; }
+  const r: PlannedRoute = { id: newId(), name: got.name, points: got.points, length: got.length, created: Date.now() };
+  plannedRoutes.value = [r, ...plannedRoutes.peek()];
+  openPlanned(r);
+  say('Imported');
+}
+
 export function Saved() {
   const trails = savedTrails.value, routes = plannedRoutes.value;
   return (
@@ -35,6 +48,15 @@ export function Saved() {
           <span class="row-main">
             <span class="row-title">Plan a route</span>
             <span class="row-sub">Tap points on the map, see the length, take it along as GPX</span>
+          </span>
+          <Icon name="chevron" size={16} class="row-chevron" />
+        </button>
+
+        <button type="button" class="feature" onClick={() => go({ page: 'help' })}>
+          <span class="feature-icon feature-icon-green"><Icon name="flag" size={22} /></span>
+          <span class="row-main">
+            <span class="row-title">Help map trails</span>
+            <span class="row-sub">Trails that parks name but the map is missing, and ones that need checking</span>
           </span>
           <Icon name="chevron" size={16} class="row-chevron" />
         </button>
@@ -65,8 +87,13 @@ export function Saved() {
             ))}
           </ul>
         ) : (
-          <p class="quiet-line">Routes you draw and save appear here.</p>
+          <p class="quiet-line">Routes you draw, save or import appear here.</p>
         )}
+        <label class="btn btn-secondary btn-wide file-pick">
+          <Icon name="send" size={18} /><span>Import a GPX file</span>
+          <input type="file" accept=".gpx,.xml,.txt,application/gpx+xml,application/xml,text/xml" class="visually-hidden"
+            onChange={(e) => { const el = e.currentTarget as HTMLInputElement; void importGpx(el.files?.[0]); el.value = ''; }} />
+        </label>
         <div class="spacer" />
         <Button kind="quiet" icon="map" onClick={() => go({ page: 'explore' })}>Find trails on the map</Button>
       </div>

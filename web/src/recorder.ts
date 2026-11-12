@@ -62,7 +62,7 @@ function checkOffTrail(fix: Fix): void {
 function onFix(fix: Fix): void {
   recAccuracy.value = fix.accuracy;
   recError.value = null;
-  myLocation.value = { at: [fix.lat, fix.lon], accuracy: fix.accuracy };
+  myLocation.value = { at: [fix.lat, fix.lon], accuracy: fix.accuracy, ele: fix.ele, heading: fix.heading };
   if (recState.peek() !== 'recording') return;
   // (a fix a little older than "since" is fine: the service may have had it ready)
   const r = addFix(track, fix, since - 5000);
@@ -146,6 +146,21 @@ export async function resume(): Promise<void> {
   await run();
 }
 
+/** Stops following the trail and follows your own recorded track back to where you started. */
+export function headBack(): boolean {
+  const points = track.segments.flat();
+  if (points.length < 2) return false;
+  following.value = { region: '', id: '', name: 'Back to the start', path: points.map((p) => [p.lat, p.lon] as [number, number]).reverse(), profile: null };
+  offTrail.value = false;
+  offCount = 0;
+  return true;
+}
+
+export function stopFollowing(): void {
+  following.value = null;
+  offTrail.value = false;
+}
+
 /** Marks where you are now, with a name (a spring, a junction, a view). */
 export function dropMarker(name: string): boolean {
   const at = lastPoint(track);
@@ -186,10 +201,10 @@ export async function finish(): Promise<Walk | null> {
   const part = when.getHours() < 12 ? 'Morning' : when.getHours() < 17 ? 'Afternoon' : 'Evening';
   const f = following.peek();
   const walk: Walk = {
-    id: newId(), name: f ? f.name : `${part} walk`, started, ended: points[points.length - 1].t,
+    id: newId(), name: f && f.id ? f.name : `${part} walk`, started, ended: points[points.length - 1].t,
     seconds: Math.round(recSeconds.peek()), length: track.length, segments,
     ...(recMarkers.peek().length ? { markers: recMarkers.peek() } : {}),
-    ...(f ? { trail: { region: f.region, id: f.id, name: f.name } } : {}),
+    ...(f && f.id ? { trail: { region: f.region, id: f.id, name: f.name } } : {}),
   };
   await addWalk(walk);
   platform.haptics.success();
@@ -222,7 +237,7 @@ export async function restoreDraft(): Promise<void> {
     recSeconds.value = d.seconds;
     recMarkers.value = markers;
     recState.value = 'paused';
-    following.value = d.follow ? { region: d.follow.region, id: d.follow.id, name: d.follow.name, path: decodePolyline(d.follow.line) } : null;
+    following.value = d.follow ? { region: d.follow.region, id: d.follow.id, name: d.follow.name, path: decodePolyline(d.follow.line), profile: null } : null;
   });
   say('Your recording was kept. It is paused.');
 }

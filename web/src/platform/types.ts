@@ -11,6 +11,8 @@ export interface Fix {
   accuracy: number;
   /** Milliseconds since 1970. */
   time: number;
+  /** The way the device is moving, degrees from north, when it knows. */
+  heading: number | null;
 }
 
 export type LocationProblem = 'denied' | 'unavailable' | 'unsupported';
@@ -43,6 +45,8 @@ export interface PlatformFiles {
   readonly exportVerb: string;
   /** Shares a link. Browser: copies it. Native: the share sheet. Resolves to what happened, for a message. */
   shareLink(title: string, url: string): Promise<'copied' | 'shared' | 'failed'>;
+  /** Shares a few words (where I am). Browser: copies them. */
+  shareText(text: string): Promise<'copied' | 'shared' | 'failed'>;
 }
 
 /** Small values: settings, saved trails, planned routes, recorded hikes. */

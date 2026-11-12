@@ -1,7 +1,7 @@
 // Keeps the trails in step with the map and the address bar.
 import { effect } from '@preact/signals';
 import {
-  loading, loadNote, MIN_TRAIL_ZOOM, regions, regionsError, route, selected, selectedState, sheet, trailsInView, view, flyTo,
+  loading, loadNote, unverifiedInView, MIN_TRAIL_ZOOM, regions, regionsError, route, selected, selectedState, sheet, trailsInView, view, flyTo,
 } from './state';
 import { findTrail, loadRegions, trailsIn } from './data';
 import { isPhone } from './layout';
@@ -22,6 +22,7 @@ export function startController(): void {
     const id = ++run;
     if (v.zoom < MIN_TRAIL_ZOOM) {
       if (trailsInView.peek().length) trailsInView.value = [];
+      if (unverifiedInView.peek().length) unverifiedInView.value = [];
       loading.value = false;
       loadNote.value = null;
       return;
@@ -32,6 +33,7 @@ export function startController(): void {
         const res = await trailsIn(v.bounds, () => id === run);
         if (!res || id !== run) return;
         trailsInView.value = res.trails;
+        unverifiedInView.value = res.unverified;
         loadNote.value = res.failed.length
           ? `Trails for ${res.failed.join(', ')} couldn't be loaded. Check your connection.`
           : res.uncovered ? 'No trail files cover this part of the map yet.' : null;
@@ -57,7 +59,7 @@ export function startController(): void {
       selectedState.value = 'idle';
       return;
     }
-    const near = trailsInView.peek().find((t) => t.key === key);
+    const near = trailsInView.peek().find((t) => t.key === key) ?? unverifiedInView.peek().find((t) => t.key === key);
     const id = ++finding;
     const show = (t: NonNullable<typeof near>) => {
       selected.value = t;

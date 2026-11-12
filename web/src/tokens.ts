@@ -103,6 +103,19 @@ export const dark: Palette = {
   focus: '#7FD0A3',
 };
 
+/** Colours used only on the map (the same in light and dark: they sit on the map, not on a surface). */
+export const mapColors = {
+  /** A planned route, a recording, a recorded hike. */
+  route: '#E8A33D',
+  /** Where you are. */
+  me: '#2B7FD9',
+  /** Trails on the "needs verification" list. */
+  unverified: '#B0651C',
+  start: '#1F6B45',
+  end: '#14211A',
+  marker: '#FFFFFF',
+} as const;
+
 export const radius = { card: 14, control: 10, chip: 999, sheet: 20 } as const;
 /** A 4px scale. */
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const;
@@ -117,7 +130,7 @@ const vars = (o: Record<string, string | number>, prefix: string, unit = '') =>
 
 export function tokensCss(): string {
   const shared =
-    vars(difficultyColors, 'diff-') + vars(radius, 'radius-', 'px') + vars(space, 'space-', 'px') +
+    vars(difficultyColors, 'diff-') + vars(mapColors, 'map-') + vars(radius, 'radius-', 'px') + vars(space, 'space-', 'px') +
     vars(type, 'text-', 'px') + vars(size, 'size-', 'px') + vars(motion, 'motion-') + `--font:${font};`;
   const l = vars(light as unknown as Record<string, string>, 'c-');
   const d = vars(dark as unknown as Record<string, string>, 'c-');

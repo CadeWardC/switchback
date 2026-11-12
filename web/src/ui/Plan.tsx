@@ -1,7 +1,8 @@
 // Plan a route: tap the map to add points, drag them to adjust, save it, take it along as GPX.
 import { useEffect, useState } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
-import { planEditing, planName, planPoints, plannedRoutes, say, sheet, go } from '../state';
+import { planEditing, planName, planPoints, plannedRoutes, recState, say, sheet, go } from '../state';
+import { start } from '../recorder';
 import { planTap } from '../map/map';
 import { lineLength } from '../lib/geo';
 import { buildGpx, exportGpx } from '../lib/gpx';
@@ -87,6 +88,10 @@ export function Plan() {
           <Button icon="download" disabled={points.length < 2} onClick={() => void exportGpx(name, gpx())}>Download GPX</Button>
           <Button icon="send" disabled={points.length < 2} onClick={() => setSubmitting(true)}>Submit this trail</Button>
         </div>
+        <Button icon="play" wide disabled={points.length < 2 || recState.value !== 'idle'}
+          onClick={() => { go({ page: 'record' }); void start({ region: '', id: `route:${planEditing.value ?? 'draft'}`, name, path: points, profile: null }); }}>
+          Follow this route
+        </Button>
         <p class="fine">Routes are kept in this browser only. The length follows the straight lines you draw, so a winding path is a little longer on the ground.</p>
       </div>
       {submitting && (
