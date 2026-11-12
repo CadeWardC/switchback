@@ -1,6 +1,6 @@
 # Download the trails
 
-Every trail in Switchback's dataset, as open files anyone can use. One file per US state and Canadian province, rebuilt whenever the dataset is (at least monthly).
+Every trail in Switchback's dataset, as open files anyone can use: the cleaned-up trails, each one whole, and the way in to each from its trailheads. One file per US state, Canadian province and country, rebuilt whenever the dataset is (at least monthly). The app doesn't download these; it reads its own compact files.
 
 All files are in the [`trails-open` release](https://github.com/CadeWardC/switchback/releases/tag/trails-open).
 
@@ -8,7 +8,7 @@ All files are in the [`trails-open` release](https://github.com/CadeWardC/switch
 
 GeoJSON, gzipped. Unzip with `gunzip`, 7-Zip or similar; open in QGIS, [geojson.io](https://geojson.io), or convert with GDAL (`ogr2ogr trails.gpkg missouri.geojson`).
 
-Each feature is one trail: a `MultiLineString` (longitude, latitude) with these properties.
+Every feature has a `kind`. A `trail` is one whole trail, every piece of it: a `MultiLineString` (longitude, latitude) with these properties.
 
 | Property | Meaning |
 |---|---|
@@ -21,6 +21,18 @@ Each feature is one trail: a `MultiLineString` (longitude, latitude) with these 
 | `hike` | `true` when the app lists it as a hike (not a fragment, side trail, road walk or informal path) |
 | `informal`, `informal_reason`, `unnamed`, `side_trail`, `road_walk`, `shared_with_bikes` | Present when true |
 | `climb_m`, `descent_m`, `lowest_m`, `highest_m` | Elevation along the main line |
+| `trailheads` | How many trailheads and car parks it can be started from (see below) |
+| `joined_along_route_m`, `loop_closed_along_trails` | Present when pieces were joined into one trail, or a loop was closed along other trails |
+
+A `way_in` is the walk from a trailhead or car park to a trail, along the trails and paths between them: a `LineString` that starts at the trailhead. Where the trailhead is on the trail itself there is no walk, and the feature is a `trailhead` (a `Point`). A trailhead that serves several trails has one feature for each.
+
+| Property | Meaning |
+|---|---|
+| `trailhead`, `trailhead_lat`, `trailhead_lon` | The trailhead or car park, and where it is |
+| `trail_id`, `trail` | The trail it leads to (the `id` and `name` of a `trail` feature) |
+| `walk_m` | The walk from the trailhead to the trail, one way, in metres |
+| `via` | The named trails the walk follows, in the order walked (at most two; absent for a short walk or one on no named trail) |
+| `climb_m`, `descent_m`, `lowest_m`, `highest_m` | Elevation along the walk |
 
 ## Licence
 
@@ -102,6 +114,12 @@ Lines marked `National Park Service` are U.S. federal data in the public domain.
 | Quebec | [ca-quebec.geojson.gz](https://github.com/CadeWardC/switchback/releases/download/trails-open/ca-quebec.geojson.gz) |
 | Saskatchewan | [ca-saskatchewan.geojson.gz](https://github.com/CadeWardC/switchback/releases/download/trails-open/ca-saskatchewan.geojson.gz) |
 | Yukon | [ca-yukon.geojson.gz](https://github.com/CadeWardC/switchback/releases/download/trails-open/ca-yukon.geojson.gz) |
+
+## Switzerland
+
+| Country | File |
+|---|---|
+| Switzerland | [switzerland.geojson.gz](https://github.com/CadeWardC/switchback/releases/download/trails-open/switzerland.geojson.gz) |
 
 ## The app's own files
 

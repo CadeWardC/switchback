@@ -86,7 +86,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Trail files")
                 } footer: {
-                    Text("Your area's trails download as soon as the map knows where you are (Missouri is about 0.4 MB), then the rest of your country on Wi-Fi (the US is about 38 MB), so trails work offline wherever you go in it. Other regions download when the map shows them. They're rebuilt from OpenStreetMap every week; the app picks up new versions for the states you look at by itself every few days, or right away here.")
+                    Text("Your area's trails download as soon as the map knows where you are (Missouri is about 1 MB), then the rest of your country on Wi-Fi (the US is about 85 MB), so trails work offline wherever you go in it. Other regions download when the map shows them. They're rebuilt from OpenStreetMap every week; the app picks up new versions for the states you look at by itself every few days, or right away here.")
                 }
                 Section("Data") {
                     Text("Trails: © OpenStreetMap contributors, available under the Open Database Licence.")

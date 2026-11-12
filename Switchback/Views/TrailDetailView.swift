@@ -55,6 +55,11 @@ struct TrailDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(t.name)
                         .font(.title2.bold())
+                    if let line = from?.startLine {
+                        Text(line)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                     if let area = t.area {
                         Label(area, systemImage: "tree.fill")
                             .font(.subheadline.weight(.medium))
@@ -89,7 +94,7 @@ struct TrailDetailView: View {
 
                 hikeOptions(base, from: from, chartIsTrailOnly: t.tags["switchback:chart"] == "trail")
 
-                actions(t)
+                actions(t, from: from)
                 offlineButton(t)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -190,7 +195,8 @@ struct TrailDetailView: View {
                     Menu {
                         Picker("Start from", selection: Binding(get: { from?.id ?? "" }, set: { startId = $0 })) {
                             ForEach(points) { p in
-                                Text("\(p.name) · \(Fmt.distance(base.hike(from: p, adding: []).length))").tag(p.id)
+                                Text("\(p.name) · \(Fmt.distance(base.hike(from: p, adding: []).length))"
+                                     + (p.viaText.map { " · \($0)" } ?? "")).tag(p.id)
                             }
                             Text("The trail on its own · \(Fmt.distance(base.length))").tag("")
                         }
@@ -231,7 +237,7 @@ struct TrailDetailView: View {
     }
 
     @ViewBuilder
-    private func actions(_ t: Trail) -> some View {
+    private func actions(_ t: Trail, from: TrailAccess?) -> some View {
         HStack(spacing: 10) {
             Button {
                 recorder.follow(t)
@@ -243,7 +249,7 @@ struct TrailDetailView: View {
             .buttonStyle(.borderedProminent)
 
             Button {
-                openDirections(to: t)
+                openDirections(to: t, from: from)
             } label: {
                 Label("Drive", systemImage: "car.fill")
                     .frame(maxWidth: .infinity)
@@ -314,9 +320,10 @@ struct TrailDetailView: View {
         }
     }
 
-    private func openDirections(to t: Trail) {
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: t.start.cl))
-        item.name = "\(t.name) trailhead"
+    /// Driving directions to where the hike starts: the trailhead picked, by its own name when it has one.
+    private func openDirections(to t: Trail, from: TrailAccess?) {
+        let item = MKMapItem(placemark: MKPlacemark(coordinate: (from?.point ?? t.start).cl))
+        item.name = from.flatMap { $0.isNamed ? $0.name : nil } ?? "\(t.name) trailhead"
         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
 }
