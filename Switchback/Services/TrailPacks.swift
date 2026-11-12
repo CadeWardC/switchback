@@ -338,7 +338,7 @@ actor TrailPacks {
     func prefetch(near c: Coord) async {
         guard let list = await regionList() else { return }
         var countries = Set<String>()
-        // 1. where you are, on any network (small: Missouri is about 0.4 MB)
+        // 1. where you are, on any network (small: Missouri is about 1 MB)
         for r in list.regions.values where r.contains(c) {
             countries.insert(r.country ?? "US")
             if let p = packs[r.region], p.header.version == r.version { continue }

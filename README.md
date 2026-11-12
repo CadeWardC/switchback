@@ -32,7 +32,7 @@ subscription and no API keys.
   compressed block per 0.25° cell), all published monthly in the single release `trails-us` with `regions.json`. The app
   downloads a state's file once, the first time the map shows it, then has every trail there instantly and offline,
   unpacking only the cells around the map. As soon as the map knows where you are, your area's file downloads (Missouri is about
-  0.4 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 38 MB), so trails work
+  1 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 85 MB), so trails work
   offline wherever you go in it; travelling to another country does the same there. Only the list of areas is built
   into the app (`BUNDLED_STATES: "none"`; `"all"` builds every US state in instead). Each file also holds the trail
   highlights (viewpoints, peaks, waterfalls, water, shelters, campsites, toilets, parking within ~200 m of a trail),
@@ -54,7 +54,7 @@ subscription and no API keys.
   can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
   off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
   trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
-- **Regions:** the pack job's matrix in `trail-packs.yml` lists the areas (any Geofabrik extract); each becomes one
+- **Regions:** `data/trail-regions.json` lists the areas the pack job builds (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map
   knows your location (or the map shows them), and Settings › Trail regions lists them all to download ahead of a
