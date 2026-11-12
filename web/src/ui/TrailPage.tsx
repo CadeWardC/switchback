@@ -195,8 +195,9 @@ export function TrailView(props: TrailViewProps) {
 
         {unwalked && (
           <Note kind="warn">
-            <strong>Not yet walked.</strong> This trail was placed on the map from the park's own trail list and USGS lidar; nobody has
-            sent in a walk of it yet. {about ?? ''} If you walk it, record it and send it in.
+            <strong>Not yet walked.</strong>{' '}
+            {about ?? "This trail was placed on the map from the park's own trail list and USGS lidar; nobody has sent in a walk of it yet."}
+            {' '}If you walk it, record it and send it in.
           </Note>
         )}
         {unverified && (
