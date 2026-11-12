@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:usesCleartextTraffic="false"
@@ -44,5 +45,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Keeps the processor awake so points are written while the screen is off -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- The notifications plugin can schedule alarms and restore them after a restart. This app only shows
+         a notice at the moment something happens, so it asks for neither (stores question both). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>
