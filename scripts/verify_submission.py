@@ -265,7 +265,59 @@ def slug(name):
 
 # ---------------------------------------------------------------- the checks
 
-def verify(sub, pack=None):
+def named_by_park(name, line, wanted):
+    """The trail on the region's wanted list (a park's own list or map names it) that this is, if any."""
+    mine = re.sub(r"[^a-z0-9]", "", re.sub(r"\b(trail|loop|path)\b", "", name.lower()))
+    for w in wanted or ():
+        theirs = re.sub(r"[^a-z0-9]", "", re.sub(r"\b(trail|loop|path)\b", "", w["trail"].lower()))
+        if mine and mine == theirs and ("lat" not in w or dist(line[0], (w["lat"], w["lon"])) <= 8000):
+            return w
+    return None
+
+def placed(sub, segs, raw, pack, wanted, check, checks):
+    """A trail placed on a map and not walked. The points may be few and a little off; what matters is that the
+    trail is a trail: a park's own list or map names it there, and the ground (USGS 1 m lidar) shows it."""
+    line = [(p[0], p[1]) for p in max(segs, key=length)]
+    check("Long enough", raw >= MIN_LENGTH_M, f"{raw:.0f} m")
+    inside = not pack or all(pack[0][0] <= p[0] <= pack[0][2] and pack[0][1] <= p[1] <= pack[0][3] for p in line)
+    check("A real place", inside, "inside the region" if inside else "some of it is outside this region's file")
+    plain = re.sub(r"[^a-z0-9]", "", sub["name"].lower())
+    check("Named", plain not in PLACEHOLDERS and len(plain) >= 3 and not plain.isdigit(),
+          f'"{sub["name"]}"' if sub["name"] else "no name")
+    hit = named_by_park(sub["name"], line, wanted)
+    check("Named by the park", hit, f'{hit["park"]} lists "{hit["trail"]}"' if hit
+          else "no park's list or map names a trail like this here" if wanted is not None else "no wanted list given (--wanted)")
+    z = None
+    try:
+        import lidar_trail
+        r = lidar_trail.evidence(line)
+        z = r["z"]
+        check("The ground shows it", r["agrees"],
+              ("the lidar shows a trail along this line" if r["agrees"] else
+               "there is no 1 m lidar for most of it" if z is None else
+               "the lidar does not show a trail along this line (it misses many real ones: walk it instead)")
+              + ("" if z is None else f" (z={z})"))
+        if r["agrees"]:
+            line = r["line"]
+    except Exception as ex:
+        check("The ground shows it", False, f"the lidar could not be looked at ({ex})")
+    known = None
+    if pack:
+        samples = every(line, 10)
+        known = sum(pack[1].near(p, NEAR_M) for p in samples) / len(samples)
+        check("New", known < KNOWN_SHARE, f"{100 * known:.0f}% of it follows trails already in the file")
+    line = simplify(line)
+    trail = {
+        "name": sub["name"], "notes": sub["notes"], "kind": "placed", "app": sub["app"],
+        "access_stated": sub["access"], "length_m": round(length(line)),
+        "loop": dist(line[0], line[-1]) <= 40 and length(line) >= MIN_LENGTH_M, "out_and_back": False,
+        "lidar_z": z,
+        "park": hit["park"] if hit else None, "park_source": (hit.get("source") or hit.get("map")) if hit else None,
+        "already_known_share": None if known is None else round(known, 2), "line": line,
+    }
+    return checks, trail
+
+def verify(sub, pack=None, wanted=None):
     """[(check, passed, what was found)], and the cleaned trail (or None)."""
     checks = []
 
@@ -280,11 +332,10 @@ def verify(sub, pack=None):
 
     timed = sum(p[3] is not None for p in pts)
     kind = sub["kind"] or ("walked" if timed >= 0.9 * len(pts) else "drawn")
-    check("Walked", kind == "walked" and timed >= 0.9 * len(pts),
-          "drawn on a map, not walked: it waits until someone walks it" if kind != "walked"
-          else f"{timed} of {len(pts)} points have a time")
-
     raw = sum(length(s) for s in segs)
+    if kind != "walked":
+        return placed(sub, segs, raw, pack, wanted, check, checks)
+    check("Walked", timed >= 0.9 * len(pts), f"{timed} of {len(pts)} points have a time")
     check("Long enough", raw >= MIN_LENGTH_M and len(pts) >= MIN_POINTS, f"{raw:.0f} m, {len(pts)} points")
 
     speeds, fast, still, jumps = [], 0.0, 0.0, 0
@@ -370,6 +421,7 @@ def main():
     ap.add_argument("file")
     ap.add_argument("--pack", help="the region's trail file, to check the trail is in the region and is new")
     ap.add_argument("--region", help="the region's id (default: the pack's file name)")
+    ap.add_argument("--wanted", help="the region's wanted list (<region>.wanted.json), for a trail placed on a map")
     ap.add_argument("--out", help="where to write a passing trail (data/submissions/verified)")
     a = ap.parse_args()
     try:
@@ -378,11 +430,14 @@ def main():
         print(f"FAIL  Readable: {ex}")
         return 1
     pack = read_pack(a.pack) if a.pack else None
-    checks, trail = verify(sub, pack)
+    wanted = json.load(open(a.wanted)).get("wanted", []) if a.wanted else None
+    checks, trail = verify(sub, pack, wanted)
     for name, ok, found in checks:
         print(f"{'ok  ' if ok else 'FAIL'}  {name}: {found}")
     passed = all(ok for _, ok, _ in checks)
     if trail:
+        if trail["kind"] == "placed":
+            print("      Placed on a map, not walked: it is marked so until someone walks it")
         shape = "out and back" if trail["out_and_back"] else "loop" if trail["loop"] else "one way"
         print(f"      Cleaned line: {trail['length_m']} m, {len(trail['line'])} points, {shape}")
     if not a.pack:
@@ -402,4 +457,5 @@ def main():
     return 0 if passed else 1
 
 if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     sys.exit(main())

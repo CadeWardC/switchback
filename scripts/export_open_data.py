@@ -21,6 +21,7 @@ def feature(t):
         "line_from": origin or "OpenStreetMap",
         "licence": ("CC BY 4.0, USDA Forest Service" if origin == "Forest Service" else
                     "ODbL, walked and sent in by a Switchback user" if origin == "Community" else
+                    "ODbL, placed from USGS 3DEP lidar (public domain) by a Switchback user" if origin == "USGS lidar" else
                     "public domain (U.S. federal data)" if origin else "ODbL, © OpenStreetMap contributors"),
     }
     if not origin and t.get("osmId"):
@@ -44,6 +45,8 @@ def feature(t):
     for key, k in (("climb_m", "g"), ("descent_m", "l"), ("lowest_m", "mn"), ("highest_m", "mx")):
         if isinstance(e.get(k), (int, float)):
             props[key] = round(e[k])
+    if tags.get("switchback:unwalked") == "yes":
+        props["not_yet_walked"] = True
     if tags.get("switchback:difficulty"):
         props["difficulty"] = tags["switchback:difficulty"]
     if tags.get("switchback:minutes", "").isdigit():

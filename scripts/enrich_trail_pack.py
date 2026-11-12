@@ -313,8 +313,11 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
         if not str(p.get("approved_by") or "").strip():
             counts["sent in by walkers: waiting for approval"] += 1
             continue
-        if p.get("kind") != "walked" or len(line) < 2 or official.length(line) < ADD_MIN_M:
-            counts["sent in by walkers: not added, not a walked trail of a quarter mile"] += 1
+        placed = p.get("kind") == "placed"
+        # walked, or placed on a map where a park's own list names the trail and the lidar shows it
+        sound = p.get("kind") == "walked" or (placed and p.get("park") and (p.get("lidar_z") or 0) >= 2)
+        if not sound or len(line) < 2 or official.length(line) < ADD_MIN_M:
+            counts["sent in by walkers: not added, not a sound trail of a quarter mile"] += 1
             continue
         if official.match([line], grid)[0] >= 0.8:
             counts["sent in by walkers: not added, the pack has the trail now"] += 1
@@ -328,12 +331,20 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
             continue
         t, at = made
         tags = t.setdefault("tags", {})
-        tags["switchback:origin"] = "Community"
-        tags["switchback:walked"] = str(p.get("walked_on") or "")
-        if p.get("area"):
-            tags["switchback:area"] = p["area"]
-        if p.get("notes"):
-            tags["description"] = str(p["notes"])[:400]
+        if placed:
+            tags["switchback:origin"] = "USGS lidar"
+            tags["switchback:unwalked"] = "yes"
+            tags["description"] = ("Placed from USGS lidar where the park's own list names this trail. "
+                                   "Nobody has sent in a walk of it yet, so the line may be a little off.")
+            if p.get("park_source"):
+                tags["official:url"] = p["park_source"]
+        else:
+            tags["switchback:origin"] = "Community"
+            tags["switchback:walked"] = str(p.get("walked_on") or "")
+            if p.get("notes"):
+                tags["description"] = str(p["notes"])[:400]
+        if p.get("area") or p.get("park"):
+            tags["switchback:area"] = p.get("area") or p["park"]
         t["_lines"] = [line]
         grid.add(line, len(trails) + len(added))
         added.append((t, at))

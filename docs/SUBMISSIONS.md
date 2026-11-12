@@ -18,7 +18,7 @@ app and the website:
     <time>2026-11-12T15:04:05Z</time>
     <extensions>
       <sb:submission>
-        <sb:kind>walked</sb:kind>          <!-- walked: recorded on foot. drawn: points placed on a map, not walked -->
+        <sb:kind>walked</sb:kind>          <!-- walked: recorded on foot. placed: points put on a map (lidar, aerial photos), not walked -->
         <sb:app>ios 1.0</sb:app>           <!-- ios, android or web, and the version -->
         <sb:loop>yes</sb:loop>             <!-- optional: yes when it ends where it starts -->
         <sb:access>public</sb:access>      <!-- the sender says it is open to the public on foot -->
@@ -35,8 +35,9 @@ app and the website:
 </gpx>
 ```
 
-A walked trail keeps the time (and height, when the phone has it) of every point: the checks need them. A drawn
-trail has neither, and is never added on its own: it waits until someone walks it.
+A walked trail keeps the time (and height, when the phone has it) of every point: the checks need them. A trail
+placed on a map has neither, and has its own, stricter checks (below). `drawn` (a route someone planned) is read
+as `placed`.
 
 By sending a trail, the sender agrees it may be published in Switchback's open trail files under the
 [Open Database License](https://opendatacommons.org/licenses/odbl/) and says they walked it themselves on land
@@ -57,7 +58,7 @@ every check passes.
 | Check | Fails when |
 | --- | --- |
 | Readable | not GPX, or no track |
-| Walked | no times on the points, or marked `drawn` |
+| Walked | no times on the points |
 | Long enough | under 400 m or under 30 points |
 | On foot | the middle speed is over 9 km/h, or it is faster than 20 km/h for more than a twentieth of the way |
 | Clean recording | jumps of more than 150 m between points, or more than a tenth of it is standing still noise |
@@ -83,7 +84,32 @@ Each region's build also writes `<region>.wanted.json` (in the `trails-us` relea
 that a park's own list or map names but the file has no line for, with the park, roughly where it is, and the
 manager's page or map. These are the trails most worth walking and sending in.
 
+## Placing a trail on a map without walking it
+
+A trail can also be placed from public-domain USGS data: 1 m lidar (3DEP) and aerial photos (NAIP). The file is
+the same GPX with `<sb:kind>placed</sb:kind>` and no times. The points can be few (one at each bend is enough)
+and a few metres off, as long as they stay within about 15 m of the trail. What matters is that the trail is a
+trail, so a placed trail must pass two more checks than a walked one:
+
+| Check | Fails when |
+| --- | --- |
+| Named by the park | no trail of that name is on the region's wanted list near there (`--wanted <region>.wanted.json`) |
+| The ground shows it | `scripts/lidar_trail.py` does not find a trail along the line in the lidar |
+
+`lidar_trail.py` subtracts the shape of the hill from the lidar heights, which leaves a footpath as a groove or
+bench a metre or two wide; finds the cheapest way along the line's corridor, where walking along a groove is cheap
+(that is the line snapped to the ground, bends and all); and compares it with the same line pushed 50 m aside in
+eight directions, where there should be no trail. Measured on Missouri trails that official lists confirm
+(November 2026): it agreed with about four in ten real trails, whether given the mapped line or only a point
+every 60 m, and with almost no ground where we have no trail (1 of 47 pieces, none of 11 whole lines). So when it
+agrees that is strong evidence, and when it does not the trail simply has to be walked. An old road bed, a ditch
+or an ATV track leaves a groove too, which is why the park's own list must name the trail, and why a maintainer
+still approves each one.
+
+In the packs a placed trail carries `switchback:origin` = `USGS lidar` and `switchback:unwalked` = `yes`, and its
+description says nobody has sent in a walk of it yet.
+
 Lines are never traced from Google Maps, Apple Maps or a park's drawn map: their terms do not allow it, and
-neither does OpenStreetMap. What may be used to place a trail: a walk recorded on the ground, public-domain
-aerial photos and lidar (USGS NAIP and 3DEP), imagery whose owners allow tracing into OpenStreetMap (Esri World
-Imagery, Bing), and GPS traces already published on OpenStreetMap (`scripts/gps_traces.py`).
+neither does OpenStreetMap. Esri World Imagery and Bing imagery may be traced only into OpenStreetMap itself
+(the trail then reaches the packs at the next build): the apps link to OpenStreetMap's editor at the spot.
+GPS traces already published on OpenStreetMap confirm paths that are mapped (`scripts/gps_traces.py`).
