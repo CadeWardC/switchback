@@ -491,6 +491,10 @@ def main():
                     tags["official:match"] = "named in the park's trail list"
                 if rec.get("source"):
                     tags["official:url"] = rec["source"]
+                # the colour the park paints this trail's blazes, for the apps to draw them in
+                paint = re.match(r"(yellow|orange|blue|red|white|green|purple|pink|brown|black)\b", str(hit.get("blaze") or "").strip().lower())
+                if paint:
+                    tags["switchback:blaze"] = paint.group(1)
                 if not official.same_name(hit["name"], t["name"]):
                     tags["official:name"] = hit["name"]
                 # the manager's length, when this is the whole trail and not one piece of it
