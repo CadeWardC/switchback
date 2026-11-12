@@ -8,12 +8,15 @@ import { go, isSaved, recState, route, say, selected, selectedState, shownTrail,
 import { start } from '../recorder';
 import { areaReady, mapJobs, trailParts } from '../map/tilesource';
 import { Note, Segmented } from './common';
-import { fmtDistance, fmtDuration } from '../lib/format';
+import { fmtDistance, fmtDuration, fmtElevation } from '../lib/format';
 import { buildGpx, exportGpx, type GpxPoint } from '../lib/gpx';
 import { lineLength, distance } from '../lib/geo';
 import { APP_VERSION, platformLabel } from '../lib/submit';
 import { platform } from '../platform';
-import { Badge, Button, dist, elev, Empty, PageHeader, Stat } from './common';
+import { Badge, Button, Empty, PageHeader, Stat } from './common';
+import type { ComponentChildren } from 'preact';
+import type { Units } from '../lib/format';
+import type { Access, ShortLoop } from '../lib/trail';
 import { ElevationChart } from './ElevationChart';
 import { Icon } from './Icon';
 import type { Coord } from '../lib/polyline';
@@ -110,8 +113,51 @@ export function TrailPage() {
       </div>
     );
   }
-  const u = units.value;
-  const fmt = (m: number) => fmtDistance(m, u);
+  const saved = isSaved(whole);
+  return (
+    <TrailView
+      whole={whole} trail={t} shorts={shorts} shortId={shortId} heads={heads} from={from} saved={saved} units={units.value}
+      directionsUrl={(lat, lon) => platform.links.directionsUrl(lat, lon)} shareLabel={platform.name === 'web' ? 'Copy link' : 'Share'}
+      gpxLabel={platform.name === 'web' ? 'Download GPX' : 'Share GPX'} status={<OfflineTick t={whole} />}
+      onBack={() => go({ page: 'explore' })} onShort={setShortId} onFrom={setFrom}
+      onShare={() => void share(whole)} onFollow={() => void follow(t)} onGpx={() => void exportGpx(t.name, trailGpx(t))}
+      onSave={() => { toggleSaved(whole); platform.haptics.tap(); say(saved ? 'Removed from Saved' : 'Saved'); }}
+    />
+  );
+}
+
+/** What a trail page needs: the trail (whole, and as chosen to walk), the choices, and what to do on each
+ *  action. It reads nothing else, so another layout can take the same data and callbacks. */
+export interface TrailViewProps {
+  whole: Trail;
+  /** The trail as it is being looked at: a short loop of it, or with the walk in from a trailhead. */
+  trail: Trail;
+  shorts: ShortLoop[];
+  shortId: string;
+  heads: Access[];
+  /** Index into `heads`, or -1 for the trail on its own. */
+  from: number;
+  saved: boolean;
+  units: Units;
+  directionsUrl: (lat: number, lon: number) => string;
+  shareLabel: string;
+  gpxLabel: string;
+  /** A small status line (is the map on the device?). */
+  status?: ComponentChildren;
+  onBack: () => void;
+  onShort: (id: string) => void;
+  onFrom: (index: number) => void;
+  onShare: () => void;
+  onSave: () => void;
+  onFollow: () => void;
+  onGpx: () => void;
+}
+
+export function TrailView(props: TrailViewProps) {
+  const { whole, trail: t, shorts, shortId, heads, from, saved, units: u } = props;
+  const setShortId = props.onShort, setFrom = props.onFrom;
+  const dist = (m: number) => fmtDistance(m, u), elev = (m: number) => fmtElevation(m, u);
+  const fmt = dist;
   const p = t.profile;
   const head = heads[from >= 0 ? from : 0];
   const to = head?.point ?? t.start;
@@ -119,17 +165,19 @@ export function TrailPage() {
   const unwalked = isUnwalked(whole), unverified = needsVerification(whole);
   const details = facts(t, fmt), official = officialFacts(t, fmt);
   const site = website(t), osm = osmUrl(t), about = summary(t);
-  const saved = isSaved(whole);
   return (
     <div class="page">
-      <PageHeader back={{ page: 'explore' }} backLabel="Trails">
-        <Button kind="quiet" icon="link" aria-label={platform.name === 'web' ? 'Copy a link to this trail' : 'Share this trail'} title={platform.name === 'web' ? 'Copy link' : 'Share'} onClick={() => void share(t)} />
+      <header class="page-header">
+        <button type="button" class="btn btn-quiet back" onClick={props.onBack}><Icon name="back" size={18} /><span>Trails</span></button>
+        <div class="page-actions">
+        <Button kind="quiet" icon="link" aria-label={`${props.shareLabel}: this trail`} title={props.shareLabel} onClick={props.onShare} />
         <button type="button" class={`btn btn-quiet btn-icon${saved ? ' saved-on' : ''}`} aria-pressed={saved}
           aria-label={saved ? 'Remove from saved trails' : 'Save this trail'} title={saved ? 'Saved' : 'Save'}
-          onClick={() => { toggleSaved(whole); platform.haptics.tap(); say(saved ? 'Removed from Saved' : 'Saved'); }}>
+          onClick={props.onSave}>
           <Icon name="bookmark" size={18} filled={saved} />
         </button>
-      </PageHeader>
+        </div>
+      </header>
       <div class="page-scroll trail-page">
         <div class="trail-head">
           <h1 class="page-title">{t.name}</h1>
@@ -142,7 +190,7 @@ export function TrailPage() {
             {unwalked && <span class="tag tag-warn">Not yet walked</span>}
             {!t.isHike && !unverified && <span class="tag">{t.tags['switchback:unnamed'] === 'yes' ? 'Unnamed path' : t.tags['switchback:roadwalk'] === 'yes' ? 'Road walk' : 'Side trail'}</span>}
           </div>
-          <OfflineTick t={whole} />
+          {props.status}
         </div>
 
         {unwalked && (
@@ -178,10 +226,10 @@ export function TrailPage() {
         {p && p.distances.length > 1 && <div class="card pad"><ElevationChart profile={p} path={t.path} /></div>}
 
         <div class="actions stack">
-          {(unwalked || unverified) && <Button kind="primary" icon="record" onClick={() => void follow(t)}>I walked this: record it</Button>}
-          <Button kind={unwalked || unverified ? 'secondary' : 'primary'} icon="directions" href={platform.links.directionsUrl(to[0], to[1])} data-directions={`${to[0]},${to[1]}`}>Directions to trailhead</Button>
-          {!unwalked && !unverified && <Button icon="play" onClick={() => void follow(t)}>Start this hike</Button>}
-          <Button icon="download" onClick={() => void exportGpx(t.name, trailGpx(t))}>{platform.name === 'web' ? 'Download GPX' : 'Share GPX'}</Button>
+          {(unwalked || unverified) && <Button kind="primary" icon="record" onClick={props.onFollow}>I walked this: record it</Button>}
+          <Button kind={unwalked || unverified ? 'secondary' : 'primary'} icon="directions" href={props.directionsUrl(to[0], to[1])} data-directions={`${to[0]},${to[1]}`}>Directions to trailhead</Button>
+          {!unwalked && !unverified && <Button icon="play" onClick={props.onFollow}>Start this hike</Button>}
+          <Button icon="download" onClick={props.onGpx}>{props.gpxLabel}</Button>
         </div>
 
         {about && !unwalked && <p class="about-text">{about}</p>}
@@ -204,7 +252,7 @@ export function TrailPage() {
             <ul class="list card">
               {heads.slice(0, 4).map((h) => (
                 <li>
-                  <a class="row" href={platform.links.directionsUrl(h.point[0], h.point[1])} data-directions={`${h.point[0]},${h.point[1]}`} target="_blank" rel="noopener">
+                  <a class="row" href={props.directionsUrl(h.point[0], h.point[1])} data-directions={`${h.point[0]},${h.point[1]}`} target="_blank" rel="noopener">
                     <span class="row-icon"><Icon name="flag" size={18} /></span>
                     <span class="row-main">
                       <span class="row-title">{h.name}</span>

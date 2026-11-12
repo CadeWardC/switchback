@@ -1,7 +1,7 @@
 // Keeps the trails in step with the map and the address bar.
 import { effect } from '@preact/signals';
 import {
-  loading, loadNote, unverifiedInView, MIN_TRAIL_ZOOM, regions, regionsError, route, selected, selectedState, sheet, trailsInView, view, flyTo,
+  loading, loadNote, online, unverifiedInView, MIN_TRAIL_ZOOM, regions, regionsError, route, selected, selectedState, sheet, trailsInView, view, flyTo,
 } from './state';
 import { findTrail, loadRegions, trailsIn } from './data';
 import { isPhone } from './layout';
@@ -35,7 +35,9 @@ export function startController(): void {
         trailsInView.value = res.trails;
         unverifiedInView.value = res.unverified;
         loadNote.value = res.failed.length
-          ? `Trails for ${res.failed.join(', ')} couldn't be loaded. Check your connection.`
+          ? online.peek()
+            ? `Trails for ${res.failed.join(', ')} couldn't be loaded. Check your connection.`
+            : `Trails for ${res.failed.join(', ')} are not on this device yet. They download when there is a connection.`
           : res.uncovered ? 'No trail files cover this part of the map yet.' : null;
       } catch {
         if (id === run) loadNote.value = "Trails couldn't be loaded. Check your connection.";

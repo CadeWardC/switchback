@@ -1,7 +1,7 @@
 // Pieces shared by the screens.
 import type { ComponentChildren, HTMLAttributes } from 'preact';
 import { Icon } from './Icon';
-import { units, go, hoverKey, type Route } from '../state';
+import { units, go, type Route } from '../state';
 import { fmtDistance, fmtElevation } from '../lib/format';
 import { DIFFICULTY_TITLE, type Difficulty } from '../lib/trail';
 
@@ -80,13 +80,17 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
 
 export interface RowTrail { region: string; id: string; name: string; length: number; gain: number; difficulty: Difficulty; loop: boolean; key?: string }
 
-export function TrailRow({ t, extra }: { t: RowTrail; extra?: string }) {
+/** One trail in a list. Data in, callbacks out: `onOpen` when chosen, `onPoint` when a mouse is over it. */
+export function TrailRow({ t, extra, onOpen, onPoint, pointed }: {
+  t: RowTrail; extra?: string; onOpen?: (t: RowTrail) => void; onPoint?: (key: string | null) => void; pointed?: boolean;
+}) {
   const key = t.key ?? `${t.region}/${t.id}`;
+  const open = onOpen ?? ((x: RowTrail) => go({ page: 'trail', region: x.region, id: x.id }));
   return (
-    <button type="button" class={`row trail-row${hoverKey.value === key ? ' hover' : ''}`}
-      onClick={() => go({ page: 'trail', region: t.region, id: t.id })}
-      onPointerEnter={(e) => { if (e.pointerType === 'mouse') hoverKey.value = key; }}
-      onPointerLeave={() => { if (hoverKey.peek() === key) hoverKey.value = null; }}>
+    <button type="button" class={`row trail-row${pointed ? ' hover' : ''}`}
+      onClick={() => open(t)}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') onPoint?.(key); }}
+      onPointerLeave={() => onPoint?.(null)}>
       <span class={`dot dot-${t.difficulty}`} aria-hidden="true" />
       <span class="row-main">
         <span class="row-title">{t.name}</span>
@@ -96,6 +100,26 @@ export function TrailRow({ t, extra }: { t: RowTrail; extra?: string }) {
       </span>
       <Badge difficulty={t.difficulty} />
     </button>
+  );
+}
+
+export interface ResultGroup { title: string; total: number; trails: RowTrail[] }
+
+/** The results, grouped. A different layout (cards, a ticket, a text index…) can take the same props. */
+export function ResultsList({ groups, onOpen, onPoint, pointedKey }: {
+  groups: ResultGroup[]; onOpen: (t: RowTrail) => void; onPoint?: (key: string | null) => void; pointedKey?: string | null;
+}) {
+  return (
+    <>
+      {groups.map((g) => (
+        <section class="group" aria-label={g.title}>
+          <h2 class="group-title"><span>{g.title}</span><span class="group-count">{g.total}</span></h2>
+          <ul class="list card">
+            {g.trails.map((t) => <li key={t.key}><TrailRow t={t} onOpen={onOpen} onPoint={onPoint} pointed={pointedKey === t.key} /></li>)}
+          </ul>
+        </section>
+      ))}
+    </>
   );
 }
 

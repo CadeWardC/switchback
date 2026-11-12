@@ -169,3 +169,34 @@ describe('filters', () => {
     expect(passes(trail({ profile: { distances: [], elevations: [], gain: 300, loss: 0, min: 0, max: 0 } }), { ...f, climb: 'low' }, 'metric')).toBe(false);
   });
 });
+
+import { around, countFor, hereParts, keysFor, throughStore, trailParts, MAX_JOB_TILES } from '../src/map/tilesource';
+
+describe('saving the map ahead', () => {
+  it('lists the tiles a box needs at each zoom', () => {
+    // Rock Bridge: one tile at zoom 10, with terrain; no terrain past zoom 11
+    expect(keysFor([38.86, -92.33, 38.88, -92.31], 10, 10)).toEqual(['v/10/249/391', 'd/10/249/391']);
+    const z14 = keysFor([38.86, -92.33, 38.88, -92.31], 14, 14);
+    expect(z14.length).toBeGreaterThanOrEqual(1);
+    expect(z14.every((k) => k.startsWith('v/14/'))).toBe(true);
+    // never past zoom 14: closer in, the map enlarges zoom 14
+    expect(keysFor([38.86, -92.33, 38.88, -92.31], 14, 18).every((k) => k.startsWith('v/14/'))).toBe(true);
+  });
+  it('keeps a trail and the place you are well inside the politeness limit', () => {
+    expect(countFor(trailParts([38.86, -92.33, 38.88, -92.31]))).toBeLessThan(200);
+    expect(countFor(hereParts(38.87, -92.32))).toBeLessThan(600);
+    expect(countFor(hereParts(38.87, -92.32))).toBeLessThan(MAX_JOB_TILES);
+  });
+  it('adds a margin in kilometres', () => {
+    const b = around([38.87, -92.32, 38.87, -92.32], 1);
+    expect((b[2] - b[0]) * 111.32).toBeCloseTo(2, 1);
+    expect((b[3] - b[1]) * 111.32 * Math.cos(38.87 * Math.PI / 180)).toBeCloseTo(2, 1);
+  });
+  it('points the style at the device store', () => {
+    const s = throughStore({ glyphs: 'https://x/{fontstack}/{range}.pbf', sources: { openmaptiles: { type: 'vector', url: 'https://x/planet' }, terrain: { type: 'raster-dem', tiles: ['https://y/{z}/{x}/{y}.png'], encoding: 'terrarium' } } });
+    expect(s.glyphs).toBe('sb://g/{fontstack}/{range}');
+    expect(s.sources.openmaptiles).toEqual({ type: 'vector', tiles: ['sb://v/{z}/{x}/{y}'], minzoom: 0, maxzoom: 14 });
+    expect(s.sources.terrain.tiles).toEqual(['sb://d/{z}/{x}/{y}']);
+    expect(s.sources.terrain.encoding).toBe('terrarium');
+  });
+});

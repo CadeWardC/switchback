@@ -2,14 +2,14 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
 import {
-  climbBands, climbFilter, clearFilters, difficultyFilter, dogsOnly, filters, filterSummary, filtersOn, flyTo, go, hikesInView, lengthBands,
+  climbBands, climbFilter, clearFilters, hoverKey, difficultyFilter, dogsOnly, filters, filterSummary, filtersOn, flyTo, go, hikesInView, lengthBands,
   lengthFilter, loading, loadNote, loopsOnly, MIN_TRAIL_ZOOM, query, regions, regionsError, sheet, sort, sorted, units, view,
   type ClimbBand, type LengthBand, type Sort,
 } from '../state';
 import { DIFFICULTIES, DIFFICULTY_TITLE, type Trail } from '../lib/trail';
 import { regionName, search, type SearchHit } from '../data';
 import { Icon } from './Icon';
-import { Empty, Note, TrailRow, Button } from './common';
+import { Empty, Note, ResultsList, Button } from './common';
 import { isPhone } from '../layout';
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -65,11 +65,13 @@ function Filters() {
   );
 }
 
-/** Groups keep the order their first trail has in the sorted list. */
+/** Groups keep the order their first trail has in the sorted list. A trail system (a named trail with its
+ *  loops and sections, "Cedar Creek Trail") is one group of its own; other trails group by their area. */
 function grouped(trails: Trail[]): { area: string; trails: Trail[] }[] {
   const groups = new Map<string, Trail[]>();
   for (const t of trails) {
-    const area = t.area ?? 'Other trails';
+    const system = t.tags['switchback:system'];
+    const area = system ? `${system} (trail system)` : t.area ?? 'Other trails';
     const g = groups.get(area);
     if (g) g.push(t);
     else groups.set(area, [t]);
@@ -158,7 +160,7 @@ export function Explore() {
   const visible = groups.map((g) => {
     const take = g.trails.slice(0, Math.max(0, left));
     left -= take.length;
-    return { area: g.area, total: g.trails.length, trails: take };
+    return { title: g.area, total: g.trails.length, trails: take.map((t) => ({ ...t, gain: t.profile?.gain ?? 0, loop: t.isLoop })) };
   }).filter((g) => g.trails.length);
 
   return (
@@ -214,14 +216,9 @@ export function Explore() {
                   : 'Move or zoom the map to look somewhere else.'}
               </Empty>
             )}
-            {visible.map((g) => (
-              <section class="group" aria-label={g.area}>
-                <h2 class="group-title"><span>{g.area}</span><span class="group-count">{g.total}</span></h2>
-                <ul class="list card">
-                  {g.trails.map((t) => <li key={t.key}><TrailRow t={{ ...t, gain: t.profile?.gain ?? 0, loop: t.isLoop }} /></li>)}
-                </ul>
-              </section>
-            ))}
+            <ResultsList groups={visible} pointedKey={hoverKey.value}
+              onOpen={(t) => go({ page: 'trail', region: t.region, id: t.id })}
+              onPoint={(key) => { if (key || hoverKey.peek()) hoverKey.value = key; }} />
             {hikes.length > shown && (
               <Button wide onClick={() => setShown(shown + PAGE)}>Show more ({(hikes.length - shown).toLocaleString()} left)</Button>
             )}

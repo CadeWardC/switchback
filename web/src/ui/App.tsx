@@ -1,5 +1,5 @@
 // The frame: the map behind, a panel beside it (wide screens) or a sheet over it with a tab bar (phones).
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   baseMap, dark, flyTo, go, loading, online, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
 } from '../state';
@@ -11,12 +11,25 @@ import { isNativeApp, platform } from '../platform';
 import { Icon } from './Icon';
 import { Explore } from './Explore';
 import { TrailPage } from './TrailPage';
-import { Saved } from './Saved';
-import { Plan } from './Plan';
 import { Record } from './Record';
-import { Activity, WalkPage } from './Activity';
-import { Settings } from './Settings';
-import { Help } from './Help';
+
+/** A screen that is fetched the first time it is opened (the less-used ones, to keep the start light). */
+function lazy(load: () => Promise<() => any>) {
+  let Loaded: (() => any) | null = null;
+  return function Lazy() {
+    const [, redraw] = useState(0);
+    useEffect(() => {
+      if (!Loaded) void load().then((c) => { Loaded = c; redraw((n) => n + 1); });
+    }, []);
+    return Loaded ? <Loaded /> : <div class="page"><div class="page-scroll"><p class="quiet-line">Loading…</p></div></div>;
+  };
+}
+const Saved = lazy(() => import('./Saved').then((m) => m.Saved));
+const Plan = lazy(() => import('./Plan').then((m) => m.Plan));
+const Activity = lazy(() => import('./Activity').then((m) => m.Activity));
+const WalkPage = lazy(() => import('./Activity').then((m) => m.WalkPage));
+const Settings = lazy(() => import('./Settings').then((m) => m.Settings));
+const Help = lazy(() => import('./Help').then((m) => m.Help));
 
 const TABS: { tab: Tab; label: string; icon: string }[] = [
   { tab: 'explore', label: 'Explore', icon: 'map' },
