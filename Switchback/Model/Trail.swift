@@ -250,6 +250,32 @@ struct Trail: Codable, Identifiable, Hashable {
         }
     }
 
+    /// Shorter loops of this trail, by a cut-across that isn't a trail of its own ("Short loop").
+    var shortLoops: [TrailExtension] {
+        guard let rows = Self.json(tags["switchback:short"]) else { return [] }
+        return rows.compactMap { r in
+            guard let name = r["n"] as? String, let m = (r["m"] as? NSNumber)?.doubleValue,
+                  let line = r["l"] as? String else { return nil }
+            return TrailExtension(id: "short-\(Int(m))", name: name, length: m, line: Polyline.decode(line),
+                                  profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
+        }
+    }
+
+    /// This trail walked as one of its short loops: the same trail and trailheads, a shorter line.
+    func shortened(to short: TrailExtension) -> Trail {
+        guard short.line.count > 1 else { return self }
+        var t = self
+        t.path = short.line
+        t.length = short.length
+        t.profile = short.profile
+        t.segments.append(short.line)      // so the cut-across is drawn
+        // these were worked out for the whole loop
+        for tag in ["switchback:short", "switchback:ext", "switchback:difficulty", "switchback:minutes"] {
+            t.tags[tag] = nil
+        }
+        return t
+    }
+
     private static func json(_ text: String?) -> [[String: Any]]? {
         guard let data = text?.data(using: .utf8) else { return nil }
         return (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]

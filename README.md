@@ -53,7 +53,7 @@ subscription and no API keys.
   trailheads and car parks within 100 m of a trail and the walk from each to the trails within 3 km, so a trail page
   can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
   off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
-  trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
+  trails); (6) offers a short loop where a short cut-across joins two points of a loop (the trail page then has Full loop and Short loop; the cut-across is not listed as a trail); and (7) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
 - **Regions:** the pack job's matrix in `trail-packs.yml` lists the areas (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map
