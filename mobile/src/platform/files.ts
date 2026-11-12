@@ -64,7 +64,8 @@ export const keyValue: PlatformKeyValue = {
 };
 
 // ── Documents ───────────────────────────────────────────────────────────────────────────────────────────
-const safe = (name: string) => name.replace(/[^\w.@-]/g, '_');
+/** Names stay as given (web/src/data.ts compares them), except that they cannot reach another folder. */
+const safe = (name: string) => name.replace(/[/\\]/g, '_');
 
 export const documents: PlatformDocuments = {
   async read(name) {

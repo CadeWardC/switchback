@@ -35,7 +35,6 @@ module.exports = {
         backgroundColor: '#f6ae6c',
       },
       predictiveBackGestureEnabled: false,
-      edgeToEdgeEnabled: true,
       permissions: [
         'ACCESS_COARSE_LOCATION',
         'ACCESS_FINE_LOCATION',
@@ -75,11 +74,11 @@ module.exports = {
       [
         'expo-build-properties',
         {
-          android: { enableMinifyInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true },
+          // R8 on; native libraries compressed in the APK (a much smaller download for an APK installed by hand)
+          android: { enableMinifyInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, useLegacyPackaging: true },
           ios: { deploymentTarget: '16.4' },
         },
       ],
     ],
-    experiments: { typedRoutes: false },
   },
 };

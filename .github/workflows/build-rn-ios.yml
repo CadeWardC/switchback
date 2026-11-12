@@ -1,0 +1,145 @@
+name: Build unsigned IPA (Switchback React Native)
+
+# Builds the React Native Switchback app in mobile/ for iPhone (unsigned) and publishes it as a
+# switchback-rn-ios-N release with Switchback-unsigned.ipa. The bundle id is com.cadewardc.switchback.rn
+# (mobile/app.config.js), so it installs beside the existing Switchback app.
+# mobile/ios is not committed: `expo prebuild` makes it fresh here from mobile/app.config.js.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "mobile/**"
+      - "web/src/lib/**"
+      - "web/src/data.ts"
+      - "web/src/filters.ts"
+      - "web/src/tokens.ts"
+      - "web/src/platform/types.ts"
+      - ".github/workflows/build-rn-ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: switchback-rn-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Ensure the iOS platform is installed
+        run: |
+          xcodebuild -version
+          xcodebuild -downloadPlatform iOS || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            mobile/package-lock.json
+            web/package-lock.json
+
+      - name: Install packages (with retries)
+        run: |
+          for dir in mobile web; do
+            for i in 1 2 3; do
+              (cd $dir && npm ci --no-audit --no-fund) && break
+              [ $i = 3 ] && exit 1
+              echo "npm ci in $dir failed (attempt $i), retrying…"; sleep $((i * 15))
+            done
+          done
+
+      - name: Check types and bundle the JavaScript
+        working-directory: mobile
+        run: |
+          npx tsc --noEmit
+          npx expo export --platform ios --output-dir dist-check > /dev/null
+
+      - name: Generate the Xcode project
+        working-directory: mobile
+        run: CI=1 npx expo prebuild --platform ios --clean --no-install
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            mobile/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: switchback-rn-pods-${{ hashFiles('mobile/package-lock.json', 'mobile/app.config.js') }}
+          restore-keys: switchback-rn-pods-
+
+      - name: Install pods (with retries)
+        working-directory: mobile/ios
+        run: |
+          for i in 1 2 3 4; do
+            pod install && exit 0
+            echo "pod install failed (attempt $i), retrying…"; pod repo update || true; sleep $((i * 20))
+          done
+          exit 1
+
+      - name: Archive the app (no code signing)
+        working-directory: mobile/ios
+        run: |
+          mkdir -p build
+          xcodebuild archive \
+            -workspace Switchback.xcworkspace \
+            -scheme Switchback \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Switchback.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            > build/xcodebuild.log 2>&1 || { grep -E "error:|Undefined symbol|ld: " build/xcodebuild.log | sort -u | head -60; tail -30 build/xcodebuild.log; exit 1; }
+          grep -q "ARCHIVE SUCCEEDED" build/xcodebuild.log
+
+      - name: Package Switchback-unsigned.ipa
+        working-directory: mobile/ios
+        run: |
+          APP=build/Switchback.xcarchive/Products/Applications/Switchback.app
+          test -f "$APP/Switchback"
+          # the JavaScript bundle and the map engine must be inside
+          test -f "$APP/main.jsbundle"
+          ls "$APP/Frameworks" | grep -qi maplibre
+          plutil -extract UIBackgroundModes xml1 -o - "$APP/Info.plist" | grep -q location
+          rm -rf build/ipa && mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../Switchback-unsigned.ipa Payload)
+          cp build/Switchback-unsigned.ipa "$GITHUB_WORKSPACE/Switchback-unsigned.ipa"
+          ls -lh "$GITHUB_WORKSPACE/Switchback-unsigned.ipa"
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: switchback-rn-xcodebuild-log
+          path: mobile/ios/build/xcodebuild.log
+          if-no-files-found: ignore
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Switchback-rn-unsigned-ipa
+          path: Switchback-unsigned.ipa
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="switchback-rn-ios-${{ github.run_number }}"
+          gh release create "$TAG" Switchback-unsigned.ipa \
+            --target "${{ github.sha }}" \
+            --title "Switchback React Native (unsigned) #${{ github.run_number }}" \
+            --notes "Unsigned IPA of the React Native Switchback app (native screens and map), built from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. It installs beside the existing Switchback app (bundle id com.cadewardc.switchback.rn). Sign it with your sideloading tool (AltStore, SideStore, Sideloadly, TrollStore) before installing." \
+            --latest=false
