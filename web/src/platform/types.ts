@@ -86,6 +86,9 @@ export interface PlatformNotifications {
   request(): Promise<boolean>;
   /** Shows a notification now. Browser: nothing (the page is open, or it is not running). */
   show(title: string, body: string): Promise<void>;
+  /** Shows a notification with buttons. `onAction` gets the id of the button pressed, or 'tap' when the
+   *  notification itself was tapped (the app then opens). Browser: nothing. */
+  ask(title: string, body: string, actions: { id: string; title: string }[], onAction: (id: string) => void): Promise<void>;
 }
 
 export interface PlatformApp {

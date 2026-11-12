@@ -204,6 +204,8 @@ export interface Following {
 export const following = signal<Following | null>(null);
 /** True while the walker is more than 60 m from the trail being followed. */
 export const offTrail = signal(false);
+/** While off the trail: how far it is, and which way ("to your right", "to the north-east"). */
+export const offTrailInfo = signal<{ metres: number; way: string } | null>(null);
 
 // ── Recorded hikes ────────────────────────────────────────────────────────────────────────────────────
 export const walks = signal<WalkSummary[]>([]);

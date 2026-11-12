@@ -33,6 +33,8 @@ interface Palette {
   primaryLift: string;
   /** Green for text, lines and small marks on a surface; also a trail with no known blaze colour. */
   green: string;
+  /** Links and quiet buttons. */
+  link: string;
   /** You. */
   you: string;
   onYou: string;
@@ -63,6 +65,7 @@ export const light: Palette = {
   onPrimary: '#ffffff',
   primaryLift: '#3a7260',
   green: '#23945a',
+  link: '#12543f',
   you: '#f4c430',
   onYou: '#231b00',
   onYouMuted: '#5a4700',
@@ -89,6 +92,7 @@ export const dark: Palette = {
   onPrimary: '#ffffff',
   primaryLift: '#3f937a',
   green: '#4fc588',
+  link: '#4fc588',
   you: '#f4c430',
   onYou: '#231b00',
   onYouMuted: '#5a4700',
@@ -131,7 +135,7 @@ export const font = '"Figtree Variable", Figtree, system-ui, -apple-system, "Seg
 export const fontNum = '"Bricolage Grotesque Variable", "Bricolage Grotesque", "Figtree Variable", system-ui, sans-serif';
 export const motion = { fast: '140ms', sheet: '260ms', ease: 'cubic-bezier(0.2, 0.8, 0.2, 1)' } as const;
 
-const kebab = (s: string) => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`).replace(/(\D)(\d)/g, '$1-$2');
+const kebab = (s: string) => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 const vars = (o: Record<string, string | number>, prefix: string, unit = '') =>
   Object.entries(o).map(([k, v]) => `--${prefix}${kebab(k)}:${v}${unit};`).join('');
 

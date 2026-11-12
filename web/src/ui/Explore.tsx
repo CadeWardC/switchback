@@ -3,13 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
 import {
   climbBands, climbFilter, clearFilters, hoverKey, difficultyFilter, dogsOnly, filters, filterSummary, filtersOn, flyTo, go, hikesInView, lengthBands,
-  lengthFilter, loading, loadNote, loopsOnly, MIN_TRAIL_ZOOM, query, regions, regionsError, sheet, sort, sorted, units, view,
+  lengthFilter, loading, loadNote, loopsOnly, MIN_TRAIL_ZOOM, openShort, query, regions, regionsError, sheet, sort, sorted, units, view,
   type ClimbBand, type LengthBand, type Sort,
 } from '../state';
-import { DIFFICULTIES, DIFFICULTY_TITLE, type Trail } from '../lib/trail';
+import { DIFFICULTIES, DIFFICULTY_TITLE, shortLoops, type Trail } from '../lib/trail';
 import { regionName, search, type SearchHit } from '../data';
 import { Icon } from './Icon';
-import { Empty, Note, ResultsList, Button } from './common';
+import { Blazes, Empty, Note, ResultsList, Button } from './common';
 import { isPhone } from '../layout';
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -22,45 +22,61 @@ const SORTS: { value: Sort; label: string }[] = [
 
 const PAGE = 120;
 
-function Filters() {
+/** A chip that opens a list of choices (the browser's own picker, so it works with a thumb and a keyboard). */
+function PickChip<T extends string>({ label, value, options, onChange, active }: {
+  label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; active: boolean;
+}) {
+  return (
+    <label class={`chip${active ? ' active' : ''}`}>
+      <span>{options.find((o) => o.value === value)?.label ?? label}</span><span class="chip-caret" aria-hidden="true" />
+      <select aria-label={label} value={value} onChange={(e) => onChange((e.currentTarget as HTMLSelectElement).value as T)}>
+        {options.map((o) => <option value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+/** The filters, as chips in a row under the search box. They read and write the filter store only. */
+export function FilterChips() {
   const bands = lengthBands(units.value), climbs = climbBands(units.value);
   const toggle = (d: (typeof DIFFICULTIES)[number]) => {
     const now = difficultyFilter.value;
     difficultyFilter.value = now.includes(d) ? now.filter((x) => x !== d) : [...now, d];
   };
   return (
-    <div class="filters">
-      <div class="filter-row">
-        <label class="select">
-          <span class="visually-hidden">Sort by</span>
-          <select value={sort.value} onChange={(e) => (sort.value = (e.currentTarget as HTMLSelectElement).value as Sort)}>
-            {SORTS.map((s) => <option value={s.value}>{s.label} first</option>)}
-          </select>
-        </label>
-        <label class="select">
-          <span class="visually-hidden">Length</span>
-          <select value={lengthFilter.value} onChange={(e) => (lengthFilter.value = (e.currentTarget as HTMLSelectElement).value as LengthBand)}>
-            {(Object.keys(bands.labels) as LengthBand[]).map((b) => <option value={b}>{bands.labels[b]}</option>)}
-          </select>
-        </label>
-        <label class="select">
-          <span class="visually-hidden">Climb</span>
-          <select value={climbFilter.value} onChange={(e) => (climbFilter.value = (e.currentTarget as HTMLSelectElement).value as ClimbBand)}>
-            {(Object.keys(climbs.labels) as ClimbBand[]).map((b) => <option value={b}>{climbs.labels[b]}</option>)}
-          </select>
-        </label>
-      </div>
-      <div class="chips" role="group" aria-label="Show only">
-        {DIFFICULTIES.map((d) => (
-          <button type="button" class={`chip chip-${d}`} aria-pressed={difficultyFilter.value.includes(d)} onClick={() => toggle(d)}>
-            <span class={`dot dot-${d}`} aria-hidden="true" />{DIFFICULTY_TITLE[d]}
-          </button>
-        ))}
-        <button type="button" class="chip" aria-pressed={loopsOnly.value} onClick={() => (loopsOnly.value = !loopsOnly.value)}>
-          <Icon name="loop" size={15} />Loops
+    <div class="chips scroll" role="group" aria-label="Sort and filter">
+      <PickChip label="Sort by" value={sort.value} onChange={(v) => (sort.value = v)} active={sort.value !== 'closest'}
+        options={SORTS.map((x) => ({ value: x.value, label: `${x.label} first` }))} />
+      <PickChip label="Length" value={lengthFilter.value} onChange={(v) => (lengthFilter.value = v)} active={lengthFilter.value !== 'any'}
+        options={(Object.keys(bands.labels) as LengthBand[]).map((b) => ({ value: b, label: bands.labels[b] }))} />
+      <button type="button" class="chip" aria-pressed={loopsOnly.value} onClick={() => (loopsOnly.value = !loopsOnly.value)}>Loops</button>
+      {DIFFICULTIES.map((d) => (
+        <button type="button" class="chip" aria-pressed={difficultyFilter.value.includes(d)} onClick={() => toggle(d)}>
+          <Blazes difficulty={d} inline />{DIFFICULTY_TITLE[d]}
         </button>
-        <button type="button" class="chip" aria-pressed={dogsOnly.value} onClick={() => (dogsOnly.value = !dogsOnly.value)}>Dogs welcome</button>
-      </div>
+      ))}
+      <PickChip label="Climb" value={climbFilter.value} onChange={(v) => (climbFilter.value = v)} active={climbFilter.value !== 'any'}
+        options={(Object.keys(climbs.labels) as ClimbBand[]).map((b) => ({ value: b, label: climbs.labels[b] }))} />
+      <button type="button" class="chip" aria-pressed={dogsOnly.value} onClick={() => (dogsOnly.value = !dogsOnly.value)}>Dogs welcome</button>
+    </div>
+  );
+}
+
+/** The search box. It is drawn in the panel on wide screens and over the top of the map on phones. */
+export function SearchBox({ floating }: { floating?: boolean }) {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <div class={floating ? 'find' : 'search'}>
+      <Icon name="search" size={18} />
+      <input ref={input} type="search" placeholder="Search trails and parks" aria-label="Search trails and parks"
+        value={query.value} enterkeyhint="search" autocomplete="off" spellcheck={false}
+        onInput={(e) => (query.value = (e.currentTarget as HTMLInputElement).value)}
+        onFocus={() => { if (isPhone()) sheet.value = 'full'; }} />
+      {query.value && (
+        <button type="button" class="search-clear" aria-label="Clear search" onClick={() => { query.value = ''; input.current?.focus(); }}>
+          <Icon name="close" size={16} />
+        </button>
+      )}
     </div>
   );
 }
@@ -109,7 +125,7 @@ function Results() {
     }
   };
   return (
-    <ul class="list" aria-label="Search results">
+    <ul class="list card" aria-label="Search results">
       {hits.map((h) => (
         <li>
           <button type="button" class="row" onClick={() => pick(h)}>
@@ -147,8 +163,6 @@ function RegionList() {
 
 export function Explore() {
   const [shown, setShown] = useState(PAGE);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
   const zoomedOut = useComputed(() => (view.value?.zoom ?? 0) < MIN_TRAIL_ZOOM);
   const hikes = hikesInView.value;
   const by = sort.value;
@@ -160,34 +174,29 @@ export function Explore() {
   const visible = groups.map((g) => {
     const take = g.trails.slice(0, Math.max(0, left));
     left -= take.length;
-    return { title: g.area, total: g.trails.length, trails: take.map((t) => ({ ...t, gain: t.profile?.gain ?? 0, loop: t.isLoop })) };
+    return {
+      title: g.area, total: g.trails.length,
+      trails: take.map((t) => ({
+        ...t, gain: t.profile?.gain ?? 0, loop: t.isLoop,
+        short: shortLoops(t).map((x) => ({ id: x.id, length: x.length, gain: x.profile?.gain ?? 0 })),
+      })),
+    };
   }).filter((g) => g.trails.length);
+  const listing = !query.value.trim() && !zoomedOut.value;
 
   return (
     <div class="page">
       <div class="page-top">
-        <div class="search">
-          <Icon name="search" size={18} />
-          <input ref={input} type="search" placeholder="Search trails and parks" aria-label="Search trails and parks"
-            value={query.value} enterkeyhint="search" autocomplete="off" spellcheck={false}
-            onInput={(e) => (query.value = (e.currentTarget as HTMLInputElement).value)}
-            onFocus={() => { if (isPhone()) sheet.value = 'full'; }} />
-          {query.value && (
-            <button type="button" class="search-clear" aria-label="Clear search" onClick={() => { query.value = ''; input.current?.focus(); }}>
-              <Icon name="close" size={16} />
-            </button>
-          )}
-        </div>
-        {!query.value && !zoomedOut.value && (
-          <div class="count-row">
-            <p class="count" aria-live="polite">
-              {loading.value && !hikes.length ? 'Loading trails…' : `${hikes.length.toLocaleString()} ${hikes.length === 1 ? 'hike' : 'hikes'} on the map`}
-              {loading.value && hikes.length > 0 && <span class="spinner" aria-label="Loading" />}
-            </p>
-            <button type="button" class={`chip filter-toggle${filtersOn.value ? ' active' : ''}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
-              <Icon name="filter" size={15} />Sort and filter{filtersOn.value ? ' •' : ''}
-            </button>
-          </div>
+        <SearchBox />
+        {listing && <FilterChips />}
+        {listing && (
+          <p class="count" aria-live="polite">
+            <span>
+              <strong>{loading.value && !hikes.length ? 'Loading trails…' : `${hikes.length.toLocaleString()} ${hikes.length === 1 ? 'hike' : 'hikes'} on the map`}</strong>
+              {(filtersOn.value || sort.value !== 'closest') && ` · ${filterSummary(filters.value, units.value)}`}
+            </span>
+            {loading.value && hikes.length > 0 && <span class="spinner" aria-label="Loading" />}
+          </p>
         )}
       </div>
 
@@ -206,8 +215,6 @@ export function Explore() {
           </>
         ) : (
           <>
-            {filtersOpen && <Filters />}
-            {(filtersOn.value || sort.value !== 'closest') && <p class="quiet-line filter-summary">{filterSummary(filters.value, units.value)}</p>}
             {loadNote.value && <Note kind="warn">{loadNote.value}</Note>}
             {!loading.value && !hikes.length && (
               <Empty icon="peak" title={filtersOn.value ? 'No hikes match' : 'No hikes here'}>
@@ -217,7 +224,7 @@ export function Explore() {
               </Empty>
             )}
             <ResultsList groups={visible} pointedKey={hoverKey.value}
-              onOpen={(t) => go({ page: 'trail', region: t.region, id: t.id })}
+              onOpen={(t, shortId) => { openShort.value = shortId ?? null; go({ page: 'trail', region: t.region, id: t.id }); }}
               onPoint={(key) => { if (key || hoverKey.peek()) hoverKey.value = key; }} />
             {hikes.length > shown && (
               <Button wide onClick={() => setShown(shown + PAGE)}>Show more ({(hikes.length - shown).toLocaleString()} left)</Button>

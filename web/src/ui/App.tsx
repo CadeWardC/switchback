@@ -1,7 +1,7 @@
 // The frame: the map behind, a panel beside it (wide screens) or a sheet over it with a tab bar (phones).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  baseMap, dark, flyTo, go, loading, online, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
+  baseMap, dark, flyTo, go, loading, online, query, MIN_TRAIL_ZOOM, recState, route, say, sheet, tabOf, toast, view, type Sheet, type Tab,
 } from '../state';
 import { createMap, myLocation, resizeMap, zoomBy } from '../map/map';
 import { mapJobs, mapOffline } from '../map/tilesource';
@@ -9,7 +9,7 @@ import { saveView } from '../offline';
 import { isPhone, sheetVisible } from '../layout';
 import { isNativeApp, platform } from '../platform';
 import { Icon } from './Icon';
-import { Explore } from './Explore';
+import { Explore, FilterChips, SearchBox } from './Explore';
 import { TrailPage } from './TrailPage';
 import { Record } from './Record';
 
@@ -31,11 +31,12 @@ const WalkPage = lazy(() => import('./Activity').then((m) => m.WalkPage));
 const Settings = lazy(() => import('./Settings').then((m) => m.Settings));
 const Help = lazy(() => import('./Help').then((m) => m.Help));
 
-const TABS: { tab: Tab; label: string; icon: string }[] = [
-  { tab: 'explore', label: 'Explore', icon: 'map' },
-  { tab: 'record', label: 'Record', icon: 'record' },
-  { tab: 'saved', label: 'Saved', icon: 'bookmark' },
-  { tab: 'activity', label: 'Activity', icon: 'activity' },
+/** The four words. Hike is where a hike is recorded; Log is the hikes you have recorded. */
+const TABS: { tab: Tab; label: string; href: string }[] = [
+  { tab: 'explore', label: 'Explore', href: '#/' },
+  { tab: 'record', label: 'Hike', href: '#/hike' },
+  { tab: 'saved', label: 'Saved', href: '#/saved' },
+  { tab: 'activity', label: 'Log', href: '#/log' },
 ];
 
 function Tabs() {
@@ -48,20 +49,16 @@ function Tabs() {
       </a>
       <div class="tab-list">
         {TABS.map((t) => (
-          <a href={`#/${t.tab === 'explore' ? '' : t.tab}`} class={`tab${current === t.tab ? ' on' : ''}`} aria-current={current === t.tab ? 'page' : undefined}
+          <a href={t.href} class={`tab${current === t.tab ? ' on' : ''}`} aria-current={current === t.tab ? 'page' : undefined}
             onClick={() => platform.haptics.tap()}>
-            <span class="tab-icon">
-              <Icon name={t.icon} size={22} />
-              {t.tab === 'record' && recState.value !== 'idle' && <span class={`rec-dot ${recState.value}`} />}
-            </span>
-            <span class="tab-label">{t.label}</span>
+            {t.label}
+            {t.tab === 'record' && recState.value !== 'idle' && <span class={`rec-dot ${recState.value}`} aria-label={recState.value === 'recording' ? 'recording' : 'paused'} />}
           </a>
         ))}
-        <a href="#/settings" class={`tab tab-gear${current === 'settings' ? ' on' : ''}`} aria-current={current === 'settings' ? 'page' : undefined} aria-label="Settings" title="Settings">
-          <span class="tab-icon"><Icon name="gear" size={22} /></span>
-          <span class="tab-label">Settings</span>
-        </a>
       </div>
+      <a href="#/settings" class={`tab tab-gear${current === 'settings' ? ' on' : ''}`} aria-current={current === 'settings' ? 'page' : undefined} aria-label="Settings" title="Settings">
+        <Icon name="gear" size={20} />
+      </a>
     </nav>
   );
 }
@@ -99,6 +96,12 @@ function MapChrome() {
   const area = mapJobs.value.area;
   return (
     <>
+      {page === 'explore' && (
+        <div class="find-wrap">
+          <SearchBox floating />
+          {!query.value.trim() && !zoomedOut && <FilterChips />}
+        </div>
+      )}
       <div class="map-buttons">
         <a class="map-btn only-phone" href="#/settings" aria-label="Settings"><Icon name="gear" size={20} /></a>
         <button type="button" class="map-btn" aria-label="Show where I am" title="Show where I am" onClick={locate}>
@@ -172,7 +175,7 @@ function Panel({ children }: { children: any }) {
     sync();
     window.addEventListener('resize', sync);
     return () => window.removeEventListener('resize', sync);
-  }, [sheet.value]);
+  }, [sheet.value, recState.value, route.value.page]);
 
   const down = (e: PointerEvent) => {
     if (!isPhone()) return;
@@ -217,7 +220,9 @@ function Panel({ children }: { children: any }) {
       <Attribution />
       <button type="button" class="grabber" aria-label={`Resize the panel. It is ${sheet.value === 'peek' ? 'small' : sheet.value === 'half' ? 'half open' : 'fully open'}.`}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}>
-        <span />
+        <svg viewBox="0 0 34 8" width="44" height="10" aria-hidden="true">
+          <path d="M2 6 9 2 17 6 25 2 32 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </button>
       <div class="panel-body">{children}</div>
     </section>
@@ -281,7 +286,7 @@ export function App() {
   }, []);
   const page = route.value.page;
   return (
-    <div class="app" data-page={page}>
+    <div class="app" data-page={page} {...(recState.value !== 'idle' ? { 'data-hiking': '' } : {})}>
       <a class="skip" href="#panel-main">Skip to the trail list</a>
       <div class="map" ref={mapEl} role="application" aria-label="Map of trails. Use the arrow keys to move and plus or minus to zoom." />
       <MapChrome />

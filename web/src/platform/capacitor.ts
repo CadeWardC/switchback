@@ -45,6 +45,8 @@ function problemOf(error: { code?: string } | undefined): LocationProblem {
 
 let recordingWatcher: string | null = null;
 let notificationId = 1;
+let askHandler: ((id: string) => void) | null = null;
+let askListening = false;
 
 async function watch(onFix: FixHandler, onProblem: ProblemHandler, background?: { title: string; text: string }): Promise<string> {
   return BackgroundGeolocation.addWatcher(
@@ -279,6 +281,21 @@ export const capacitorPlatform: Platform = {
       try {
         await LocalNotifications.schedule({ notifications: [{ id: notificationId++, title, body }] });
       } catch { /* not allowed: the app still shows it on screen */ }
+    },
+    async ask(title, body, actions, onAction) {
+      try {
+        const type = `ask-${actions.map((a) => a.id).join('-')}`;
+        // (the last button brings the app to the front; the others act from the notification)
+        await LocalNotifications.registerActionTypes({
+          types: [{ id: type, actions: actions.map((a, i) => ({ id: a.id, title: a.title, foreground: i === actions.length - 1 })) }],
+        });
+        askHandler = onAction;
+        if (!askListening) {
+          askListening = true;
+          await LocalNotifications.addListener('localNotificationActionPerformed', (event) => { askHandler?.(event.actionId); });
+        }
+        await LocalNotifications.schedule({ notifications: [{ id: notificationId++, title, body, actionTypeId: type }] });
+      } catch { /* not allowed: the question is on screen when the app is opened */ }
     },
   },
 

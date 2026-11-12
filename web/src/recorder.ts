@@ -5,14 +5,14 @@
 import { batch } from '@preact/signals';
 import { platform, type Fix, type LocationProblem } from './platform';
 import {
-  addWalk, following, offTrail, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments, recState, recWakeLock, say,
-  type Following,
+  addWalk, endReached, following, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments, recStarted,
+  recState, recWakeLock, say, type Following,
 } from './state';
+import { bearing, newEndWatch, progressOn, watchEnd, whichWay, type EndWatch } from './lib/follow';
 import { newId, type Marker, type Walk } from './lib/storage';
 import { addFix, emptyTrack, lastPoint, newStretch, restoreLog, MAX_ACCURACY, type LogLine, type Track } from './lib/track';
-import { distanceToLine } from './lib/geo';
 import { decodePolyline, encodePolyline } from './lib/polyline';
-import { myLocation } from './map/map';
+import { backLine, myLocation } from './map/map';
 
 export { MAX_ACCURACY };
 const LOG = 'recording';
@@ -27,6 +27,9 @@ let since = 0;
 let ticker: ReturnType<typeof setInterval> | undefined;
 let track: Track = emptyTrack();
 let offCount = 0;
+let endWatch: EndWatch = newEndWatch();
+let followTotal = 0;
+let lastAlong = -Infinity;
 
 const PROBLEMS: Record<LocationProblem, string> = {
   denied: platform.name === 'web'
@@ -41,22 +44,79 @@ const write = (line: LogLine) => { void platform.documents.append(LOG, JSON.stri
 /** Seconds on the clock for a moment in time (the clock runs on real time, not on timers that may sleep). */
 const secondsAt = (time: number) => banked + Math.max(0, (time - since) / 1000);
 
+/** The way you are going: the device's own heading when it gives one, else from your last two points. */
+function headingNow(fix: Fix): number | null {
+  if (fix.heading != null) return fix.heading;
+  const pts = track.segments[track.segments.length - 1] ?? [];
+  if (pts.length < 2) return null;
+  const a = pts[pts.length - 2], b = pts[pts.length - 1];
+  return bearing([a.lat, a.lon], [b.lat, b.lon]);
+}
+
 function checkOffTrail(fix: Fix): void {
   const f = following.peek();
   if (!f) return;
-  const d = distanceToLine([fix.lat, fix.lon], f.path);
+  const here: [number, number] = [fix.lat, fix.lon];
+  const at = progressOn(f.path, here, lastAlong);
+  const d = at.off;
   if (!offTrail.peek()) {
     // three fixes in a row, so one stray reading does not raise the alarm
     offCount = d > OFF_TRAIL ? offCount + 1 : 0;
     if (offCount >= 3) {
       offTrail.value = true;
       platform.haptics.success();
-      void platform.notifications.show('You have left the trail', `${f.name} is about ${Math.round(d)} m away.`);
+      void platform.notifications.show('You have left the trail', `${f.name} is about ${Math.round(d)} m ${whichWay(here, at.point, headingNow(fix))}.`);
     }
   } else if (d < BACK_ON_TRAIL) {
     offTrail.value = false;
     offCount = 0;
   }
+  if (offTrail.peek()) {
+    offTrailInfo.value = { metres: d, way: whichWay(here, at.point, headingNow(fix)) };
+    backLine.value = [here, at.point];
+  } else {
+    lastAlong = at.along;
+    if (offTrailInfo.peek()) offTrailInfo.value = null;
+    if (backLine.peek()) backLine.value = null;
+  }
+}
+
+/** At the end of the trail (or back at the start of a loop): ask once whether to finish. */
+function checkEnd(fix: Fix): void {
+  const f = following.peek();
+  if (!f || !f.id || f.path.length < 2) return; // (not while heading back along your own track)
+  const r = watchEnd(endWatch, [fix.lat, fix.lon], f.path, followTotal, !!f.loop);
+  endWatch = r.watch;
+  if (!r.ask || endReached.peek()) return;
+  endReached.value = r.ask;
+  platform.haptics.success();
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+    void platform.notifications.ask(
+      r.ask === 'start' ? 'You are back at the trailhead' : 'You have reached the end of the trail', 'Finish this hike?',
+      [{ id: 'keep', title: 'Keep going' }, { id: 'finish', title: 'Finish hike' }],
+      (id) => {
+        if (id === 'keep') keepGoing();
+        else if (id === 'finish') void finish().then((w) => { if (w) location.hash = `#/log/${encodeURIComponent(w.id)}`; });
+        // a tap on the notification itself opens the app, where the same question is showing
+      },
+    );
+  }
+}
+
+/** "Keep going": the question goes away and recording carries on. It is not asked again for a long stretch. */
+export function keepGoing(): void {
+  endReached.value = null;
+}
+
+function startFollowing(f: Following | null): void {
+  endWatch = newEndWatch();
+  lastAlong = -Infinity;
+  followTotal = f && f.path.length > 1 ? progressOn(f.path, f.path[0]).total : 0;
+  offCount = 0;
+  offTrail.value = false;
+  offTrailInfo.value = null;
+  backLine.value = null;
+  endReached.value = null;
 }
 
 function onFix(fix: Fix): void {
@@ -75,6 +135,7 @@ function onFix(fix: Fix): void {
     recLength.value = track.length;
   });
   checkOffTrail(fix);
+  checkEnd(fix);
 }
 
 function onProblem(p: LocationProblem): void {
@@ -113,9 +174,10 @@ export async function start(follow: Following | null = null): Promise<void> {
     recError.value = null;
     recMarkers.value = [];
     following.value = follow;
-    offTrail.value = false;
   });
+  startFollowing(follow);
   started = Date.now();
+  recStarted.value = started;
   banked = 0;
   await platform.documents.removeLog(LOG);
   write({ start: started, ...(follow ? { follow: { region: follow.region, id: follow.id, name: follow.name, line: encodePolyline(follow.path) } } : {}) });
@@ -151,14 +213,13 @@ export function headBack(): boolean {
   const points = track.segments.flat();
   if (points.length < 2) return false;
   following.value = { region: '', id: '', name: 'Back to the start', path: points.map((p) => [p.lat, p.lon] as [number, number]).reverse(), profile: null };
-  offTrail.value = false;
-  offCount = 0;
+  startFollowing(following.peek());
   return true;
 }
 
 export function stopFollowing(): void {
   following.value = null;
-  offTrail.value = false;
+  startFollowing(null);
 }
 
 /** Marks where you are now, with a name (a spring, a junction, a view). */
@@ -183,8 +244,8 @@ async function reset(): Promise<void> {
     recAccuracy.value = null;
     recMarkers.value = [];
     following.value = null;
-    offTrail.value = false;
   });
+  startFollowing(null);
   await platform.documents.removeLog(LOG);
 }
 
@@ -219,12 +280,21 @@ export async function discard(): Promise<void> {
   await reset();
 }
 
+/** Whether a line ends where it starts (a restored recording only has the line). */
+function loopLine(path: [number, number][]): boolean {
+  if (path.length < 3) return false;
+  const total = progressOn(path, path[0]).total;
+  const k = Math.cos(path[0][0] * Math.PI / 180), a = path[0], b = path[path.length - 1];
+  return total > 500 && Math.hypot((a[0] - b[0]) * 111_320, (a[1] - b[1]) * 111_320 * k) < Math.max(150, total * 0.03);
+}
+
 /** A recording that was running when the app or page closed comes back paused. */
 export async function restoreDraft(): Promise<void> {
   const lines = await platform.documents.readLog(LOG);
   const d = restoreLog(lines);
   if (!d) return;
   started = d.started;
+  recStarted.value = started;
   banked = d.seconds;
   track = d.track;
   const markers: Marker[] = [];
@@ -237,7 +307,8 @@ export async function restoreDraft(): Promise<void> {
     recSeconds.value = d.seconds;
     recMarkers.value = markers;
     recState.value = 'paused';
-    following.value = d.follow ? { region: d.follow.region, id: d.follow.id, name: d.follow.name, path: decodePolyline(d.follow.line), profile: null } : null;
+    following.value = d.follow ? { region: d.follow.region, id: d.follow.id, name: d.follow.name, path: decodePolyline(d.follow.line), profile: null, loop: loopLine(decodePolyline(d.follow.line)) } : null;
   });
+  startFollowing(following.peek());
   say('Your recording was kept. It is paused.');
 }

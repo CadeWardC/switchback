@@ -1,4 +1,4 @@
-// Activity: the walks you have recorded, and one walk with its map, numbers and files.
+// Log: the hikes you have recorded, and one hike with its map, numbers and files.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { deleteWalk, go, loadWalk, renameWalk, route, say, sheet, storageFailed, units, walks, flyTo } from '../state';
 import { shownLines } from '../map/map';
@@ -21,16 +21,15 @@ export function Activity() {
   return (
     <div class="page">
       <div class="page-top">
-        <h1 class="page-title">Activity</h1>
+        <h1 class="page-title">Log</h1>
       </div>
       <div class="page-scroll">
-        {storageFailed.value && <Note kind="warn">This browser isn't keeping your walks (private browsing, or storage is full). Download GPX files to keep them.</Note>}
+        {storageFailed.value && <Note kind="warn">This browser isn't keeping your hikes (private browsing, or storage is full). Download GPX files to keep them.</Note>}
         {list.length ? (
           <ul class="list card">
             {list.map((w) => (
               <li key={w.id}>
                 <button type="button" class="row" onClick={() => go({ page: 'walk', id: w.id })}>
-                  <span class="row-icon"><Icon name="activity" size={18} /></span>
                   <span class="row-main">
                     <span class="row-title">{w.name}</span>
                     <span class="row-sub">{fmtDate(w.started)} · {dist(w.length)} · {fmtClock(w.seconds)}</span>
@@ -41,9 +40,9 @@ export function Activity() {
             ))}
           </ul>
         ) : (
-          <Empty icon="activity" title="No walks yet">
-            Walks you record are kept here, on this device.
-            <div class="empty-action"><Button kind="primary" icon="record" onClick={() => go({ page: 'record' })}>Record a walk</Button></div>
+          <Empty icon="activity" title="No hikes yet">
+            Hikes you record are kept here, on this device.
+            <div class="empty-action"><Button kind="primary" onClick={() => go({ page: 'record' })}>Go to Hike</Button></div>
           </Empty>
         )}
       </div>
@@ -105,7 +104,7 @@ export function WalkPage() {
   if (w === undefined) {
     return (
       <div class="page">
-        <PageHeader back={{ page: 'activity' }} backLabel="Activity" />
+        <PageHeader back={{ page: 'activity' }} backLabel="Log" />
         <div class="page-scroll"><p class="quiet-line">Loading…</p></div>
       </div>
     );
@@ -113,8 +112,8 @@ export function WalkPage() {
   if (!w) {
     return (
       <div class="page">
-        <PageHeader back={{ page: 'activity' }} backLabel="Activity" />
-        <div class="page-scroll"><Empty icon="activity" title="Walk not found">It may have been deleted, or recorded in another browser.</Empty></div>
+        <PageHeader back={{ page: 'activity' }} backLabel="Log" />
+        <div class="page-scroll"><Empty icon="activity" title="Hike not found">It may have been deleted, or recorded in another browser.</Empty></div>
       </div>
     );
   }
@@ -123,7 +122,7 @@ export function WalkPage() {
   const per = w.length > 50 ? w.seconds / (w.length / (imperial ? 1609.344 : 1000)) : 0;
   return (
     <div class="page">
-      <PageHeader back={{ page: 'activity' }} backLabel="Activity" />
+      <PageHeader back={{ page: 'activity' }} backLabel="Log" />
       <div class="page-scroll">
         <label class="field title-field">
           <span>Name</span>
@@ -132,12 +131,12 @@ export function WalkPage() {
         </label>
         <p class="trail-area">{new Date(w.started).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
         <div class="stats">
-          <Stat icon="length" label="Distance" value={dist(w.length)} />
-          <Stat icon="clock" label="Time" value={fmtClock(w.seconds)} />
-          <Stat icon="activity" label={`Minutes per ${imperial ? 'mile' : 'km'}`} value={per ? `${Math.floor(per / 60)}:${String(Math.round(per % 60)).padStart(2, '0')}` : '–'} />
-          {profile && <Stat icon="climb" label="Climb" value={fmtElevation(profile.gain, units.value)} />}
+          <Stat label="Distance" value={dist(w.length)} />
+          <Stat label="Time" value={fmtClock(w.seconds)} />
+          <Stat label={`Pace, min/${imperial ? 'mi' : 'km'}`} value={per ? `${Math.floor(per / 60)}:${String(Math.round(per % 60)).padStart(2, '0')}` : '–'} />
+          {profile && <Stat label="Climbed" value={fmtElevation(profile.gain, units.value)} />}
         </div>
-        {profile && path.length > 1 && <div class="card pad"><ElevationChart profile={profile} path={path} /></div>}
+        {profile && path.length > 1 && <div class="card ridge-card"><ElevationChart profile={profile} path={path} height={84} /></div>}
         <div class="actions">
           <Button kind="primary" icon="download" onClick={() => void exportGpx(w.name, walkGpx(w))}>Download GPX</Button>
           <Button icon="send" onClick={() => setSubmitting(true)}>Submit this trail</Button>
@@ -147,12 +146,12 @@ export function WalkPage() {
           {' '}{flat.length.toLocaleString()} points recorded, {fmtDistance(w.length, units.value)}.
         </p>
         {!confirm
-          ? <Button kind="quiet" icon="trash" onClick={() => setConfirm(true)}>Delete this walk</Button>
+          ? <Button kind="quiet" icon="trash" onClick={() => setConfirm(true)}>Delete this hike</Button>
           : (
             <div class="confirm" role="alertdialog" aria-label="Confirm">
-              <span>Delete this walk for good?</span>
+              <span>Delete this hike for good?</span>
               <Button kind="quiet" onClick={() => setConfirm(false)}>Keep</Button>
-              <Button kind="danger" onClick={() => { void deleteWalk(w.id); say('Walk deleted'); go({ page: 'activity' }); }}>Delete</Button>
+              <Button kind="danger" onClick={() => { void deleteWalk(w.id); say('Hike deleted'); go({ page: 'activity' }); }}>Delete</Button>
             </div>
           )}
       </div>

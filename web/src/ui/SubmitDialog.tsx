@@ -58,7 +58,7 @@ export function SubmitDialog({ what, onClose }: { what: SubmitWhat; onClose: () 
           )}
           {walked && short && (
             <Note kind="warn">
-              This walk is short ({dist(what.length)}, {what.points.length} points). The checks need at least 400 m and 30 points, so it will probably not pass.
+              This hike is short ({dist(what.length)}, {what.points.length} points). The checks need at least 400 m and 30 points, so it will probably not pass.
             </Note>
           )}
           <label class="field">

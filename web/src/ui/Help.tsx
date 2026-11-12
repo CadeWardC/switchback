@@ -42,7 +42,7 @@ export function Help() {
       <PageHeader back={{ page: 'saved' }} backLabel="Saved" title="Help map trails" />
       <div class="page-scroll">
         <Note>
-          Walk a trail that is missing or unsure, record it, and send it in from Activity. Every trail is checked before it is added.
+          Walk a trail that is missing or unsure, record it, and send it in from your Log. Every trail is checked before it is added.
         </Note>
 
         <h2 class="section-title">Needs verification, on the map now</h2>

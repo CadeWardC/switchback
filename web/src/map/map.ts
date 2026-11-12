@@ -70,9 +70,10 @@ function plainStyle(isDark: boolean): StyleSpecification {
 
 /** Every trail feature carries its own colour (`c`): the park's blaze colour where known, green otherwise. */
 const diffColor: any = ['coalesce', ['get', 'c'], lightTokens.green];
+/** Dots for the things near trails: water in blue, everything else quiet (yellow is kept for you). */
 const HIGHLIGHT_COLORS: Record<string, string> = {
-  water: '#2B7FD9', waterfall: '#2B7FD9', viewpoint: '#E8A33D', peak: '#8A5A2B', parking: '#5C6B7A',
-  campsite: '#2E9E5B', shelter: '#8A5A2B', picnic: '#2E9E5B', toilets: '#5C6B7A', cave: '#55635B',
+  water: '#2f6fc0', waterfall: '#2f6fc0', viewpoint: '#5b6861', peak: '#5b6861', parking: '#8a938d',
+  campsite: '#5b6861', shelter: '#5b6861', picnic: '#8a938d', toilets: '#8a938d', cave: '#5b6861',
 };
 
 /** Our own layers, drawn over whichever base map there is. */
@@ -116,8 +117,8 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
     { id: 'sb-highlights', type: 'circle', source: 'sb-highlights', minzoom: 12.5,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 16, 6],
-        'circle-color': ['match', ['get', 'kind'], ...Object.entries(HIGHLIGHT_COLORS).flat(), '#55635B'] as any,
-        'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 1.5,
+        'circle-color': ['match', ['get', 'kind'], ...Object.entries(HIGHLIGHT_COLORS).flat(), '#5b6861'] as any,
+        'circle-stroke-color': p.mapCasing, 'circle-stroke-width': 1.5,
       } },
     { id: 'sb-ends', type: 'circle', source: 'sb-ends',
       paint: {

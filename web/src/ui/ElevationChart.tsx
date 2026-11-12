@@ -30,7 +30,7 @@ export interface RidgeProps {
   height?: number;
 }
 
-export function ElevationChart({ profile, path, stops = [], here: you = null, next = null, height = size.ridge }: RidgeProps) {
+export function ElevationChart({ profile, path, stops = [], here: you = null, next = null, height }: RidgeProps) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(340);
   const [at, setAt] = useState<number | null>(null); // metres along the profile
@@ -56,7 +56,8 @@ export function ElevationChart({ profile, path, stops = [], here: you = null, ne
   const walking = you != null;
   // room above the line for the names: two rows when there are pins, one while walking
   const top = stops.length ? (walking ? 22 : 34) : 8;
-  const H = height;
+  // (shorter when there is nothing to pin above the line)
+  const H = height ?? (stops.length ? size.ridge : size.ridge - 28);
   // a flat trail should look flat: the height axis spans at least 30 m
   let lo = Math.min(...profile.elevations), hi = Math.max(...profile.elevations);
   const spare = Math.max(0, 30 - (hi - lo));

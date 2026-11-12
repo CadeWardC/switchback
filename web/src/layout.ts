@@ -20,8 +20,14 @@ export function tabBarHeight(): number {
 export function sheetVisible(state: Sheet): number {
   const room = window.innerHeight - tabBarHeight() - cssPx('--safe-bottom');
   if (state === 'peek') return 132;
-  // "half" leaves most of the screen to the map
-  if (state === 'half') return Math.round(Math.max(300, room * 0.44));
+  if (state === 'half') {
+    // the resting height suits the page: the list leaves most of the screen to the map; a trail page shows
+    // its name, numbers, ridge and Start button; a hike shows the ridge, two numbers and one line
+    const app = document.querySelector<HTMLElement>('.app');
+    const page = app?.dataset.page;
+    const share = app && 'hiking' in app.dataset && page === 'record' ? 0.36 : page === 'trail' ? 0.64 : page === 'explore' ? 0.42 : 0.5;
+    return Math.round(Math.max(290, room * share));
+  }
   return room - 64;
 }
 

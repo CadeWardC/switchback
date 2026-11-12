@@ -223,6 +223,7 @@ export const browserPlatform: Platform = {
   notifications: {
     async request() { return false; },
     async show() {},
+    async ask() {},
   },
   app: {
     onBack() {},
