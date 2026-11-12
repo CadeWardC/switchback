@@ -44,6 +44,10 @@ def feature(t):
     for key, k in (("climb_m", "g"), ("descent_m", "l"), ("lowest_m", "mn"), ("highest_m", "mx")):
         if isinstance(e.get(k), (int, float)):
             props[key] = round(e[k])
+    if tags.get("switchback:difficulty"):
+        props["difficulty"] = tags["switchback:difficulty"]
+    if tags.get("switchback:minutes", "").isdigit():
+        props["minutes"] = int(tags["switchback:minutes"])
     lines = [[[round(lo, 6), round(la, 6)] for la, lo in decode(s)] for s in t["segments"]]
     return {"type": "Feature", "properties": props, "geometry": {"type": "MultiLineString", "coordinates": lines}}
 

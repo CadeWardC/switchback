@@ -297,6 +297,29 @@ def add_community(region_id, trails, counts, folder=COMMUNITY):
         counts["sent in by walkers: added"] += 1
     return added
 
+LEVELS = ["easy", "moderate", "hard", "veryHard"]
+
+def rate(t):
+    """Writes the trail's difficulty and walking time into the file, so every app shows the same without working
+    them out itself (and a change to the rule is a rebuild of the files, not a new version of each app).
+    Difficulty: kilometres plus a point for every 100 m of climb, raised by the SAC scale and a Forest Service
+    class 1 trail. Time: Naismith's rule at an easy pace, 4.5 km/h plus an hour for every 600 m of climb."""
+    tags = t.setdefault("tags", {})
+    gain = (t.get("elev") or {}).get("g") or 0
+    effort = t["length"] / 1000 + gain / 100
+    level = 0 if effort < 8 else 1 if effort < 16 else 2 if effort < 26 else 3
+    if re.sub(r"\D", "", tags.get("usfs:trail_class", "")) == "1":
+        level = max(level, 1)
+    sac = tags.get("sac_scale")
+    if sac == "mountain_hiking":
+        level = max(level, 1)
+    elif sac == "demanding_mountain_hiking":
+        level = max(level, 2)
+    elif sac in ("alpine_hiking", "demanding_alpine_hiking", "difficult_alpine_hiking"):
+        level = 3
+    tags["switchback:difficulty"] = LEVELS[level]
+    tags["switchback:minutes"] = str(round((t["length"] / 1000 / 4.5 + gain / 600) * 60))
+
 def place(added, trails_by_cell, header, info):
     """Puts added trails in their cells and widens the area's summary to hold them."""
     for t, at in added:
@@ -464,6 +487,7 @@ def main():
     for k, ts in trails_by_cell.items():
         for t in ts:
             t.pop("_lines", None)
+            rate(t)
         cells[k] = json.dumps(ts, ensure_ascii=False, separators=(",", ":")).encode()
     size = write(pack_path, header, cells)
     info["bytes"] = size
