@@ -56,3 +56,23 @@ export function pointAlong(line: Coord[], d: number): Coord {
   }
   return line[line.length - 1];
 }
+
+/** Metres from a point to the nearest part of a line (flat-earth maths: fine over trail distances). */
+export function distanceToLine(c: Coord, line: Coord[]): number {
+  if (!line.length) return Infinity;
+  const k = Math.cos(c[0] * rad), mLat = 111_320, mLon = 111_320 * k;
+  const px = 0, py = 0;
+  let best = Infinity;
+  let ax = (line[0][1] - c[1]) * mLon, ay = (line[0][0] - c[0]) * mLat;
+  if (line.length === 1) return Math.hypot(ax, ay);
+  for (let i = 1; i < line.length; i++) {
+    const bx = (line[i][1] - c[1]) * mLon, by = (line[i][0] - c[0]) * mLat;
+    const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
+    const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2)) : 0;
+    const d = Math.hypot(ax + t * dx - px, ay + t * dy - py);
+    if (d < best) best = d;
+    ax = bx;
+    ay = by;
+  }
+  return best;
+}

@@ -1,5 +1,5 @@
 // The browser's version of the device interface.
-import type { Fix, FixHandler, Platform, ProblemHandler } from './types';
+import type { Fix, FixHandler, Platform, PlatformDocuments, ProblemHandler } from './types';
 
 const PREFIX = 'switchback:';
 const CACHE = 'switchback-trail-files-v1';
@@ -48,10 +48,78 @@ if (typeof document !== 'undefined') {
   });
 }
 
+// ── The person's own documents, in IndexedDB ──────────────────────────────────────────────────────────
+let dbPromise: Promise<IDBDatabase> | null = null;
+
+function db(): Promise<IDBDatabase> {
+  dbPromise ??= new Promise((resolve, reject) => {
+    const open = indexedDB.open('switchback', 1);
+    open.onupgradeneeded = () => {
+      open.result.createObjectStore('docs');
+      open.result.createObjectStore('logs', { autoIncrement: true }).createIndex('log', 'log');
+    };
+    open.onsuccess = () => resolve(open.result);
+    open.onerror = () => reject(open.error);
+  });
+  dbPromise.catch(() => (dbPromise = null));
+  return dbPromise;
+}
+
+function tx<T>(store: 'docs' | 'logs', mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T> | void): Promise<T | undefined> {
+  return db().then((d) => new Promise<T | undefined>((resolve, reject) => {
+    const t = d.transaction(store, mode);
+    const req = run(t.objectStore(store));
+    t.oncomplete = () => resolve(req ? req.result : undefined);
+    t.onerror = t.onabort = () => reject(t.error);
+  }));
+}
+
+export const browserDocuments: PlatformDocuments = {
+  async read(name) {
+    try { return (await tx<string>('docs', 'readonly', (s) => s.get(name))) ?? null; } catch { return null; }
+  },
+  async write(name, text) {
+    try { await tx('docs', 'readwrite', (s) => { s.put(text, name); }); return true; } catch { return false; }
+  },
+  async remove(name) {
+    try { await tx('docs', 'readwrite', (s) => { s.delete(name); }); } catch { /* not there */ }
+  },
+  async append(log, line) {
+    try { await tx('logs', 'readwrite', (s) => { s.add({ log, line }); }); return true; } catch { return false; }
+  },
+  async readLog(log) {
+    try {
+      const rows = await tx<{ log: string; line: string }[]>('logs', 'readonly', (s) => s.index('log').getAll(log));
+      return (rows ?? []).map((r) => r.line);
+    } catch { return []; }
+  },
+  async removeLog(log) {
+    try {
+      await tx('logs', 'readwrite', (s) => {
+        const cursor = s.index('log').openKeyCursor(IDBKeyRange.only(log));
+        cursor.onsuccess = () => { const c = cursor.result; if (c) { s.delete(c.primaryKey); c.continue(); } };
+      });
+    } catch { /* nothing to remove */ }
+  },
+};
+
 const cacheUrl = (name: string) => new URL(`trail-files/${encodeURIComponent(name)}`, document.baseURI).href;
 
 export const browserPlatform: Platform = {
   name: 'web',
+  async init() {},
+  documents: browserDocuments,
+  notifications: {
+    async request() { return false; },
+    async show() {},
+  },
+  app: {
+    onBack() {},
+    setTheme() {},
+    onResume(handler) {
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') handler(); });
+    },
+  },
 
   location: {
     recordsInBackground: false,
@@ -61,7 +129,7 @@ export const browserPlatform: Platform = {
         { enableHighAccuracy: true, maximumAge: 10_000, timeout: 20_000 });
     }),
     watch: follow,
-    async startRecording(onFix, onProblem) {
+    async startRecording(onFix, onProblem, _notice) {
       stopRecordingWatch?.();
       stopRecordingWatch = follow(onFix, onProblem);
     },
@@ -94,6 +162,14 @@ export const browserPlatform: Platform = {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    },
+    async shareLink(_title, url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        return 'copied';
+      } catch {
+        return 'failed';
+      }
     },
   },
 
@@ -153,6 +229,7 @@ export const browserPlatform: Platform = {
     directions(lat, lon) {
       window.open(this.directionsUrl(lat, lon), '_blank', 'noopener');
     },
+    openSettings() {},
   },
 
   haptics: {
@@ -162,5 +239,13 @@ export const browserPlatform: Platform = {
 
   trailFiles: {
     url: (file) => new URL(`data/${file}`, document.baseURI).href,
+    async getJson(file) {
+      const res = await fetch(new URL(`data/${file}`, document.baseURI).href, { cache: 'no-cache' });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`${file}: ${res.status}`);
+      // a static host may answer a missing file with its own page
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return null; }
+    },
   },
 };

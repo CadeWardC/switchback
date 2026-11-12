@@ -1,7 +1,11 @@
 // What the whole site shares: settings, where the map is, the trails in view, and which page is open.
 import { computed, effect, signal } from '@preact/signals';
 import { defaultUnits, type Units } from './lib/format';
-import { load, save, type PlannedRoute, type SavedTrail, type Walk, type WalkPoint } from './lib/storage';
+import {
+  load, loadDoc, migrateFromKeyValue, save, saveDoc, summaryOf, walkDoc, type Marker, type PlannedRoute, type SavedTrail, type Walk,
+  type WalkPoint, type WalkSummary,
+} from './lib/storage';
+import { platform } from './platform';
 import type { Coord } from './lib/polyline';
 import type { Difficulty, Trail } from './lib/trail';
 import type { BBox } from './lib/geo';
@@ -169,11 +173,10 @@ export const planPoints = signal<Coord[]>(load<Coord[]>('plan-draft', []));
 export const planName = signal<string>(load<string>('plan-draft-name', ''));
 /** The saved route being edited, if any. */
 export const planEditing = signal<string | null>(null);
-export const plannedRoutes = signal<PlannedRoute[]>(load<PlannedRoute[]>('routes', []));
+export const plannedRoutes = signal<PlannedRoute[]>([]);
 export const storageFailed = signal(false);
 effect(() => { save('plan-draft', planPoints.value); });
 effect(() => { save('plan-draft-name', planName.value); });
-effect(() => { if (!save('routes', plannedRoutes.value)) storageFailed.value = true; });
 
 // ── Recording a walk ──────────────────────────────────────────────────────────────────────────────────
 export type RecState = 'idle' | 'recording' | 'paused';
@@ -184,12 +187,39 @@ export const recSeconds = signal(0);
 export const recAccuracy = signal<number | null>(null);
 export const recError = signal<string | null>(null);
 export const recWakeLock = signal<'on' | 'off' | 'unsupported'>('off');
-export const walks = signal<Walk[]>(load<Walk[]>('walks', []));
-effect(() => { if (!save('walks', walks.value)) storageFailed.value = true; });
+/** Places marked during the recording. */
+export const recMarkers = signal<Marker[]>([]);
+/** The trail being followed while recording. */
+export interface Following { region: string; id: string; name: string; path: Coord[] }
+export const following = signal<Following | null>(null);
+/** True while the walker is more than 60 m from the trail being followed. */
+export const offTrail = signal(false);
+
+// ── Recorded hikes ────────────────────────────────────────────────────────────────────────────────────
+export const walks = signal<WalkSummary[]>([]);
+
+export async function addWalk(w: Walk): Promise<void> {
+  if (!(await saveDoc(walkDoc(w.id), w))) storageFailed.value = true;
+  walks.value = [summaryOf(w), ...walks.peek().filter((x) => x.id !== w.id)];
+}
+
+export function loadWalk(id: string): Promise<Walk | null> {
+  return loadDoc<Walk | null>(walkDoc(id), null);
+}
+
+export async function renameWalk(id: string, name: string): Promise<void> {
+  walks.value = walks.peek().map((x) => (x.id === id ? { ...x, name } : x));
+  const w = await loadWalk(id);
+  if (w) await saveDoc(walkDoc(id), { ...w, name });
+}
+
+export async function deleteWalk(id: string): Promise<void> {
+  walks.value = walks.peek().filter((x) => x.id !== id);
+  await platform.documents.remove(walkDoc(id));
+}
 
 // ── Saved trails ──────────────────────────────────────────────────────────────────────────────────────
-export const savedTrails = signal<SavedTrail[]>(load<SavedTrail[]>('saved-trails', []));
-effect(() => { if (!save('saved-trails', savedTrails.value)) storageFailed.value = true; });
+export const savedTrails = signal<SavedTrail[]>([]);
 
 export function isSaved(t: Trail): boolean {
   return savedTrails.value.some((s) => s.region === t.region && s.id === t.id);
@@ -213,4 +243,25 @@ export function say(message: string): void {
   toast.value = message;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (toast.value = null), 4000);
+}
+
+// ── Reading the person's things at startup, and keeping them as they change ──────────────────────────
+/** Loads saved trails, routes and the list of hikes from the device. Call once, before the first screen. */
+export async function hydrate(): Promise<void> {
+  await migrateFromKeyValue().catch(() => {});
+  const [w, r, t] = await Promise.all([
+    loadDoc<WalkSummary[]>('walks.json', []), loadDoc<PlannedRoute[]>('routes.json', []), loadDoc<SavedTrail[]>('saved-trails.json', []),
+  ]);
+  walks.value = Array.isArray(w) ? w : [];
+  plannedRoutes.value = Array.isArray(r) ? r : [];
+  savedTrails.value = Array.isArray(t) ? t : [];
+  // from here on, every change is written (the first run of each effect only notes what is there)
+  for (const [doc, sig] of [['walks.json', walks], ['routes.json', plannedRoutes], ['saved-trails.json', savedTrails]] as const) {
+    let first = true;
+    effect(() => {
+      const value = sig.value;
+      if (first) { first = false; return; }
+      void saveDoc(doc, value).then((ok) => { if (!ok) storageFailed.value = true; });
+    });
+  }
 }
