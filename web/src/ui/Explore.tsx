@@ -204,7 +204,7 @@ export function Explore() {
       <div class="page-scroll">
         {locationState.value === 'ask' && (
           <div class="card locate-card">
-            <span>See the trails near you</span>
+            <span>Trails near you</span>
             <Button kind="quiet" onClick={dismissLocationCard}>Not now</Button>
             <Button kind="primary" onClick={() => startLocating(true, true)}>Use my location</Button>
           </div>
