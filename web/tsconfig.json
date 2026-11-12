@@ -11,7 +11,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "node", "geojson"]
   },
   "include": ["src", "test", "vite.config.ts"]
 }

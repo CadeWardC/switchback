@@ -18,7 +18,7 @@ export function sheetVisible(state: Sheet): number {
   return room - 64;
 }
 
-/** The part of the map covered at the bottom on phones. */
+/** The part of the map covered by the sheet on phones (the map itself stops at the tab bar). */
 export function coveredBottom(state: Sheet): number {
-  return sheetVisible(state === 'full' ? 'half' : state) + size.tabBar + safeBottom();
+  return sheetVisible(state === 'full' ? 'half' : state);
 }

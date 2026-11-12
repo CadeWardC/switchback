@@ -1,7 +1,10 @@
 // The map: the base map (our outdoor style from OpenFreeMap, or a plain background when that can't be
 // reached), with the trails, trailheads, the open trail, a planned route and a recording drawn on top.
-import maplibregl, { type GeoJSONSource, type LayerSpecification, type Map as MlMap, type StyleSpecification } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import { type GeoJSONSource, type LayerSpecification, type Map as MlMap, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// the map's background worker is a file of its own: have the bundler copy it and tell the map where it is
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { effect, signal, untracked } from '@preact/signals';
 import {
   baseMap, chartPoint, dark, flyTo, hikesInView, hoverKey, initialView, MIN_TRAIL_ZOOM, planPoints, recSegments,
@@ -76,9 +79,7 @@ function overlay(isDark: boolean, withText: boolean): { sources: StyleSpecificat
   const width = (a: number, b: number): any => ['interpolate', ['linear'], ['zoom'], 8, a, 14, b];
   const layers: LayerSpecification[] = [
     { id: 'sb-region-fill', type: 'fill', source: 'sb-regions', maxzoom: MIN_TRAIL_ZOOM,
-      paint: { 'fill-color': p.mapRegion, 'fill-opacity': 0.13 } },
-    { id: 'sb-region-line', type: 'line', source: 'sb-regions', maxzoom: MIN_TRAIL_ZOOM,
-      paint: { 'line-color': p.mapRegion, 'line-opacity': 0.35, 'line-width': 1 } },
+      paint: { 'fill-color': p.mapRegion, 'fill-opacity': 0.12, 'fill-antialias': false } },
     // paths that are not hikes of their own: thinner, and dashed when they have no name
     { id: 'sb-side-casing', type: 'line', source: 'sb-trails', filter: ['==', ['get', 'h'], 0], layout: line,
       paint: { 'line-color': p.mapCasing, 'line-width': width(2, 4.5), 'line-opacity': 0.8 } },
@@ -346,6 +347,7 @@ function showHighlight(h: { kind: string; name?: string; elevation?: number }, a
 }
 
 export function createMap(container: HTMLElement): void {
+  maplibregl.setWorkerUrl(new URL(workerUrl, document.baseURI).href);
   const m = new maplibregl.Map({
     container,
     style: plainStyle(dark.peek()),
@@ -363,7 +365,9 @@ export function createMap(container: HTMLElement): void {
   map = m;
   (window as any).__switchbackMap = m; // for checking the site by hand and in tests
 
-  m.on('styleimagemissing', (e) => makeImage(m, e.id, dark.peek()));
+  // a map tile or font that fails to load is not worth an error: the rest of the map still draws
+  m.on('error', (e) => console.warn('map:', e.error?.message ?? e));
+  m.setMissingStyleImageResolver((id) => makeImage(m, id, dark.peek()));
 
   // Trails draw at once on a plain background; the outdoor base map replaces it when it can be reached.
   let wantFull = false;

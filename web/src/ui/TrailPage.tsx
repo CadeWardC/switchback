@@ -1,0 +1,169 @@
+// A trail: what it is like, where it goes up and down, how to get there, and a GPX file to take along.
+import {
+  accessPoints, estimatedSeconds, facts, heightAt, lineCredit, officialFacts, osmUrl, routeType, summary, website, hostOf, type Trail,
+} from '../lib/trail';
+import { isSaved, route, say, selected, selectedState, toggleSaved, units } from '../state';
+import { fmtDistance, fmtDuration } from '../lib/format';
+import { buildGpx, exportGpx, type GpxPoint } from '../lib/gpx';
+import { lineLength, distance } from '../lib/geo';
+import { APP_VERSION } from '../lib/submit';
+import { platform } from '../platform';
+import { Badge, Button, dist, elev, Empty, PageHeader, Stat } from './common';
+import { ElevationChart } from './ElevationChart';
+import { Icon } from './Icon';
+import type { Coord } from '../lib/polyline';
+
+/** The trail as a GPX track: the main line with heights from its elevation profile, then any other sections. */
+export function trailGpx(t: Trail): string {
+  const total = lineLength(t.path), profileTotal = t.profile?.distances.at(-1) ?? 0;
+  let run = 0;
+  const main: GpxPoint[] = t.path.map((c, i) => {
+    if (i > 0) run += distance(t.path[i - 1], c);
+    const ele = t.profile && total > 0 ? heightAt(t.profile, (run / total) * profileTotal) : null;
+    return { lat: c[0], lon: c[1], ele };
+  });
+  const same = (a: Coord[], b: Coord[]) => a.length === b.length && a[0][0] === b[0][0] && a[0][1] === b[0][1] && a.at(-1)![0] === b.at(-1)![0];
+  const others = t.segments.filter((s) => !same(s, t.path));
+  const tracks = [{ name: t.name, segments: [main] }];
+  if (others.length) tracks.push({ name: `${t.name} (other sections)`, segments: others.map((s) => s.map((c) => ({ lat: c[0], lon: c[1], ele: null }))) });
+  return buildGpx({
+    creator: `Switchback Web ${APP_VERSION}`,
+    name: t.name,
+    desc: [t.area, 'Trail data © OpenStreetMap contributors, ODbL. From Switchback.'].filter(Boolean).join('. '),
+    tracks,
+  });
+}
+
+async function share(t: Trail): Promise<void> {
+  const url = location.href;
+  try {
+    if (navigator.share && platform.name !== 'web') await navigator.share({ title: t.name, url });
+    else {
+      await navigator.clipboard.writeText(url);
+      say('Link copied');
+    }
+  } catch {
+    say('Copy the address of this page to share it');
+  }
+}
+
+export function TrailPage() {
+  const t = selected.value;
+  const r = route.value;
+  const wanted = r.page === 'trail' ? `${r.region}/${r.id}` : null;
+  if (!t || t.key !== wanted) {
+    return (
+      <div class="page">
+        <PageHeader back={{ page: 'explore' }} backLabel="Trails" />
+        <div class="page-scroll">
+          {selectedState.value === 'missing'
+            ? <Empty icon="peak" title="Trail not found">This trail isn't in the current trail files. It may have been renamed or removed when the files were rebuilt.</Empty>
+            : <p class="quiet-line">Loading the trail…</p>}
+        </div>
+      </div>
+    );
+  }
+  const u = units.value;
+  const fmt = (m: number) => fmtDistance(m, u);
+  const p = t.profile;
+  const heads = accessPoints(t);
+  const head = heads[0];
+  const to = head?.point ?? t.start;
+  const details = facts(t, fmt), official = officialFacts(t, fmt);
+  const site = website(t), osm = osmUrl(t), about = summary(t);
+  const saved = isSaved(t);
+  return (
+    <div class="page">
+      <PageHeader back={{ page: 'explore' }} backLabel="Trails">
+        <Button kind="quiet" icon="link" aria-label="Copy a link to this trail" title="Copy link" onClick={() => void share(t)} />
+        <button type="button" class={`btn btn-quiet btn-icon${saved ? ' saved-on' : ''}`} aria-pressed={saved}
+          aria-label={saved ? 'Remove from saved trails' : 'Save this trail'} title={saved ? 'Saved' : 'Save'}
+          onClick={() => { toggleSaved(t); platform.haptics.tap(); say(saved ? 'Removed from Saved' : 'Saved'); }}>
+          <Icon name="bookmark" size={18} filled={saved} />
+        </button>
+      </PageHeader>
+      <div class="page-scroll trail-page">
+        <div class="trail-head">
+          <h1 class="page-title">{t.name}</h1>
+          {t.area && <p class="trail-area">{t.area}</p>}
+          <div class="badges">
+            <Badge difficulty={t.difficulty} />
+            <span class="tag"><Icon name={t.isLoop ? 'loop' : 'oneway'} size={14} />{routeType(t)}</span>
+            {t.tags['switchback:multiuse'] === 'yes' && <span class="tag">Shared with bikes</span>}
+            {!t.isHike && <span class="tag">{t.tags['switchback:unnamed'] === 'yes' ? 'Unnamed path' : t.tags['switchback:roadwalk'] === 'yes' ? 'Road walk' : 'Side trail'}</span>}
+          </div>
+        </div>
+
+        <div class="stats">
+          <Stat icon="length" label="Length" value={dist(t.length)} />
+          <Stat icon="clock" label="Time, easy pace" value={fmtDuration(estimatedSeconds(t))} />
+          {p && <Stat icon="climb" label="Climb" value={elev(p.gain)} />}
+          {p && <Stat icon="descent" label="Descent" value={elev(p.loss)} />}
+          {p && <Stat icon="peak" label="Highest point" value={elev(p.max)} />}
+          {p && <Stat icon="flag" label="Lowest point" value={elev(p.min)} />}
+        </div>
+
+        {p && p.distances.length > 1 && <div class="card pad"><ElevationChart profile={p} path={t.path} /></div>}
+
+        <div class="actions stack">
+          <Button kind="primary" icon="directions" href={platform.links.directionsUrl(to[0], to[1])}>Directions to trailhead</Button>
+          <Button icon="download" onClick={() => void exportGpx(t.name, trailGpx(t))}>Download GPX</Button>
+        </div>
+
+        {about && <p class="about-text">{about}</p>}
+
+        {heads.length > 0 && (
+          <section>
+            <h2 class="section-title">Where to start</h2>
+            <ul class="list card">
+              {heads.slice(0, 4).map((h) => (
+                <li>
+                  <a class="row" href={platform.links.directionsUrl(h.point[0], h.point[1])} target="_blank" rel="noopener">
+                    <span class="row-icon"><Icon name="flag" size={18} /></span>
+                    <span class="row-main">
+                      <span class="row-title">{h.name}</span>
+                      <span class="row-sub">{h.distance < 15 ? 'On the trail' : `${dist(h.distance)} walk to the trail`}</span>
+                    </span>
+                    <span class="row-action">Directions</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {official.length > 0 && (
+          <section>
+            <h2 class="section-title">Official record</h2>
+            <dl class="facts card">
+              {official.map((f) => (
+                <div><dt>{f.title}</dt><dd>{f.href ? <a href={f.href} target="_blank" rel="noopener">{f.value} <Icon name="external" size={13} /></a> : f.value}</dd></div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        {details.length > 0 && (
+          <section>
+            <h2 class="section-title">Details</h2>
+            <dl class="facts card">
+              {details.map((f) => <div><dt>{f.title}</dt><dd>{f.value}</dd></div>)}
+            </dl>
+          </section>
+        )}
+
+        {(site || osm) && (
+          <div class="link-row">
+            {site && <a href={site} target="_blank" rel="noopener">{hostOf(site)} <Icon name="external" size={13} /></a>}
+            {osm && <a href={osm} target="_blank" rel="noopener">View on OpenStreetMap <Icon name="external" size={13} /></a>}
+          </div>
+        )}
+
+        <p class="fine">
+          {lineCredit(t)} Elevation from open terrain data. Difficulty and time are estimates worked out from
+          length and climb: check conditions before you go.
+        </p>
+      </div>
+    </div>
+  );
+}

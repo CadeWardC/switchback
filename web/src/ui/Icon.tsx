@@ -1,5 +1,5 @@
 // The icons, drawn inline (24px grid, 1.8px strokes). No icon files or fonts.
-import type { JSX } from 'preact';
+import type { SVGAttributes } from 'preact';
 
 const PATHS: Record<string, string> = {
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5',
@@ -42,7 +42,7 @@ const PATHS: Record<string, string> = {
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name, size = 20, filled = false, ...rest }: { name: string; size?: number; filled?: boolean } & JSX.SVGAttributes<SVGSVGElement>) {
+export function Icon({ name, size = 20, filled = false, ...rest }: { name: string; size?: number; filled?: boolean } & SVGAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill={filled ? 'currentColor' : 'none'} stroke="currentColor"
       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" {...rest}>
