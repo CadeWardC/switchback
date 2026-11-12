@@ -8,7 +8,8 @@
 // To use a real backend, replace `submitTrail` below (keep its signature). Nothing else in the site knows
 // how a submission travels. Accounts, photos and reviews are deliberately not built; they would start here.
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────
-import { buildGpx, downloadText, fileName, xml, type GpxPoint } from './gpx';
+import { buildGpx, exportGpx, fileName, xml, type GpxPoint } from './gpx';
+import { platform } from '../platform';
 import { distance } from './geo';
 
 export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
@@ -69,7 +70,7 @@ export function issueUrl(s: Submission): string {
     '**Notes:**',
     s.notes.trim() || '(none)',
     '',
-    `**File:** please drag \`${fileName(s.name)}\` (it was just saved to your downloads) into this box to attach it. GitHub does not take .gpx files as they are: zip it first, or rename it to end in .gpx.txt.`,
+    `**File:** please drag \`${fileName(s.name)}\` (it was just ${platform.files.exportVerb}) into this box to attach it. GitHub does not take .gpx files as they are: zip it first, or rename it to end in .gpx.txt.`,
     '',
     `_Sent from the Switchback website ${APP_VERSION}._`,
   ].filter((l) => l !== '').join('\n').replace(/\n\*\*Notes/, '\n\n**Notes').replace(/\n\*\*File/, '\n\n**File').replace(/\n_Sent/, '\n\n_Sent');
@@ -80,6 +81,6 @@ export function issueUrl(s: Submission): string {
 /** Sends a trail in. Today: saves the file and returns the link to the prefilled issue for the caller to open. */
 export async function submitTrail(s: Submission): Promise<SubmissionResult> {
   const name = fileName(s.name);
-  downloadText(name, submissionGpx(s));
+  await exportGpx(s.name, submissionGpx(s));
   return { fileName: name, issueUrl: issueUrl(s) };
 }

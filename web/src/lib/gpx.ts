@@ -1,4 +1,5 @@
-// Writing GPX 1.1 files, and handing a file to the browser to save.
+// Writing GPX 1.1 files.
+import { platform } from '../platform';
 
 export interface GpxPoint { lat: number; lon: number; ele?: number | null; time?: number | null }
 
@@ -59,13 +60,7 @@ export function fileName(name: string, ext = 'gpx'): string {
   return `${base}.${ext}`;
 }
 
-export function downloadText(name: string, text: string, type = 'application/gpx+xml'): void {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+/** Hands a GPX file to the person (a download in the browser, the share sheet in the phone apps). */
+export function exportGpx(name: string, text: string): Promise<void> {
+  return platform.files.exportText(fileName(name), text, 'application/gpx+xml');
 }
