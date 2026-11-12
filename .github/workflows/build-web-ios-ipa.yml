@@ -61,6 +61,9 @@ jobs:
       - name: Resolve Swift packages (with retries)
         working-directory: web/ios/App
         run: |
+          # the project must be in the repository (the top-level .gitignore leaves out *.xcodeproj; web/ios/.gitignore keeps this one)
+          test -f App.xcodeproj/project.pbxproj || { echo "web/ios/App/App.xcodeproj is not in the repository"; exit 1; }
+          xcodebuild -list -project App.xcodeproj
           for i in 1 2 3 4 5; do
             xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App \
               -clonedSourcePackagesDirPath ../build/spm && exit 0
@@ -83,7 +86,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            build > ../build/xcodebuild.log 2>&1 || { grep -E "error:|Undefined symbol|ld: " ../build/xcodebuild.log | sort -u | head -60; tail -20 ../build/xcodebuild.log; exit 1; }
+            build > ../build/xcodebuild.log 2>&1 || { grep -E "error:|error |Undefined symbol|ld: |xcodebuild: " ../build/xcodebuild.log | sort -u | head -80; tail -40 ../build/xcodebuild.log; exit 1; }
           grep -q "BUILD SUCCEEDED" ../build/xcodebuild.log
 
       - name: Package Switchback-app-unsigned.ipa

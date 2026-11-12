@@ -12,3 +12,7 @@ capacitor-cordova-ios-plugins
 App/App/capacitor.config.json
 App/App/config.xml
 build
+
+# The repository's top-level .gitignore leaves out every *.xcodeproj (the Swift app's project is generated).
+# This one is written by hand and by Capacitor and must be in the repository, or the app can't be built.
+!App/App.xcodeproj/
