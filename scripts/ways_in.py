@@ -32,6 +32,7 @@ from build_trail_pack import decode   # noqa: E402
 TAG = "switchback:access"
 STEP = 5.0          # metres between the points a walk is checked at
 NEAR = 6.0          # a walk this close to a trail's line is on it
+PIECE = 30          # points in each piece a trail's line is measured in
 MIN_WALK = 150.0    # a shorter walk in isn't "via" anything
 MIN_ON = 100.0      # a trail has to carry the walk at least this far…
 MIN_SHARE = 0.2     # …and this share of it
@@ -39,7 +40,9 @@ NOT_A_NAME = ("switchback:unnamed", "switchback:derived_name", "switchback:roadw
 
 def nameable(t):
     tags = t.get("tags", {})
-    return bool(t.get("name")) and not any(tags.get(k) == "yes" for k in NOT_A_NAME)
+    name = t.get("name") or ""
+    # (a mapper's note to self isn't a name: "Kollersweid - fixme")
+    return bool(name) and "fixme" not in name.lower() and "?" not in name and not any(tags.get(k) == "yes" for k in NOT_A_NAME)
 
 def same(a, b):
     """The same trail by name, or a stretch named for both ("A and B" beside "A")."""
@@ -57,9 +60,10 @@ class Lines:
                 if not nameable(t):
                     continue
                 for s in t["segments"] + ([t["path"]] if "path" in t else []):
-                    pts = decode(s)
-                    if len(pts) > 1:
-                        g = LineString(self.flat(pts))
+                    pts = self.flat(decode(s))
+                    # in short pieces, so a walk is only measured against the part of a long trail beside it
+                    for i in range(0, len(pts) - 1, PIECE):
+                        g = LineString(pts[i:i + PIECE + 1])
                         if g.length > 0:
                             self.names.append(t["name"])
                             self.geoms.append(g)
@@ -79,7 +83,7 @@ class Lines:
         n = int(total // STEP) + 2
         samples = shapely.line_interpolate_point(geom, np.linspace(0, total, n))
         on = {}                                  # name -> which samples are on a trail of that name
-        for j in self.tree.query(geom.buffer(NEAR)):
+        for j in self.tree.query(geom, predicate="dwithin", distance=NEAR):
             name = self.names[j]
             if same(name, own):
                 continue

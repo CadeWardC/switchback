@@ -22,6 +22,7 @@ on:
       - "scripts/elevation.py"
       - "scripts/export_open_data.py"
       - "scripts/ways_in.py"
+      - "scripts/local_rules.py"
       - "data/parks/**"
 
 permissions:
@@ -106,6 +107,20 @@ jobs:
         run: |
           export TERRAIN_CACHE="$RUNNER_TEMP/terrain"
           python3 scripts/enrich_trail_pack.py out "${{ matrix.region.id }}"
+
+      - name: Sort the trails of a country with no official lists by what its map says (Switzerland)
+        # does nothing for the US and Canada; writes one line per trail, kept with the run
+        continue-on-error: true
+        run: python3 scripts/local_rules.py out "${{ matrix.region.id }}" "check/${{ matrix.region.id }}-trails.csv"
+
+      - name: Keep the line-per-trail list with the run
+        if: hashFiles('check/*.csv') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: trail-check-${{ matrix.region.id }}
+          path: check/*.csv
+          retention-days: 30
 
       - name: Say which trails each way in follows ("via Ridge Trail")
         # after the official names are in, so the names are the ones the app shows; never blocks publishing

@@ -60,6 +60,11 @@ subscription and no API keys.
   under the hike's title says where it starts and how you get in, driving directions go to the trailhead picked by
   its own name, and tapping a trail on the main map draws its way in from the nearest trailhead. Search, lists and
   the title keep just the hike's name.
+- **Countries without official lists (Switzerland):** `scripts/local_rules.py` sorts a finished pack by what the
+  country's own map says, in its languages. A signposted route is a hike (one with no name is named for its ends,
+  "Furi – Furgg", or left as an unnamed line); a named path on no route is a hike only with a hiking grade, a trail's
+  name ("Höhenweg", "Sentier …", "Sentiero …") or a park around it; one named like a street ("…strasse", "Rue …")
+  is informal. Each build keeps a list with one line per trail saying what it was taken for and why.
 - **Regions:** `data/trail-regions.json` lists the areas the pack job builds (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map
