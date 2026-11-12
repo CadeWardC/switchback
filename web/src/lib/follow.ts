@@ -10,13 +10,15 @@ export interface Progress {
   /** Metres from you to that point. */
   off: number;
   total: number;
+  /** That point. */
+  point: Coord;
 }
 
 /** The nearest point on a line to a place. `after` (metres): on a loop or an out-and-back, prefer a point
  *  not far behind where you were last, so the start and the end of a loop are not confused. */
 export function progressOn(path: Coord[], c: Coord, after = -Infinity): Progress {
   const k = Math.cos(c[0] * rad), mLat = 111_320, mLon = 111_320 * k;
-  let best = { along: 0, off: Infinity }, bestScore = Infinity;
+  let best = { along: 0, off: Infinity, point: path[0] }, bestScore = Infinity;
   let run = 0;
   let ax = (path[0][1] - c[1]) * mLon, ay = (path[0][0] - c[0]) * mLat;
   for (let i = 1; i < path.length; i++) {
@@ -26,12 +28,15 @@ export function progressOn(path: Coord[], c: Coord, after = -Infinity): Progress
     const off = Math.hypot(ax + t * dx, ay + t * dy), along = run + t * len;
     // going back along the line costs a little, so of two places equally near, the one ahead wins
     const score = off + (along < after - 30 ? 25 + (after - along) * 0.02 : 0);
-    if (score < bestScore) { bestScore = score; best = { along, off }; }
+    if (score < bestScore) {
+      bestScore = score;
+      best = { along, off, point: [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t] };
+    }
     run += len;
     ax = bx;
     ay = by;
   }
-  if (path.length === 1) best = { along: 0, off: Math.hypot(ax, ay) };
+  if (path.length === 1) best = { along: 0, off: Math.hypot(ax, ay), point: path[0] };
   return { ...best, total: run };
 }
 
@@ -93,4 +98,97 @@ export function sunTimes(date: Date, at: Coord): { sunrise: Date; sunset: Date }
   };
   const sunrise = event(true), sunset = event(false);
   return sunrise && sunset ? { sunrise, sunset } : null;
+}
+
+// ── Which way back to the trail ───────────────────────────────────────────────────────────────────────
+/** The compass bearing from one place to another, degrees from north. */
+export function bearing(from: Coord, to: Coord): number {
+  const y = Math.sin((to[1] - from[1]) * rad) * Math.cos(to[0] * rad);
+  const x = Math.cos(from[0] * rad) * Math.sin(to[0] * rad) - Math.sin(from[0] * rad) * Math.cos(to[0] * rad) * Math.cos((to[1] - from[1]) * rad);
+  return (Math.atan2(y, x) / rad + 360) % 360;
+}
+
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+
+/** "to your right", "ahead of you"… relative to the way you are going; a compass word when that is not known. */
+export function whichWay(from: Coord, to: Coord, heading: number | null): string {
+  const b = bearing(from, to);
+  if (heading == null || !Number.isFinite(heading)) return `to the ${COMPASS[Math.round(b / 45) % 8]}`;
+  const turn = ((b - heading + 540) % 360) - 180; // -180..180, positive to the right
+  if (Math.abs(turn) <= 35) return 'ahead of you';
+  if (Math.abs(turn) >= 145) return 'behind you';
+  return turn > 0 ? 'to your right' : 'to your left';
+}
+
+// ── Reaching the end ──────────────────────────────────────────────────────────────────────────────────
+/** Near enough (metres) to the start or the end to count as there. */
+export const ARRIVE_WITHIN = 35;
+
+export interface EndWatch {
+  /** Metres walked since the hike began, or since the last time the question was asked. */
+  walked: number;
+  last: Coord | null;
+  /** How many times the question has been asked. */
+  asked: number;
+  /** Has been well away from the trail's ends since the hike began or the question was last asked. */
+  away: boolean;
+}
+
+export const newEndWatch = (): EndWatch => ({ walked: 0, last: null, asked: 0, away: false });
+
+/**
+ * Feed it each recorded point while a trail is followed. It says when to ask "finish this hike?":
+ *   - a loop: back at its start after most of it has been walked (passing near the start early on,
+ *     as loops often do in their first stretch, does not count);
+ *   - a one-way trail: at its far end; or back at its start after walking out and back.
+ * After it has asked, it stays quiet until another long stretch has been walked away from the ends.
+ */
+export function watchEnd(w: EndWatch, at: Coord, path: Coord[], total: number, isLoop: boolean): { watch: EndWatch; ask: 'start' | 'end' | null } {
+  const step = w.last ? distanceFlat(w.last, at) : 0;
+  const watch: EndWatch = { ...w, walked: w.walked + step, last: at };
+  const start = path[0], end = path[path.length - 1];
+  const toStart = distanceFlat(at, start), toEnd = distanceFlat(at, end);
+  if (Math.min(toStart, toEnd) > Math.max(120, ARRIVE_WITHIN * 3)) watch.away = true;
+  // how much must be walked before arriving means anything
+  const enough = watch.asked === 0 ? total * (isLoop ? 0.7 : 0.6) : Math.max(300, total * 0.5);
+  if (!watch.away || watch.walked < enough) return { watch, ask: null };
+  let ask: 'start' | 'end' | null = null;
+  if (isLoop) {
+    if (toStart <= ARRIVE_WITHIN) ask = 'start';
+  } else if (toEnd <= ARRIVE_WITHIN) ask = 'end';
+  else if (toStart <= ARRIVE_WITHIN && (watch.asked > 0 || watch.walked >= total * 1.5)) ask = 'start';
+  if (!ask) return { watch, ask: null };
+  return { watch: { walked: 0, last: at, asked: watch.asked + 1, away: false }, ask };
+}
+
+function distanceFlat(a: Coord, b: Coord): number {
+  const k = Math.cos(a[0] * rad);
+  return Math.hypot((b[0] - a[0]) * 111_320, (b[1] - a[1]) * 111_320 * k);
+}
+
+// ── The things on the way, for the ridge ──────────────────────────────────────────────────────────────
+export interface Stop {
+  /** A short name: "Creek", "High point", "Overlook", "Short loop". */
+  name: string;
+  /** Metres from the start. */
+  along: number;
+  /** Lower comes first when there is not room for all. */
+  rank: number;
+}
+
+/** At most `max` stops, none closer together than `gap` (a share of the whole length), in order along the trail. */
+export function pickStops(stops: Stop[], total: number, max = 5, gap = 0.13): Stop[] {
+  const out: Stop[] = [];
+  for (const s of stops.slice().sort((a, b) => a.rank - b.rank || a.along - b.along)) {
+    if (out.length >= max) break;
+    if (s.along < total * 0.04 || s.along > total * 0.97) continue; // on top of the start or the end
+    if (out.some((o) => Math.abs(o.along - s.along) < total * gap)) continue;
+    out.push(s);
+  }
+  return out.sort((a, b) => a.along - b.along);
+}
+
+/** The next stop ahead of a distance along the trail. */
+export function nextStop(stops: Stop[], along: number): Stop | null {
+  return stops.find((s) => s.along > along + 15) ?? null;
 }

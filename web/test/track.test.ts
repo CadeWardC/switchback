@@ -200,3 +200,99 @@ describe('saving the map ahead', () => {
     expect(s.sources.terrain.encoding).toBe('terrarium');
   });
 });
+
+import { newEndWatch, nextStop, pickStops, watchEnd, whichWay, type EndWatch } from '../src/lib/follow';
+
+describe('reaching the end of a trail', () => {
+  // about 111 m per 0.001° of latitude; 87 m per 0.001° of longitude here
+  const line = (from: [number, number], to: [number, number], n: number): [number, number][] =>
+    Array.from({ length: n + 1 }, (_, i) => [from[0] + ((to[0] - from[0]) * i) / n, from[1] + ((to[1] - from[1]) * i) / n]);
+  const walk = (w: EndWatch, pts: [number, number][], path: [number, number][], total: number, loop: boolean) => {
+    const asks: string[] = [];
+    for (const p of pts) { const r = watchEnd(w, p, path, total, loop); w = r.watch; if (r.ask) asks.push(r.ask); }
+    return { w, asks };
+  };
+
+  // a loop of about 1.9 km whose first and last stretches run close together near the trailhead
+  const A: [number, number] = [38.87, -92.32];
+  const loop = [...line(A, [38.874, -92.32], 20), ...line([38.874, -92.32], [38.874, -92.314], 20), ...line([38.874, -92.314], [38.8702, -92.314], 20),
+    ...line([38.8702, -92.314], [38.8702, -92.3198], 20), ...line([38.8702, -92.3198], A, 4)];
+  const loopTotal = 444 + 520 + 422 + 503 + 30;
+
+  it('a loop: asks once, back at the trailhead, after most of it', () => {
+    const { asks, w } = walk(newEndWatch(), loop, loop, loopTotal, true);
+    expect(asks).toEqual(['start']);
+    expect(w.asked).toBe(1);
+  });
+  it('a loop: passing near the start early on does not ask', () => {
+    // out 150 m, back past the trailhead to fetch something from the car, then round the loop
+    const early = [...line(A, [38.8714, -92.32], 8), ...line([38.8714, -92.32], A, 8)];
+    const first = walk(newEndWatch(), early, loop, loopTotal, true);
+    expect(first.asks).toEqual([]);
+    const rest = walk(first.w, loop, loop, loopTotal, true);
+    expect(rest.asks).toEqual(['start']);
+  });
+  it('a loop: standing at the trailhead before setting off does not ask', () => {
+    expect(walk(newEndWatch(), Array.from({ length: 50 }, () => A), loop, loopTotal, true).asks).toEqual([]);
+  });
+  it('after "Keep going", it stays quiet until another long stretch, then asks again', () => {
+    const once = walk(newEndWatch(), loop, loop, loopTotal, true);
+    // milling about the car park: nothing
+    const mill = walk(once.w, [...line(A, [38.8703, -92.32], 4), ...line([38.8703, -92.32], A, 4)], loop, loopTotal, true);
+    expect(mill.asks).toEqual([]);
+    // a second lap: asks once more at the end of it
+    expect(walk(mill.w, loop, loop, loopTotal, true).asks).toEqual(['start']);
+  });
+
+  const B: [number, number] = [38.88, -92.32];
+  const oneWay = line(A, B, 50); // about 1.1 km
+  it('a one-way trail: asks at the far end', () => {
+    expect(walk(newEndWatch(), oneWay, oneWay, 1113, false).asks).toEqual(['end']);
+  });
+  it('a one-way trail: turning round half way and coming back does not ask', () => {
+    const half = oneWay.slice(0, 26);
+    expect(walk(newEndWatch(), [...half, ...half.slice().reverse()], oneWay, 1113, false).asks).toEqual([]);
+  });
+  it('out and back, walked both ways: asks at the far end, and again at the start on return', () => {
+    expect(walk(newEndWatch(), [...oneWay, ...oneWay.slice().reverse()], oneWay, 1113, false).asks).toEqual(['end', 'start']);
+  });
+  it('out and back when the far end was missed by the GPS: still asks at the start on return', () => {
+    const short = oneWay.slice(0, 47); // turned 60 m short of the end
+    expect(walk(newEndWatch(), [...short, ...short.slice().reverse()], oneWay, 1113, false).asks).toEqual(['start']);
+  });
+});
+
+describe('which way back to the trail', () => {
+  const me: [number, number] = [38.87, -92.32];
+  it('is said relative to the way you are going', () => {
+    expect(whichWay(me, [38.87, -92.319], 0)).toBe('to your right');   // trail due east, walking north
+    expect(whichWay(me, [38.87, -92.321], 0)).toBe('to your left');
+    expect(whichWay(me, [38.871, -92.32], 0)).toBe('ahead of you');
+    expect(whichWay(me, [38.869, -92.32], 0)).toBe('behind you');
+    expect(whichWay(me, [38.87, -92.319], 180)).toBe('to your left');  // walking south
+  });
+  it('falls back to a compass word', () => {
+    expect(whichWay(me, [38.87, -92.319], null)).toBe('to the east');
+    expect(whichWay(me, [38.871, -92.321], null)).toBe('to the north-west');
+  });
+});
+
+describe('the things on the way', () => {
+  const stops = [
+    { name: 'Creek', along: 950, rank: 3 }, { name: 'Short loop', along: 1800, rank: 0 }, { name: 'High point', along: 3000, rank: 1 },
+    { name: 'Spring', along: 1000, rank: 4 }, { name: 'Overlook', along: 5000, rank: 2 }, { name: 'Trailhead parking', along: 20, rank: 5 },
+    { name: 'Bench', along: 4000, rank: 6 }, { name: 'Cave', along: 2400, rank: 6 },
+  ];
+  it('keeps at most five, in order, none on top of another or of the ends', () => {
+    const picked = pickStops(stops, 6000);
+    expect(picked.map((s) => s.name)).toEqual(['Creek', 'Short loop', 'High point', 'Bench', 'Overlook']);
+    expect(picked.every((s, i) => i === 0 || s.along - picked[i - 1].along >= 6000 * 0.13)).toBe(true);
+    expect(pickStops([], 6000)).toEqual([]);
+  });
+  it('names the next one ahead', () => {
+    const picked = pickStops(stops, 6000);
+    expect(nextStop(picked, 0)?.name).toBe('Creek');
+    expect(nextStop(picked, 950)?.name).toBe('Short loop');
+    expect(nextStop(picked, 5500)).toBeNull();
+  });
+});
