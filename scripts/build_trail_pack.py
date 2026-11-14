@@ -664,11 +664,17 @@ SHORT_LINK_SHARE = 0.25  # ...and at most this much of the part of the loop it s
 SHORT_SKIP_M = 800       # it must skip at least this much, and a fifth of the loop
 SHORT_MIN_M = 800        # and leave a loop of at least this
 
-def short_loops(main, nodes, adj, where):
+def short_loops(main, nodes, adj, where, starts=()):
     """Shorter loops of a closed trail: where a walk of at most SHORT_LINK_M along other paths joins two points of
-    the loop, each side of that cut-across is a loop of its own (a figure of eight has two: one either side).
+    the loop, the side that holds the trail's start is a shorter loop of the same hike. The other side is offered
+    too, but only when it can be started from as well: one of `starts` (the places the trail's trailheads and car
+    parks meet it) lies on it, as on a figure of eight with the car park at its waist. A far lobe nobody can reach
+    without walking the rest of the trail is not a hike of its own.
     Returns up to three, the shortest first, each named by where it lies on the whole trail ("East loop") when
     there is more than one: [(metres, metres of cut-across, line, name)]."""
+    def reachable(line):
+        return any(seg_dist(p, a, b) <= 60 for p in starts for a, b in zip(line, line[1:]))
+
     total = length(main)
     if total < SHORT_MIN_M + SHORT_SKIP_M or len(main) < 4:
         return []
@@ -709,7 +715,9 @@ def short_loops(main, nodes, adj, where):
                         options.append((outer + d, d, main[:a + 1] + link[1:-1] + main[b:]))
                     # the other side: the inner part, closed by the cut-across
                     if outer >= max(SHORT_SKIP_M, 0.2 * total) and inner + d >= SHORT_MIN_M:
-                        options.append((inner + d, d, main[a:b + 1] + link[::-1][1:]))
+                        other = main[a:b + 1] + link[::-1][1:]
+                        if reachable(other):
+                            options.append((inner + d, d, other))
                 continue
             for m, w in adj.get(n, ()):
                 if (n, m) in own:
@@ -1000,7 +1008,11 @@ def hikes(trails, adj, where, node_names, heads):
     for i in loops:
         t = trails[i][0]
         main = t["_main"]
-        found = short_loops(main, ids(main), adj, where)
+        # where this trail can be started from: each trailhead's or car park's walk in meets the trail here
+        starts = []
+        for e in json.loads(t.get("tags", {}).get("switchback:access", "[]")):
+            starts.append(decode(e["l"])[-1] if e.get("l") else tuple(e["p"]))
+        found = short_loops(main, ids(main), adj, where, starts)
         if found:
             t.setdefault("tags", {})["switchback:short"] = json.dumps(
                 [{"n": name, "m": round(m), "by": round(d), "l": encode(simplify(line))} for m, d, line, name in found],
