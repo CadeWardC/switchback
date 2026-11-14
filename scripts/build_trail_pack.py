@@ -666,8 +666,9 @@ SHORT_MIN_M = 800        # and leave a loop of at least this
 
 def short_loops(main, nodes, adj, where):
     """Shorter loops of a closed trail: where a walk of at most SHORT_LINK_M along other paths joins two points of
-    the loop and skips a good part of it. The start of the loop is always kept. Returns up to two, the shortest
-    first: [(metres, metres of cut-across, line)]."""
+    the loop, each side of that cut-across is a loop of its own (a figure of eight has two: one either side).
+    Returns up to three, the shortest first, each named by where it lies on the whole trail ("East loop") when
+    there is more than one: [(metres, metres of cut-across, line, name)]."""
     total = length(main)
     if total < SHORT_MIN_M + SHORT_SKIP_M or len(main) < 4:
         return []
@@ -680,6 +681,10 @@ def short_loops(main, nodes, adj, where):
             at.setdefault(n, k)
     own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
     limit = min(SHORT_LINK_M, 0.2 * total)
+
+    def middle_of(line):
+        return (sum(p[0] for p in line) / len(line), sum(p[1] for p in line) / len(line))
+
     options = []
     for u, a in at.items():
         if not any((u, m) not in own for m, _ in adj.get(u, ())):
@@ -692,14 +697,19 @@ def short_loops(main, nodes, adj, where):
                 continue
             if n != u and n in at:
                 b = at[n]
-                skipped = cum[b] - cum[a]
-                if b > a and skipped >= max(SHORT_SKIP_M, 0.2 * total) and d <= SHORT_LINK_SHARE * skipped \
-                        and total - skipped + d >= SHORT_MIN_M:
+                inner = cum[b] - cum[a]          # the part of the loop between the two ends of the cut-across
+                outer = total - inner            # ...and the part that holds the trail's start
+                if b > a and d <= SHORT_LINK_SHARE * min(max(inner, 1), max(outer, 1)) * 4 and d <= SHORT_LINK_SHARE * max(inner, outer):
                     path = [n]
                     while path[-1] != u:
                         path.append(prev[path[-1]])
-                    link = [where[x] for x in reversed(path)]
-                    options.append((total - skipped + d, d, main[:a + 1] + link[1:-1] + main[b:]))
+                    link = [where[x] for x in reversed(path)]            # u ... n
+                    # the side with the start: the loop without the inner part
+                    if inner >= max(SHORT_SKIP_M, 0.2 * total) and outer + d >= SHORT_MIN_M:
+                        options.append((outer + d, d, main[:a + 1] + link[1:-1] + main[b:]))
+                    # the other side: the inner part, closed by the cut-across
+                    if outer >= max(SHORT_SKIP_M, 0.2 * total) and inner + d >= SHORT_MIN_M:
+                        options.append((inner + d, d, main[a:b + 1] + link[::-1][1:]))
                 continue
             for m, w in adj.get(n, ()):
                 if (n, m) in own:
@@ -711,12 +721,27 @@ def short_loops(main, nodes, adj, where):
     options.sort(key=lambda o: o[0])
     picked = []
     for o in options:
-        # one of each size: cut-acrosses a few metres apart make the same short loop
-        if all(abs(o[0] - q[0]) > 0.15 * q[0] for q in picked):
+        # one of each: cut-acrosses a few metres apart make the same loop (about the same size, in the same place)
+        mid = middle_of(o[2])
+        if all(abs(o[0] - q[0]) > 0.15 * q[0] or dist(mid, middle_of(q[2])) > max(100, 0.1 * q[0]) for q in picked):
             picked.append(o)
-        if len(picked) == 2:
+        if len(picked) == 3:
             break
-    return picked
+    if len(picked) < 2:
+        return [(m, d, line, "Short loop") for m, d, line in picked]
+    # more than one: say which side of the whole trail each lies on
+    centre = middle_of(main)
+    def side(line):
+        mid = middle_of(line)
+        north = (mid[0] - centre[0]) * 111320
+        east = (mid[1] - centre[1]) * 111320 * math.cos(math.radians(centre[0]))
+        if abs(north) >= abs(east):
+            return "North" if north > 0 else "South"
+        return "East" if east > 0 else "West"
+    names = [side(line) + " loop" for _, _, line in picked]
+    if len(set(names)) < len(names):
+        names = [f"Short loop {i + 1}" for i in range(len(picked))]
+    return [(m, d, line, name) for (m, d, line), name in zip(picked, names)]
 
 def hikes(trails, adj, where, node_names, heads):
     """Turns trails into hikes: closes named loops along the trails that complete them, finds the trailheads each
@@ -912,7 +937,7 @@ def hikes(trails, adj, where, node_names, heads):
         found = short_loops(main, ids(main), adj, where)
         if found:
             t.setdefault("tags", {})["switchback:short"] = json.dumps(
-                [{"n": "Short loop", "m": round(m), "by": round(d), "l": encode(simplify(line))} for m, d, line in found],
+                [{"n": name, "m": round(m), "by": round(d), "l": encode(simplify(line))} for m, d, line, name in found],
                 ensure_ascii=False, separators=(",", ":"))
             shortened += 1
     print(f"  short loops: {shortened} loops have a cut-across that makes a shorter loop")
