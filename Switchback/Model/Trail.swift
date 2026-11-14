@@ -250,6 +250,32 @@ struct Trail: Codable, Identifiable, Hashable {
         }
     }
 
+    /// Shorter loops of this trail, by a cut-across that isn't a trail of its own ("Short loop").
+    var shortLoops: [TrailExtension] {
+        guard let rows = Self.json(tags["switchback:short"]) else { return [] }
+        return rows.compactMap { r in
+            guard let name = r["n"] as? String, let m = (r["m"] as? NSNumber)?.doubleValue,
+                  let line = r["l"] as? String else { return nil }
+            return TrailExtension(id: "short-\(Int(m))", name: name, length: m, line: Polyline.decode(line),
+                                  profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
+        }
+    }
+
+    /// This trail walked as one of its short loops: the same trail and trailheads, a shorter line.
+    func shortened(to short: TrailExtension) -> Trail {
+        guard short.line.count > 1 else { return self }
+        var t = self
+        t.path = short.line
+        t.length = short.length
+        t.profile = short.profile
+        t.segments.append(short.line)      // so the cut-across is drawn
+        // these were worked out for the whole loop
+        for tag in ["switchback:short", "switchback:ext", "switchback:difficulty", "switchback:minutes"] {
+            t.tags[tag] = nil
+        }
+        return t
+    }
+
     private static func json(_ text: String?) -> [[String: Any]]? {
         guard let data = text?.data(using: .utf8) else { return nil }
         return (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
@@ -301,6 +327,11 @@ struct Trail: Codable, Identifiable, Hashable {
         t.path = route
         t.profile = chart ?? profile
         t.tags["switchback:chart"] = chart == nil && t.length != length ? "trail" : nil
+        if t.length != length {
+            // the file's difficulty and time are for the trail on its own, not with the walk in or a side loop
+            t.tags["switchback:difficulty"] = nil
+            t.tags["switchback:minutes"] = nil
+        }
         return t
     }
 
@@ -315,6 +346,8 @@ struct Trail: Codable, Identifiable, Hashable {
     static var showsInformal: Bool { UserDefaults.standard.bool(forKey: informalKey) }
 
     var difficulty: Difficulty {
+        // trail files say (scripts/enrich_trail_pack.py, rate); anything else is worked out here by the same rule
+        if let said = tags["switchback:difficulty"].flatMap(Difficulty.init(rawValue:)) { return said }
         let km = length / 1000
         let effort = km + (profile?.gain ?? 0) / 100
         var level: Difficulty = effort < 8 ? .easy : effort < 16 ? .moderate : effort < 26 ? .hard : .veryHard
@@ -331,7 +364,8 @@ struct Trail: Codable, Identifiable, Hashable {
 
     /// Naismith's rule at an easy pace: 4.5 km/h plus an hour for every 600 m of climb.
     var estimatedDuration: TimeInterval {
-        (length / 1000 / 4.5 + (profile?.gain ?? 0) / 600) * 3600
+        if let minutes = tags["switchback:minutes"].flatMap(Double.init) { return minutes * 60 }
+        return (length / 1000 / 4.5 + (profile?.gain ?? 0) / 600) * 3600
     }
 
     var osmURL: URL? {

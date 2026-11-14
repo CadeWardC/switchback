@@ -1,0 +1,55 @@
+name: Base maps (pilot)
+
+# Pilot: how big is a whole state's base map as one file the app could download with the state's trails, so
+# maps are offline by default? Builds Missouri with Planetiler (OpenMapTiles layers, the same ones the app's
+# map style already draws) at a few levels of detail and reports the sizes. Nothing is published.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/base-maps.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Fetch Planetiler
+        run: curl -fsSLo planetiler.jar https://github.com/onthegomap/planetiler/releases/latest/download/planetiler.jar
+      - name: Whole detail (zoom 14), for comparison
+        run: |
+          java -Xmx5g -jar planetiler.jar --download --area=missouri --output=full-z14.pmtiles --force
+      - name: To zoom 12
+        run: |
+          java -Xmx5g -jar planetiler.jar --area=missouri --output=z12.pmtiles --maxzoom=12 --force
+      - name: To zoom 12, without buildings, house numbers and shop pins
+        run: |
+          java -Xmx5g -jar planetiler.jar --area=missouri --output=slim-z12.pmtiles --maxzoom=12 \
+            --exclude-layers=building,housenumber,poi --force
+      - name: To zoom 13, without buildings, house numbers and shop pins
+        run: |
+          java -Xmx5g -jar planetiler.jar --area=missouri --output=slim-z13.pmtiles --maxzoom=13 \
+            --exclude-layers=building,housenumber,poi --force
+      - name: Sizes
+        if: always()
+        run: |
+          echo "### Missouri base map, one file" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -l --block-size=M *.pmtiles | awk '{print $5, $9}' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: missouri-base-map-slim
+          path: |
+            slim-z12.pmtiles
+            slim-z13.pmtiles
+          retention-days: 7

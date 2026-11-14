@@ -10,6 +10,7 @@ struct SettingsView: View {
     @AppStorage(TrailPacks.wholeCountryKey) private var wholeCountry = true
     @AppStorage(TrailPacks.cellularCountryKey) private var wholeCountryCellular = false
     @State private var updateResult: String?
+    @State private var confirmReset = false
     @AppStorage(BaseMap.showRoutesKey) private var showRoutes = false
     @AppStorage(USFS.enabledKey) private var usfsTrails = true
     @AppStorage(Overpass.unnamedKey) private var unnamedTrails = true
@@ -66,6 +67,29 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(updating)
+                    Button(role: .destructive) {
+                        confirmReset = true
+                    } label: {
+                        Label("Reset and download again", systemImage: "arrow.counterclockwise.circle")
+                    }
+                    .disabled(updating)
+                    .confirmationDialog("Remove every trail file on this phone and download the current ones again?",
+                                        isPresented: $confirmReset, titleVisibility: .visible) {
+                        Button("Reset and download again", role: .destructive) {
+                            updating = true
+                            updateResult = nil
+                            Task {
+                                await TrailCache.shared.clear()
+                                updateResult = await TrailPacks.shared.resetAndRedownload()
+                                packStatus = await TrailPacks.shared.statusLines()
+                                cacheSize = await Task.detached { TileStore.shared.cacheSize() }.value
+                                    + (await TrailCache.shared.size()) + (await TrailPacks.shared.size())
+                                updating = false
+                            }
+                        }
+                    } message: {
+                        Text("Your saved trails, recorded hikes and offline maps are kept. Needs an internet connection.")
+                    }
                     if let updateResult {
                         Text(updateResult).font(.footnote).foregroundStyle(.secondary)
                     }
@@ -86,7 +110,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Trail files")
                 } footer: {
-                    Text("Your area's trails download as soon as the map knows where you are (Missouri is about 0.4 MB), then the rest of your country on Wi-Fi (the US is about 38 MB), so trails work offline wherever you go in it. Other regions download when the map shows them. They're rebuilt from OpenStreetMap every week; the app picks up new versions for the states you look at by itself every few days, or right away here.")
+                    Text("Your area's trails download as soon as the map knows where you are (Missouri is about 0.4 MB), then the rest of your country on Wi-Fi (the US is about 38 MB), so trails work offline wherever you go in it. Other regions download when the map shows them. They're rebuilt from OpenStreetMap every week; the app picks up new versions for the states you look at by itself every few days, or right away here. Reset and download again replaces every trail file on the phone with the current one, for when new files are published or something looks wrong.")
                 }
                 Section("Data") {
                     Text("Trails: © OpenStreetMap contributors, available under the Open Database Licence.")

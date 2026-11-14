@@ -323,6 +323,38 @@ actor TrailPacks {
         return current == 0 ? "No state trail files on the phone yet." : "Trails are up to date (\(list.regions.first?.value.version ?? ""))."
     }
 
+    /// Throws away every trail file on the phone and downloads the current ones again: for when a new set of
+    /// files has been published, or a file seems wrong. Nothing is deleted unless the list of files can be
+    /// reached, so doing this without signal leaves the trails as they were. Returns a short summary.
+    func resetAndRedownload() async -> String {
+        listFailedUntil = .distantPast
+        guard let list = await regionList(force: true) else {
+            return "Couldn't reach the trail files, so nothing was removed. Check your signal."
+        }
+        let had = Set(packs.keys).union(Self.downloadedRegions(in: dir))
+        // let downloads already under way finish first, so they don't write a file after the reset
+        for task in downloading.values { _ = await task.value }
+        memory.removeAll()
+        packs.removeAll()
+        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        for f in files where f.pathExtension == "trails" { try? FileManager.default.removeItem(at: f) }
+        note("trail files reset")
+        var done = 0, failed = 0
+        // smallest first, so the most regions are back soonest
+        let todo = had.compactMap { list.regions[$0] }.filter { $0.bbox.count == 4 }
+            .sorted { ($0.bytes ?? 0) < ($1.bytes ?? 0) }
+        for r in todo {
+            let url = dir.appendingPathComponent("\(r.region)-\(r.version).trails")
+            if await download(r, to: url) != nil { done += 1 } else { failed += 1 }
+        }
+        let version = list.regions.first?.value.version ?? ""
+        if todo.isEmpty { return "Trail files reset. They download again when the map shows a region." }
+        if failed > 0 {
+            return "Downloaded \(done) of \(todo.count) regions again. The rest download when the map shows them."
+        }
+        return "Downloaded \(done) region\(done == 1 ? "" : "s") again (\(version))."
+    }
+
     private static func downloadedRegions(in dir: URL) -> Set<String> {
         let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
         return Set(files.filter { $0.pathExtension == "trails" }.compactMap { f -> String? in
