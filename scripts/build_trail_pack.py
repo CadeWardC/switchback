@@ -743,6 +743,55 @@ def short_loops(main, nodes, adj, where):
         names = [f"Short loop {i + 1}" for i in range(len(picked))]
     return [(m, d, line, name) for (m, d, line), name in zip(picked, names)]
 
+TAIL_SHARE = 0.15       # a loop may have this much of its line beyond the point where it closes (a spur at an end)
+
+def close_past_tails(main, nodes, adj, where):
+    """A loop whose mapped line runs on past the place where it closes: a spur at one end, or the line starting
+    partway along another trail. Looks for a short walk along other trails (at most NEAR_LOOP_SHARE of the trail)
+    from near its end back to near its start, where "near" allows a tail of up to TAIL_SHARE at each end.
+    Returns (the closed line, the walk that closes it), or None."""
+    total = length(main)
+    if total < 1500 or len(main) < 6:
+        return None
+    cum = [0.0]
+    for a, b in zip(main, main[1:]):
+        cum.append(cum[-1] + dist(a, b))
+    head = {}                                   # node -> index, for the first TAIL_SHARE of the line
+    for i, n in enumerate(nodes):
+        if n is not None and cum[i] <= TAIL_SHARE * total:
+            head.setdefault(n, i)
+    tail = [(j, n) for j, n in enumerate(nodes) if n is not None and cum[j] >= (1 - TAIL_SHARE) * total and n not in head]
+    own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
+    limit = NEAR_LOOP_SHARE * total
+    best = None
+    for j, n in tail:
+        seen, prev, heap = {n: 0.0}, {}, [(0.0, n)]
+        while heap:
+            d, m = heapq.heappop(heap)
+            if d > seen.get(m, math.inf):
+                continue
+            if m != n and m in head:
+                i = head[m]
+                cut = cum[i] + (total - cum[j])          # what is left outside the loop
+                score = d + cut
+                if best is None or score < best[0]:
+                    path = [m]
+                    while path[-1] != n:
+                        path.append(prev[path[-1]])
+                    best = (score, i, j, [where[x] for x in reversed(path)])
+                break                                    # the nearest way back from this point is enough
+            for x, w in adj.get(m, ()):
+                if (m, x) in own:
+                    continue
+                nd = d + w
+                if nd <= limit and nd < seen.get(x, math.inf):
+                    seen[x], prev[x] = nd, m
+                    heapq.heappush(heap, (nd, x))
+    if not best:
+        return None
+    _, i, j, back = best
+    return main[i:j + 1] + back[1:], back
+
 def hikes(trails, adj, where, node_names, heads):
     """Turns trails into hikes: closes named loops along the trails that complete them, finds the trailheads each
     trail can be started from (with the walk in), offers loops that hang off a loop as extensions, marks access trails
@@ -808,6 +857,23 @@ def hikes(trails, adj, where, node_names, heads):
         trails[k] = (t, start)
         opened += 1
     print(f"  loops: closed {opened} more that ended within {NEAR_LOOP_M} m of their start")
+
+    # 1c. loops whose line runs on past where they close (a spur at an end, a start partway along another trail):
+    # closed along the other trail between the two points, the leftover ends kept as lines of the trail
+    tailed = 0
+    for k, (t, _) in enumerate(trails):
+        main = t["_main"]
+        if is_unnamed(t) or closed(main) or SIDE_WORDS.search(t["name"]):
+            continue
+        found = close_past_tails(main, ids(main), adj, where)
+        if not found:
+            continue
+        loop, back = found
+        start = set_main(t, loop, [back])
+        t.setdefault("tags", {})["switchback:closed"] = "yes"
+        trails[k] = (t, start)
+        tailed += 1
+    print(f"  loops: closed {tailed} more past a spur at an end")
 
     # 2. side trails: access trails, spurs, connectors and cutoffs aren't hikes of their own
     sides = 0
