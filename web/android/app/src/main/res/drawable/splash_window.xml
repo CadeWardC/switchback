@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launch screen before Android 12 (which has its own): the stone background with the icon in the middle. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item android:drawable="@drawable/splash_icon" android:gravity="center" android:width="288dp" android:height="288dp" />
+</layer-list>

@@ -18,6 +18,8 @@ struct TrailDetailView: View {
     /// The trailhead to start from: nil = the nearest one, "" = the trail on its own.
     @State private var startId: String?
     @State private var addedIds: Set<String> = []
+    /// The short loop picked, if the trail has one: nil = the whole loop.
+    @State private var shortId: String?
 
     init(trail: Trail) {
         _trail = State(initialValue: trail)
@@ -36,7 +38,8 @@ struct TrailDetailView: View {
     }
 
     var body: some View {
-        let base = shown
+        let whole = shown
+        let base = whole.shortLoops.first { $0.id == shortId }.map { whole.shortened(to: $0) } ?? whole
         let from = start(base)
         let t = base.hike(from: from, adding: base.extensions.filter { addedIds.contains($0.id) })
         let pois = highlights.pois(for: t.id) ?? []
@@ -87,6 +90,7 @@ struct TrailDetailView: View {
                     }
                 }
 
+                routeOptions(whole)
                 hikeOptions(base, from: from, chartIsTrailOnly: t.tags["switchback:chart"] == "trail")
 
                 actions(t)
@@ -176,6 +180,26 @@ struct TrailDetailView: View {
             let found = await highlights.ensure(for: base)
             await trailPhotos.ensure(for: base, pois: found)
             _ = await profile
+        }
+    }
+
+    /// The whole loop, or a shorter one by a cut-across.
+    @ViewBuilder
+    private func routeOptions(_ whole: Trail) -> some View {
+        let shorts = whole.shortLoops
+        if !shorts.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Picker("Route", selection: Binding(get: { shortId ?? "" }, set: { shortId = $0.isEmpty ? nil : $0 })) {
+                    Text("Full loop · \(Fmt.distance(whole.length))").tag("")
+                    ForEach(shorts) { s in
+                        Text("\(s.name) · \(Fmt.distance(s.length))").tag(s.id)
+                    }
+                }
+                .pickerStyle(.segmented)
+                Text("The short loop takes a cut-across and skips part of the trail.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

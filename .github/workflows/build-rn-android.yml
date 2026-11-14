@@ -1,0 +1,126 @@
+name: Build Android APK (Switchback React Native)
+
+# Builds the React Native Switchback app in mobile/ (native screens, native MapLibre map) and publishes it as a
+# switchback-rn-android-N release:
+#   Switchback.apk        the release build (Hermes, R8 on)
+#   Switchback-debug.apk  the debug build (a development build: it needs `npx expo start` on a computer)
+# Both are signed with a throwaway debug key for now: fine for installing by hand, not for a store. The app id is
+# com.cadewardc.switchback.rn (mobile/app.config.js), so it installs beside the existing Switchback app.
+# mobile/android is not committed: `expo prebuild` makes it fresh here from mobile/app.config.js.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "mobile/**"
+      - "web/src/lib/**" # the trail, track and file logic the app imports from the website
+      - "web/src/data.ts"
+      - "web/src/filters.ts"
+      - "web/src/tokens.ts"
+      - "web/src/platform/types.ts"
+      - ".github/workflows/build-rn-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: switchback-rn-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            mobile/package-lock.json
+            web/package-lock.json
+
+      # Gradle runs on 21; React Native's Gradle plugin compiles with a Java 17 toolchain
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+
+      - name: Install packages (with retries)
+        run: |
+          for dir in mobile web; do
+            for i in 1 2 3; do
+              (cd $dir && npm ci --no-audit --no-fund) && break
+              [ $i = 3 ] && exit 1
+              echo "npm ci in $dir failed (attempt $i), retrying…"; sleep $((i * 15))
+            done
+          done
+
+      # web/ is installed only so TypeScript can see the website code the app imports (and its types)
+      - name: Check types, run tests, and bundle the JavaScript
+        working-directory: mobile
+        run: |
+          npx tsc --noEmit
+          npx jest --ci
+          npx expo export --platform android --output-dir dist-check > /dev/null
+
+      - name: Generate the Android project
+        working-directory: mobile
+        run: CI=1 npx expo prebuild --platform android --clean --no-install
+
+      - name: Android SDK parts React Native needs
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;37.0.0" "ndk;27.1.12297006" "cmake;3.22.1" > /dev/null
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: switchback-rn-gradle-${{ hashFiles('mobile/package-lock.json') }}
+          restore-keys: switchback-rn-gradle-
+
+      - name: Build the release and debug APKs
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          for i in 1 2; do
+            # phones only (arm64 and older 32-bit arm); emulator ABIs are left out to keep the APK small
+            ./gradlew assembleRelease assembleDebug -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon --console=plain && break
+            [ $i = 2 ] && exit 1
+            echo "Gradle failed (attempt $i), retrying…"; sleep 30
+          done
+          REL=app/build/outputs/apk/release/app-release.apk
+          DBG=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$REL" && test -f "$DBG"
+          # the release carries its JavaScript (Hermes bytecode) and the map engine
+          unzip -l "$REL" | grep -q "assets/index.android.bundle"
+          unzip -l "$REL" | grep -q "libmaplibre.so"
+          cp "$REL" "$GITHUB_WORKSPACE/Switchback.apk"
+          cp "$DBG" "$GITHUB_WORKSPACE/Switchback-debug.apk"
+          ls -lh "$GITHUB_WORKSPACE"/Switchback*.apk
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Switchback-rn-apk
+          path: |
+            Switchback.apk
+            Switchback-debug.apk
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="switchback-rn-android-${{ github.run_number }}"
+          gh release create "$TAG" Switchback.apk Switchback-debug.apk \
+            --target "${{ github.sha }}" \
+            --title "Switchback React Native for Android #${{ github.run_number }}" \
+            --notes "The React Native Switchback app (native screens and map), built from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. It installs beside the existing Switchback app (app id com.cadewardc.switchback.rn). Download Switchback.apk on the phone and open it; Android asks you to allow installing from your browser or files app. Switchback-debug.apk is a development build that needs a computer running \`npx expo start\`." \
+            --latest=false

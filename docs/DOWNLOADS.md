@@ -13,7 +13,7 @@ Each feature is one trail: a `MultiLineString` (longitude, latitude) with these 
 | Property | Meaning |
 |---|---|
 | `id`, `name`, `length_m` | The trail, and the length of its main line in metres |
-| `line_from` | Where the line came from: `OpenStreetMap`, `Forest Service` or `National Park Service` |
+| `line_from` | Where the line came from: `OpenStreetMap`, `Forest Service`, `National Park Service` or `Community` (walked and sent in by a Switchback user, checked and approved) |
 | `licence` | The licence of that line |
 | `osm` | The OpenStreetMap relation or way, for OpenStreetMap lines |
 | `area`, `system` | The park or forest, and the trail system it belongs to |
@@ -21,6 +21,7 @@ Each feature is one trail: a `MultiLineString` (longitude, latitude) with these 
 | `hike` | `true` when the app lists it as a hike (not a fragment, side trail, road walk or informal path) |
 | `informal`, `informal_reason`, `unnamed`, `side_trail`, `road_walk`, `shared_with_bikes` | Present when true |
 | `climb_m`, `descent_m`, `lowest_m`, `highest_m` | Elevation along the main line |
+| `difficulty`, `minutes` | `easy`, `moderate`, `hard` or `veryHard`, and the walking time at an easy pace |
 
 ## Licence
 

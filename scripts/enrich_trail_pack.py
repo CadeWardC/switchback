@@ -244,6 +244,169 @@ def add_federal(missing, trails, counts):
             counts["miles added"] += official.length(lines[0]) / 1609.344
     return added
 
+def wanted_trails(region_id, parks, trails):
+    """Trails a park's own list or map names that the pack has no line for: the ones worth walking and sending
+    in (docs/SUBMISSIONS.md) or mapping in OpenStreetMap. Each says which park, where the park is (the middle of
+    the trails we do have there), and the manager's page or map to find it by. Facts only: no line is taken
+    from anyone's map. [{park, trail, miles?, source?, map?, lat?, lon?, have?}]"""
+    middles = defaultdict(list)
+    for t in trails:
+        a = official.norm_name(t.get("tags", {}).get("switchback:area", ""))
+        if a and t.get("_lines"):
+            middles[a].append(t["_lines"][0][0])
+    def where(names):
+        pts = [p for n in names for p in middles.get(official.norm_name(n), ())]
+        if not pts:
+            return {}
+        return {"lat": round(sum(p[0] for p in pts) / len(pts), 4), "lon": round(sum(p[1] for p in pts) / len(pts), 4)}
+    out, done = {}, set()
+    for rec in parks.values():
+        if id(rec) in done:
+            continue
+        done.add(id(rec))
+        at = where([rec["park"]] + rec.get("also_known_as", []))
+        for x in rec.get("trails", []):
+            if x["name"] in rec.get("_found", ()) or WATER.search(x["name"]) or MOTOR.search(x["name"]):
+                continue
+            if re.search(r"\b(paddl|canoe|kayak|orv|atv|motor)", str(x.get("uses", "")), re.I):
+                continue
+            row = {"park": rec["park"], "trail": x["name"], **at}
+            if x.get("miles"):
+                row["miles"] = x["miles"]
+            if rec.get("source"):
+                row["source"] = rec["source"]
+            out[(official.norm_name(rec["park"]), official.norm_name(x["name"]))] = row
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "park-maps", f"{region_id}-missing.json")
+    if os.path.exists(path):
+        for m in json.load(open(path)).get("trails", []):
+            if WATER.search(m["trail"]) or MOTOR.search(m["trail"]) or m.get("share_in_our_data", 0) >= 0.5:
+                continue
+            key = (official.norm_name(m["park"]), official.norm_name(m["trail"]))
+            row = out.setdefault(key, {"park": m["park"], "trail": m["trail"], **where([m["park"]])})
+            row["map"] = m["map"]
+            row["have"] = m.get("share_in_our_data", 0)
+    return sorted(out.values(), key=lambda r: (r["park"], r["trail"]))
+
+COMMUNITY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "submissions")
+
+def add_community(region_id, trails, counts, folder=COMMUNITY):
+    """Trails people walked and sent in (docs/SUBMISSIONS.md): only files that passed scripts/verify_submission.py
+    and that a maintainer approved (a name in "approved_by"), and only where the pack still has no line there
+    (OpenStreetMap or an official list may have gained the trail since). Returns [(trail, start)]."""
+    import build_trail_pack as builder
+    # verified first, so a walk of a trail on the needs-verification list is the line that gets added
+    files = sorted(glob.glob(os.path.join(folder, "verified", region_id, "*.geojson"))) + \
+        sorted(glob.glob(os.path.join(folder, "needs-verification", region_id, "*.geojson")))
+    if not files:
+        return []
+    grid = official.Grid()
+    for i, t in enumerate(trails):
+        for l in t["_lines"]:
+            grid.add(l, i)
+    added, waiting = [], []
+    for f in files:
+        try:
+            feature = json.load(open(f))
+            p = feature["properties"]
+            line = [(c[1], c[0]) for c in feature["geometry"]["coordinates"]]
+        except Exception as ex:
+            print(f"  {os.path.basename(f)}: couldn't be read ({ex})")
+            continue
+        if not str(p.get("approved_by") or "").strip():
+            counts["sent in by walkers: needs verification" if os.sep + "needs-verification" + os.sep in f
+                   else "sent in by walkers: waiting for approval"] += 1
+            waiting.append((f, p, line))
+            continue
+        placed = p.get("kind") == "placed"
+        # the checks decided which list it is on; the maintainer's name is what lets it in from either
+        if p.get("kind") not in ("walked", "placed") or len(line) < 2 or official.length(line) < ADD_MIN_M:
+            counts["sent in by walkers: not added, not a trail of a quarter mile"] += 1
+            continue
+        if official.match([line], grid)[0] >= 0.8:
+            counts["sent in by walkers: not added, the pack has the trail now"] += 1
+            continue
+        if p.get("loop") and line[0] != line[-1]:
+            line.append(line[0])
+        name = official.tidy_name(p.get("name") or "")
+        tid = f"c{name}-{line[0][0]:.3f},{line[0][1]:.3f}"
+        made = builder.make_trail(tid, None, "osmWay", name, [line], {}, ADD_MIN_M, main=line)
+        if not made:
+            continue
+        t, at = made
+        tags = t.setdefault("tags", {})
+        if placed:
+            shown = (p.get("lidar_z") or 0) >= 2
+            tags["switchback:origin"] = "USGS lidar" if shown else "Placed on a map"
+            tags["switchback:unwalked"] = "yes"
+            tags["description"] = (("Placed from USGS lidar, which shows a trail here" if shown else "Placed on a map")
+                                   + (f"; {p['park']} lists this trail. " if p.get("park") else ". ")
+                                   + "Nobody has sent in a walk of it yet, so the line may be a little off.")
+            if p.get("park_source"):
+                tags["official:url"] = p["park_source"]
+        else:
+            tags["switchback:origin"] = "Community"
+            tags["switchback:walked"] = str(p.get("walked_on") or "")
+            if p.get("notes"):
+                tags["description"] = str(p["notes"])[:400]
+        if p.get("area") or p.get("park"):
+            tags["switchback:area"] = p.get("area") or p["park"]
+        t["_lines"] = [line]
+        grid.add(line, len(trails) + len(added))
+        added.append((t, at))
+        counts["sent in by walkers: added"] += 1
+    # what is left on the needs-verification list, for the apps to show apart from the trails ("walk this one"):
+    # not the ones the pack has a line for now
+    unsure = []
+    for f, p, line in waiting:
+        if os.sep + "needs-verification" + os.sep not in f or len(line) < 2 or official.match([line], grid)[0] >= 0.8:
+            continue
+        props = {"name": p.get("name"), "kind": p.get("kind"), "length_m": p.get("length_m"),
+                 "why": "; ".join(p.get("unsure") or []), "park": p.get("park"), "lidar_z": p.get("lidar_z"),
+                 "loop": p.get("loop")}
+        unsure.append({"type": "Feature", "properties": {k: v for k, v in props.items() if v not in (None, "")},
+                       "geometry": {"type": "LineString", "coordinates": [[round(c[1], 6), round(c[0], 6)] for c in line]}})
+    add_community.unsure = unsure
+    return added
+
+LEVELS = ["easy", "moderate", "hard", "veryHard"]
+
+def rate(t):
+    """Writes the trail's difficulty and walking time into the file, so every app shows the same without working
+    them out itself (and a change to the rule is a rebuild of the files, not a new version of each app).
+    Difficulty: kilometres plus a point for every 100 m of climb, raised by the SAC scale and a Forest Service
+    class 1 trail. Time: Naismith's rule at an easy pace, 4.5 km/h plus an hour for every 600 m of climb."""
+    tags = t.setdefault("tags", {})
+    gain = (t.get("elev") or {}).get("g") or 0
+    effort = t["length"] / 1000 + gain / 100
+    level = 0 if effort < 8 else 1 if effort < 16 else 2 if effort < 26 else 3
+    if re.sub(r"\D", "", tags.get("usfs:trail_class", "")) == "1":
+        level = max(level, 1)
+    sac = tags.get("sac_scale")
+    if sac == "mountain_hiking":
+        level = max(level, 1)
+    elif sac == "demanding_mountain_hiking":
+        level = max(level, 2)
+    elif sac in ("alpine_hiking", "demanding_alpine_hiking", "difficult_alpine_hiking"):
+        level = 3
+    tags["switchback:difficulty"] = LEVELS[level]
+    tags["switchback:minutes"] = str(round((t["length"] / 1000 / 4.5 + gain / 600) * 60))
+
+def place(added, trails_by_cell, header, info):
+    """Puts added trails in their cells and widens the area's summary to hold them."""
+    for t, at in added:
+        trails_by_cell.setdefault(f"{math.floor(at[0] / header['cell'])}_{math.floor(at[1] / header['cell'])}", []).append(t)
+        t.pop("_main", None)
+        info.setdefault("coverage", [])
+        sq = f"{math.floor(at[0])}_{math.floor(at[1])}"
+        if sq not in info["coverage"]:
+            info["coverage"] = sorted(info["coverage"] + [sq])
+        b = info.get("bbox")
+        if b:
+            info["bbox"] = [min(b[0], at[0]), min(b[1], at[1]), max(b[2], at[0]), max(b[3], at[1])]
+    if added:
+        header["bbox"] = info.get("bbox", header.get("bbox"))
+        info["trails"] = info.get("trails", 0) + len(added)
+
 def main():
     out, region_id = sys.argv[1], sys.argv[2]
     pack_path, info_path = os.path.join(out, f"{region_id}.trails"), os.path.join(out, f"{region_id}.json")
@@ -328,6 +491,10 @@ def main():
                     tags["official:match"] = "named in the park's trail list"
                 if rec.get("source"):
                     tags["official:url"] = rec["source"]
+                # the colour the park paints this trail's blazes, for the apps to draw them in
+                paint = re.match(r"(yellow|orange|blue|red|white|green|purple|pink|brown|black)\b", str(hit.get("blaze") or "").strip().lower())
+                if paint:
+                    tags["switchback:blaze"] = paint.group(1)
                 if not official.same_name(hit["name"], t["name"]):
                     tags["official:name"] = hit["name"]
                 # the manager's length, when this is the whole trail and not one piece of it
@@ -366,36 +533,53 @@ def main():
             tags["switchback:hike"] = "no"
         counts["hikes" if hike else "not listed as hikes"] += 1
 
+    seen_parks = set()
     for rec in parks.values():
+        if id(rec) in seen_parks:      # a park is in the table once for each of its names
+            continue
+        seen_parks.add(id(rec))
         absent = [x["name"] for x in rec.get("trails", []) if x["name"] not in rec.get("_found", ())]
         if absent:
             print(f"  {rec['park']}: in its trail list but not found in the pack: {', '.join(absent)}")
+    try:
+        wanted = wanted_trails(region_id, parks, inside)
+        json.dump({"region": region_id, "wanted": wanted}, open(os.path.join(out, f"{region_id}.wanted.json"), "w"),
+                  ensure_ascii=False, separators=(",", ":"))
+        counts["trails wanted (on a park's list or map, no line yet)"] = len(wanted)
+    except Exception as ex:
+        print(f"  the list of trails wanted couldn't be written ({ex})")
     # federal trails our data has no line for
     try:
         added = add_federal(missing, trails, counts) if region["country"] == "US" else []
         if added and os.environ.get("ELEVATION", "1") != "0":
             import build_trail_pack as builder
             builder.add_elevation(added, os.environ.get("TERRAIN_CACHE", "terrain"))
-        for t, at in added:
-            trails_by_cell.setdefault(f"{math.floor(at[0] / header['cell'])}_{math.floor(at[1] / header['cell'])}", []).append(t)
-            t.pop("_main", None)
-            info.setdefault("coverage", [])
-            sq = f"{math.floor(at[0])}_{math.floor(at[1])}"
-            if sq not in info["coverage"]:
-                info["coverage"] = sorted(info["coverage"] + [sq])
-            b = info.get("bbox")
-            if b:
-                info["bbox"] = [min(b[0], at[0]), min(b[1], at[1]), max(b[2], at[0]), max(b[3], at[1])]
+        place(added, trails_by_cell, header, info)
         if added:
-            header["bbox"] = info.get("bbox", header.get("bbox"))
-            info["trails"] = info.get("trails", 0) + len(added)
             counts["hikes"] += len(added)
             counts["miles added"] = round(counts["miles added"])
     except Exception as ex:
         print(f"  federal trails couldn't be added ({ex})")
+    # trails people walked and sent in, once checked and approved
+    try:
+        walked = add_community(region_id, [t for ts in trails_by_cell.values() for t in ts], counts)
+        if walked and os.environ.get("ELEVATION", "1") != "0":
+            import build_trail_pack as builder
+            builder.add_elevation(walked, os.environ.get("TERRAIN_CACHE", "terrain"))
+        place(walked, trails_by_cell, header, info)
+        counts["hikes"] += len(walked)
+        # the needs-verification list, published beside the trail file (never part of it)
+        json.dump({"type": "FeatureCollection", "name": f"{info.get('name', region_id)}: trails that need verification",
+                   "note": "Likely trails that are not yet sure: not in the trail files. Walk one and send it in, "
+                           "or a maintainer can accept it. See docs/SUBMISSIONS.md.",
+                   "features": getattr(add_community, "unsure", [])},
+                  open(os.path.join(out, f"{region_id}.needs-verification.geojson"), "w"), ensure_ascii=False, separators=(",", ":"))
+    except Exception as ex:
+        print(f"  trails sent in by walkers couldn't be added ({ex})")
     for k, ts in trails_by_cell.items():
         for t in ts:
             t.pop("_lines", None)
+            rate(t)
         cells[k] = json.dumps(ts, ensure_ascii=False, separators=(",", ":")).encode()
     size = write(pack_path, header, cells)
     info["bytes"] = size
