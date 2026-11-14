@@ -11,8 +11,8 @@ import {
 } from '@web/lib/storage';
 import { filters, passes } from '@web/filters';
 import type { Coord } from '@web/lib/polyline';
-import { accessPoints, type Profile, type Trail } from '@web/lib/trail';
-import { defaultStart } from './choice';
+import { accessPoints, shortLoops, type Profile, type Trail } from '@web/lib/trail';
+import { baseRoute, defaultStart, usableStarts } from './choice';
 import type { Stop } from '@web/lib/follow';
 import type { BBox } from '@web/lib/geo';
 import type { Region } from '@web/lib/pack';
@@ -106,13 +106,30 @@ export const hikesInView = computed(() => {
 export function openTrail(t: Trail, short = -1): void {
   batch(() => {
     chosenShort.value = short;
-    // the trailhead nearest you, else the one nearest the trail
-    chosenStart.value = defaultStart(accessPoints(t), myLocation.peek()?.at ?? null);
+    chosenStart.value = startFor(t, short);
     trailRest.value = null;
     selected.value = t;
     tab.value = 'explore';
     if (sheetIndex.peek() === 0) sheetIndex.value = 1;
     flyTo.value = { bounds: t.bbox };
+  });
+}
+
+/** The start to begin with for a trail walked as one of its short loops (or whole): of the starts that meet
+ *  that route, the one nearest you, else the one nearest the trail; -1 (the trail on its own) when none does. */
+export function startFor(t: Trail, short: number): number {
+  const heads = accessPoints(t);
+  return defaultStart(heads, myLocation.peek()?.at ?? null, usableStarts(baseRoute(t, shortLoops(t), short), heads));
+}
+
+/** Chooses a short loop of the open trail (-1: the whole). A start that does not meet it is let go of. */
+export function chooseShort(short: number): void {
+  const t = selected.peek();
+  if (!t || short === chosenShort.peek()) return;
+  batch(() => {
+    chosenShort.value = short;
+    const heads = accessPoints(t), from = chosenStart.peek();
+    if (from >= 0 && !usableStarts(baseRoute(t, shortLoops(t), short), heads)[from]) chosenStart.value = startFor(t, short);
   });
 }
 

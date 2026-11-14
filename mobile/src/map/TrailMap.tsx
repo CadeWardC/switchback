@@ -9,14 +9,14 @@ import { Camera, GeoJSONSource, Layer, Map, type CameraRef, type MapRef } from '
 import { effect } from '@preact/signals-core';
 import { save } from '@web/lib/storage';
 import type { BBox } from '@web/lib/geo';
-import { accessPoints } from '@web/lib/trail';
+import { accessPoints, shortLoops } from '@web/lib/trail';
 import { light as lightTokens, dark as darkTokens, mapColors } from '@web/tokens';
 import {
   backLine, chosenShort, chosenStart, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
   tab, trailsInView, unverifiedInView, units, view, MIN_TRAIL_ZOOM,
 } from '../core/state';
 import { EMPTY, headFeatures, lineColor, lineFeature, linesFeature, pickKey, pointFeatures, trailFeatures } from '../core/trailMap';
-import { highlightLines, pickStart, startFeatures } from '../core/choice';
+import { baseRoute, highlightLines, pickStart, startFeatures, usableStarts } from '../core/choice';
 import { platform } from '../platform';
 import { useValue } from '../ui/hooks';
 import { useTheme } from '../ui/theme';
@@ -83,7 +83,12 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
     if (focused && open) return linesFeature(highlightLines(open, shown ?? open, short), { c: lineColor(open, t.dark) });
     return EMPTY;
   }, [open, shown, short, follow, rec, focused, t.dark, p]);
-  const startData = useMemo(() => (focused && open ? startFeatures(accessPoints(open), start) : EMPTY), [focused, open, start]);
+  // only the starts that meet the route as chosen (a short loop may not pass every car park)
+  const startData = useMemo(() => {
+    if (!focused || !open) return EMPTY;
+    const heads = accessPoints(open);
+    return startFeatures(heads, start, usableStarts(baseRoute(open, shortLoops(open), short), heads));
+  }, [focused, open, start, short]);
   // the open trail's casing is the light surface in both modes, so it reads against the map and the faded trails
   const casing = t.dark ? p.ink : p.card;
   const mark = t.dark ? p.green : p.primary;

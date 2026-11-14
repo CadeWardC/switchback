@@ -1,6 +1,7 @@
 import { encodePolyline, type Coord } from '@web/lib/polyline';
 import { accessPoints, makeTrail, shortLoops, type Trail } from '@web/lib/trail';
-import { chosenTrail, defaultStart, highlightLines, loopChoices, pickStart, shortName, startFeatures } from '../src/core/choice';
+import { distance as distanceOf } from '@web/lib/geo';
+import { baseRoute, choose, chosenTrail, defaultStart, highlightLines, joinedProfile, loopChoices, pickStart, shortName, startFeatures, usableStarts } from '../src/core/choice';
 import { commonsTitle, credit, linkedTitles, photoFromPage, sampleSpots, sized } from '../src/core/photos';
 
 // a square loop about 440 m a side, with a cut-across and two trailheads
@@ -59,6 +60,75 @@ describe('the open trail as chosen', () => {
     expect(pickStart([{ properties: { k: 'mo/a', h: 1 } }, { properties: { start: 1, on: 1 } }])).toBe(1);
     expect(pickStart([{ properties: { k: 'mo/a' } }])).toBeNull();
     expect(shortName('A very long name for a car park beside the road')).toHaveLength(25);
+  });
+});
+
+describe('a start must meet the route that is chosen', () => {
+  // heights every 110 m: the loop rolls gently around 200 m; the walk in has its own heights, 10 m lower where they meet
+  const pack = (pts: [number, number][]) => {
+    let s0 = 0, h0 = 0;
+    return encodePolyline(pts.map(([steps, m]) => { const d: Coord = [(steps - s0) / 1e5, (m - h0) / 1e5]; s0 = steps; h0 = m; return d; })
+      .reduce<Coord[]>((acc, d) => { const last = acc[acc.length - 1] ?? [0, 0]; acc.push([last[0] + d[0], last[1] + d[1]]); return acc; }, []));
+  };
+  const rolling = (n: number) => Array.from({ length: n + 1 }, (_, i) => [i, Math.round(200 + 10 * Math.sin((i / n) * 2 * Math.PI))] as [number, number]);
+  const withHeights = (walkInHeights: boolean) => makeTrail('mo', {
+    id: 'b', name: 'Deer Run Trail', source: 'osmWay', segments: [encodePolyline(loop)], path: encodePolyline(loop), length: 1760,
+    elev: { s: 110, p: pack(rolling(16)) },
+    tags: {
+      'switchback:short': JSON.stringify([{ n: 'West loop', m: 1320, l: encodePolyline(west), e: { s: 110, p: pack(rolling(12)) } }, { n: 'East loop', m: 1321, l: encodePolyline(east), e: { s: 110, p: pack(rolling(12)) } }]),
+      'switchback:access': JSON.stringify([
+        { n: 'West car park', d: 222, p: [38.898, -92.3], l: encodePolyline(walkIn), ...(walkInHeights ? { e: { s: 111, p: pack([[0, 185], [1, 188], [2, 190]]) } } : {}) },
+      ]),
+    },
+  })!;
+  const deer = withHeights(true), deerShorts = shortLoops(deer), deerHeads = accessPoints(deer);
+
+  it('offers a start only for routes its walk in ends on', () => {
+    expect(usableStarts(baseRoute(deer, deerShorts, -1), deerHeads)).toEqual([true]);
+    expect(usableStarts(baseRoute(deer, deerShorts, 0), deerHeads)).toEqual([true]); // the west loop passes it
+    expect(usableStarts(baseRoute(deer, deerShorts, 1), deerHeads)).toEqual([false]); // the east loop is 200 m away
+    expect(defaultStart(deerHeads, null, [false])).toBe(-1);
+    expect(startFeatures(deerHeads, 0, [false]).features).toHaveLength(0);
+  });
+  it('never joins a walk in to a loop it does not meet', () => {
+    const far = choose(deer, deerShorts, 1, deerHeads, 0);
+    expect(far.trail).toBe(far.base);
+    expect(far.trail.path).toEqual(east);
+    expect(far.trail.length).toBe(1321);
+  });
+  it('has no straight join longer than 60 m in any line it makes', () => {
+    for (const short of [-1, 0, 1]) {
+      const t = choose(deer, deerShorts, short, deerHeads, 0).trail;
+      const base = baseRoute(deer, deerShorts, short);
+      const own = Math.max(...base.path.slice(1).map((c, i) => distanceOf(base.path[i], c)));
+      for (let i = 1; i < t.path.length; i++) expect(distanceOf(t.path[i - 1], t.path[i])).toBeLessThanOrEqual(Math.max(own, 222) + 1);
+    }
+  });
+  it('joins the heights where the walk in meets the loop, with no cliffs', () => {
+    const c = choose(deer, deerShorts, -1, deerHeads, 0);
+    const p = c.trail.profile!;
+    expect(c.trailOnly).toBe(false);
+    expect(p.distances[p.distances.length - 1]).toBeCloseTo(1760 + 2 * 222, 0);
+    for (let i = 1; i < p.distances.length; i++) {
+      const dd = p.distances[i] - p.distances[i - 1], de = Math.abs(p.elevations[i] - p.elevations[i - 1]);
+      expect(dd).toBeGreaterThanOrEqual(0);
+      expect(de).toBeLessThanOrEqual(0.1 * Math.max(dd, 1) + 0.01); // nothing steeper than the ground itself
+    }
+    // out and back: it ends at the height it started
+    expect(p.elevations[p.elevations.length - 1]).toBeCloseTo(p.elevations[0], 5);
+    // the walk in keeps its own shape (5 m up), set at the loop's height where they meet (200 m)
+    expect(p.elevations[0]).toBeCloseTo(195, 5);
+  });
+  it('charts the trail alone when the walk in has no heights', () => {
+    const bare = withHeights(false);
+    const c = choose(bare, shortLoops(bare), -1, accessPoints(bare), 0);
+    expect(c.trailOnly).toBe(true);
+    expect(c.base.profile).toBe(bare.profile);
+    expect(c.trail.length).toBeCloseTo(1760 + 2 * 222, 0);
+    // (while walking, the walk in is level at the height of the join: still no cliff)
+    const j = joinedProfile(c.base, accessPoints(bare)[0])!;
+    expect(j.level).toBe(true);
+    expect(j.profile.elevations[0]).toBe(j.profile.elevations[1]);
   });
 });
 

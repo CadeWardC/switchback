@@ -13,14 +13,14 @@ import { exportGpx } from '@web/lib/gpx';
 import { sunTimes, type Stop } from '@web/lib/follow';
 import { platform } from '../platform';
 import {
-  chosenShort, chosenStart, closeTrail, flyTo, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units,
+  chosenShort, chosenStart, chooseShort, closeTrail, flyTo, startFor, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units,
 } from '../core/state';
 import { start } from '../core/recorder';
 import { stopsFor } from '../core/stops';
 import { trailGpx } from '../core/gpx';
 import { bigTime } from '../core/hikeMath';
 import { split } from '../core/shape';
-import { chosenTrail, loopChoices } from '../core/choice';
+import { choose, loopChoices, usableStarts } from '../core/choice';
 import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
@@ -70,7 +70,13 @@ export function TrailSheet() {
   const heads = useMemo(() => accessPoints(whole), [whole]);
   const choices = useMemo(() => loopChoices(whole, shorts), [whole, shorts]);
   // the trail as chosen: a short loop or the whole, in from the chosen trailhead or on its own
-  const tr = useMemo(() => chosenTrail(whole, shorts, short, heads, from), [whole, shorts, short, heads, from]);
+  const chosen = useMemo(() => choose(whole, shorts, short, heads, from), [whole, shorts, short, heads, from]);
+  const tr = chosen.trail;
+  // the starts that meet this route (a walk in that ends somewhere the chosen loop does not go is not offered)
+  const usable = useMemo(() => usableStarts(chosen.base, heads), [chosen.base, heads]);
+  useEffect(() => { if (from >= 0 && !usable[from]) chosenStart.value = startFor(whole, short); }, [from, usable, whole, short]);
+  // what the ridge shows: the whole walk, or the trail alone when the walk in has no heights of its own
+  const chart = chosen.trailOnly ? chosen.base : tr;
   useEffect(() => { shownTrail.value = tr !== whole ? tr : null; }, [tr, whole]);
   useEffect(() => () => { shownTrail.value = null; }, []);
   // the map fits a newly chosen loop (opening the trail has already fitted it; choosing a start leaves the map be)
@@ -78,7 +84,7 @@ export function TrailSheet() {
   useEffect(() => {
     if (fitted.current !== short) { fitted.current = short; flyTo.value = { bounds: tr.bbox }; }
   }, [short, tr]);
-  const pickShort = (i: number) => { if (i !== chosenShort.peek()) { platform.haptics.tap(); chosenShort.value = i; } };
+  const pickShort = (i: number) => { if (i !== chosenShort.peek()) { platform.haptics.tap(); chooseShort(i); } };
   const pickStart = (i: number) => { if (i !== chosenStart.peek()) { platform.haptics.tap(); chosenStart.value = i; } };
   const [stops, setStops] = useState<Stop[]>([]);
   useEffect(() => {
@@ -86,9 +92,18 @@ export function TrailSheet() {
     setStops([]);
     void stopsFor(tr, whole, short < 0).then((x) => { if (live) setStops(x); }, () => {});
     return () => { live = false; };
-  }, [tr, whole, short, from]);
+  }, [tr, whole, short]);
+  // (the ridge of the trail alone pins the things on the trail alone)
+  const [chartStops, setChartStops] = useState<Stop[]>([]);
+  useEffect(() => {
+    let live = true;
+    setChartStops([]);
+    if (chart !== tr) void stopsFor(chart, whole, short < 0).then((x) => { if (live) setChartStops(x); }, () => {});
+    return () => { live = false; };
+  }, [chart, tr, whole, short]);
 
   const p = tr.profile;
+  const cp = chart.profile;
   const now = new Date();
   const seconds = estimatedSeconds(tr);
   const sun = sunTimes(now, tr.start);
@@ -149,9 +164,10 @@ export function TrailSheet() {
         { value: time.value, unit: time.unit, label: 'Easy pace' },
       ]} />
 
-      {(p && p.distances.length > 1) || sun ? (
+      {(cp && cp.distances.length > 1) || sun ? (
         <Card onLayout={(e) => { trailRest.value = Math.round(e.nativeEvent.layout.y + e.nativeEvent.layout.height); }}>
-          {p && p.distances.length > 1 ? <Ridge profile={p} path={tr.path} stops={stops} units={u} /> : null}
+          {cp && cp.distances.length > 1 ? <Ridge profile={cp} path={chart.path} stops={chart === tr ? stops : chartStops} units={u} /> : null}
+          {chosen.trailOnly ? <T v="tiny" muted>Elevation is for the trail itself.</T> : null}
           <LightLine now={now} back={new Date(now.getTime() + seconds * 1000)} sunset={sun?.sunset ?? null} />
         </Card>
       ) : null}
@@ -184,19 +200,23 @@ export function TrailSheet() {
         <View style={{ gap: 8 }}>
           <T v="section">Where to start</T>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            {heads.map((h, i) => (
-              <RadioRow key={`${h.name}-${i}`} first={i === 0} on={i === from} onPress={() => pickStart(i)} title={h.name}
+            {heads.map((h, i) => (!usable[i] ? null : (
+              <RadioRow key={`${h.name}-${i}`} first={i === usable.indexOf(true)} on={i === from} onPress={() => pickStart(i)} title={h.name}
                 sub={h.distance < 15 || h.line.length < 2 ? 'On the trail' : `${dist(h.distance)} walk in`}
                 right={i === from ? (
                   <Tap onPress={() => platform.links.directions(h.point[0], h.point[1])} accessibilityRole="button" accessibilityLabel={`Directions to ${h.name}`}>
                     <T v="small" color={t.c.link} style={{ fontFamily: fonts.semibold }}>Directions</T>
                   </Tap>
                 ) : undefined} />
-            ))}
-            <RadioRow on={from < 0} onPress={() => pickStart(-1)} title="The trail on its own" sub="No walk in" />
+            )))}
+            <RadioRow first={!usable.includes(true)} on={from < 0} onPress={() => pickStart(-1)} title="The trail on its own" sub="No walk in" />
           </Card>
           {head && head.line.length > 1 && head.distance >= 15 ? (
-            <T v="tiny" muted>The distance, climb, time and ridge above include the walk in from {head.name}{whole.isLoop ? ' and back out' : ''}.</T>
+            <T v="tiny" muted>
+              {chosen.trailOnly
+                ? `The distance and time above include the walk in from ${head.name}${chosen.base.isLoop ? ' and back out' : ''}; the climb and the ridge are for the trail itself.`
+                : `The distance, climb, time and ridge above include the walk in from ${head.name}${chosen.base.isLoop ? ' and back out' : ''}.`}
+            </T>
           ) : null}
         </View>
       )}
