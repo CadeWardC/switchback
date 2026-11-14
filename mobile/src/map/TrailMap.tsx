@@ -1,25 +1,32 @@
 // The map: MapLibre Native with the Switchback outdoor style (light or dark, hillshade), and the trails drawn
 // over it as GeoJSON line layers in their own colours, with casing, names along the lines and trailhead
 // circles. A tap on a trail or a trailhead opens it; a tap on empty map closes the open trail.
+// While a trail is open it is drawn in full on top (its whole line, also where it runs along other trails),
+// every other trail fades back, and its starts show as radio markers: a tap chooses where the hike begins.
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { Camera, GeoJSONSource, Layer, Map, type CameraRef, type MapRef } from '@maplibre/maplibre-react-native';
 import { effect } from '@preact/signals-core';
 import { save } from '@web/lib/storage';
 import type { BBox } from '@web/lib/geo';
+import { accessPoints } from '@web/lib/trail';
 import { light as lightTokens, dark as darkTokens, mapColors } from '@web/tokens';
 import {
-  backLine, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
+  backLine, chosenShort, chosenStart, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
   tab, trailsInView, unverifiedInView, units, view, MIN_TRAIL_ZOOM,
 } from '../core/state';
 import { EMPTY, headFeatures, lineColor, lineFeature, linesFeature, pickKey, pointFeatures, trailFeatures } from '../core/trailMap';
+import { highlightLines, pickStart, startFeatures } from '../core/choice';
+import { platform } from '../platform';
 import { useValue } from '../ui/hooks';
 import { useTheme } from '../ui/theme';
 import { styleFor } from './style';
 
 /** Trails are drawn under the base map's labels. */
 const UNDER_LABELS = 'housenumber';
-const TAP_LAYERS = ['sb-heads', 'sb-trail', 'sb-side', 'sb-unnamed', 'sb-unverified'];
+const TAP_LAYERS = ['sb-starts', 'sb-heads', 'sb-trail', 'sb-side', 'sb-unnamed', 'sb-unverified'];
+/** While a trail is open, the others are drawn this faint, and a little thinner. */
+const FADE = 0.35, THIN = 0.8;
 const width = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 8, a, 14, b] as const;
 const round = { 'line-cap': 'round', 'line-join': 'round' } as const;
 
@@ -56,6 +63,8 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
   const follow = useValue(following);
   const walk = useValue(shownWalk);
   const currentTab = useValue(tab);
+  const short = useValue(chosenShort);
+  const start = useValue(chosenStart);
 
   const style = useMemo(() => styleFor(t.dark, u), [t.dark, u]);
   const p = t.dark ? darkTokens : lightTokens;
@@ -66,12 +75,18 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [hikes, open?.key, t.dark, rec, zoomBand]);
   const unverifiedData = useMemo(() => linesFeature(unverified.flatMap((x) => x.segments), {}), [unverified]);
-  const openLine = shown ?? open;
+  // a trail is open: it stands out, the rest step back
+  const focused = currentTab === 'explore' && rec === 'idle' && !!open;
+  const fade = focused ? FADE : 1, thin = focused ? THIN : 1;
   const selectedData = useMemo(() => {
     if (rec !== 'idle' && follow) return lineFeature(follow.path, { c: t.dark ? p.green : p.primary });
-    if (currentTab === 'explore' && openLine) return linesFeature(openLine === shown ? [openLine.path] : openLine.segments, { c: lineColor(openLine, t.dark) });
+    if (focused && open) return linesFeature(highlightLines(open, shown ?? open, short), { c: lineColor(open, t.dark) });
     return EMPTY;
-  }, [openLine, shown, follow, rec, currentTab, t.dark, p]);
+  }, [open, shown, short, follow, rec, focused, t.dark, p]);
+  const startData = useMemo(() => (focused && open ? startFeatures(accessPoints(open), start) : EMPTY), [focused, open, start]);
+  // the open trail's casing is the light surface in both modes, so it reads against the map and the faded trails
+  const casing = t.dark ? p.ink : p.card;
+  const mark = t.dark ? p.green : p.primary;
   const recData = useMemo(() => {
     if (rec !== 'idle') return linesFeature(segs.map((s) => s.map((x) => [x.lat, x.lon] as [number, number])));
     if (currentTab === 'log' && walk) return linesFeature(walk.segments.map((s) => s.map((x) => [x.lat, x.lon] as [number, number])));
@@ -100,9 +115,16 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
     try {
       features = await map.current!.queryRenderedFeatures([[x - 14, y - 14], [x + 14, y + 14]], { layers: TAP_LAYERS });
     } catch { /* treated as empty map */ }
-    const key = pickKey(features.map((f) => ({ properties: f.properties as Record<string, unknown> | null })));
+    const props = features.map((f) => ({ properties: f.properties as Record<string, unknown> | null }));
+    // a start marker of the open trail: choose it
+    const chosen = pickStart(props);
+    if (chosen != null && selected.peek()) {
+      if (chosenStart.peek() !== chosen) { platform.haptics.tap(); chosenStart.value = chosen; }
+      return;
+    }
+    const key = pickKey(props);
     const hit = key ? trailsInView.peek().find((tr) => tr.key === key) ?? unverifiedInView.peek().find((tr) => tr.key === key) : null;
-    if (hit) openTrail(hit);
+    if (hit) { if (hit.key !== selected.peek()?.key) openTrail(hit); }
     else closeTrail(); // a tap on empty map closes the open trail
   };
 
@@ -125,39 +147,59 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
 
       <GeoJSONSource id="sb-trails" data={trailData}>
         <Layer id="sb-side-casing" type="line" beforeId={UNDER_LABELS} filter={['==', ['get', 'h'], 0]} layout={round}
-          paint={{ 'line-color': p.mapCasing, 'line-width': width(2, 4.5) as never, 'line-opacity': 0.8 }} />
+          paint={{ 'line-color': p.mapCasing, 'line-width': width(2 * thin, 4.5 * thin) as never, 'line-opacity': 0.8 * fade }} />
         <Layer id="sb-side" type="line" beforeId={UNDER_LABELS} filter={['all', ['==', ['get', 'h'], 0], ['==', ['get', 'u'], 0]]} layout={round}
-          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1, 2.2) as never, 'line-opacity': 0.85 }} />
+          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1 * thin, 2.2 * thin) as never, 'line-opacity': 0.85 * fade }} />
         <Layer id="sb-unnamed" type="line" beforeId={UNDER_LABELS} filter={['all', ['==', ['get', 'h'], 0], ['==', ['get', 'u'], 1]]}
           layout={{ 'line-join': 'round' }}
-          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1, 2.2) as never, 'line-dasharray': [2, 1.6], 'line-opacity': 0.85 }} />
+          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1 * thin, 2.2 * thin) as never, 'line-dasharray': [2, 1.6], 'line-opacity': 0.85 * fade }} />
         <Layer id="sb-trail-casing" type="line" beforeId={UNDER_LABELS} filter={['==', ['get', 'h'], 1]} layout={round}
-          paint={{ 'line-color': p.mapCasing, 'line-width': width(3.2, 7) as never }} />
+          paint={{ 'line-color': p.mapCasing, 'line-width': width(3.2 * thin, 7 * thin) as never, 'line-opacity': fade }} />
         <Layer id="sb-trail" type="line" beforeId={UNDER_LABELS} filter={['==', ['get', 'h'], 1]} layout={round}
-          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1.6, 3.6) as never }} />
+          paint={{ 'line-color': ['get', 'c'], 'line-width': width(1.6 * thin, 3.6 * thin) as never, 'line-opacity': fade }} />
         <Layer id="sb-trail-names" type="symbol" minzoom={12} filter={['all', ['==', ['get', 'h'], 1], ['has', 'name']]}
           layout={{
             'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 11.5,
             'symbol-spacing': 320, 'text-max-angle': 35, 'text-offset': [0, 0.9], 'text-letter-spacing': 0.02,
           }}
-          paint={{ 'text-color': t.dark ? p.green : p.primary, 'text-halo-color': p.mapCasing, 'text-halo-width': 1.6 }} />
+          paint={{ 'text-color': mark, 'text-halo-color': p.mapCasing, 'text-halo-width': 1.6, 'text-opacity': fade }} />
       </GeoJSONSource>
 
       <GeoJSONSource id="sb-unverified" data={unverifiedData}>
         <Layer id="sb-unverified-casing" type="line" beforeId={UNDER_LABELS} layout={round}
-          paint={{ 'line-color': p.mapCasing, 'line-width': width(3, 6) as never, 'line-opacity': 0.85 }} />
+          paint={{ 'line-color': p.mapCasing, 'line-width': width(3 * thin, 6 * thin) as never, 'line-opacity': 0.85 * fade }} />
         <Layer id="sb-unverified" type="line" beforeId={UNDER_LABELS} layout={{ 'line-join': 'round' }}
-          paint={{ 'line-color': mapColors.unverified, 'line-width': width(1.6, 3) as never, 'line-dasharray': [1.2, 1.4] }} />
-      </GeoJSONSource>
-
-      <GeoJSONSource id="sb-selected" data={selectedData}>
-        <Layer id="sb-selected-casing" type="line" layout={round} paint={{ 'line-color': p.mapCasing, 'line-width': width(7, 11) as never }} />
-        <Layer id="sb-selected" type="line" layout={round} paint={{ 'line-color': ['get', 'c'], 'line-width': width(4, 6) as never }} />
+          paint={{ 'line-color': mapColors.unverified, 'line-width': width(1.6 * thin, 3 * thin) as never, 'line-dasharray': [1.2, 1.4], 'line-opacity': fade }} />
       </GeoJSONSource>
 
       <GeoJSONSource id="sb-heads" data={heads}>
         <Layer id="sb-heads" type="circle"
-          paint={{ 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4, 15, 7], 'circle-color': ['get', 'c'], 'circle-stroke-color': p.mapCasing, 'circle-stroke-width': 2 }} />
+          paint={{
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4 * thin, 15, 7 * thin], 'circle-color': ['get', 'c'],
+            'circle-stroke-color': p.mapCasing, 'circle-stroke-width': 2, 'circle-opacity': fade, 'circle-stroke-opacity': fade,
+          }} />
+      </GeoJSONSource>
+
+      {/* the open trail (or the trail being followed): above everything else, labels included */}
+      <GeoJSONSource id="sb-selected" data={selectedData}>
+        <Layer id="sb-selected-casing" type="line" layout={round} paint={{ 'line-color': casing, 'line-width': width(8, 13) as never }} />
+        <Layer id="sb-selected" type="line" layout={round} paint={{ 'line-color': ['get', 'c'], 'line-width': width(4.5, 7) as never }} />
+      </GeoJSONSource>
+
+      {/* where the open trail can be started: an empty ring each, the chosen one filled with a dot and named */}
+      <GeoJSONSource id="sb-starts" data={startData}>
+        <Layer id="sb-starts" type="circle"
+          paint={{
+            'circle-radius': ['case', ['==', ['get', 'on'], 1], 10, 8], 'circle-color': p.card,
+            'circle-stroke-color': mark, 'circle-stroke-width': ['case', ['==', ['get', 'on'], 1], 3, 2.2],
+          }} />
+        <Layer id="sb-starts-dot" type="circle" filter={['==', ['get', 'on'], 1]} paint={{ 'circle-radius': 5, 'circle-color': mark }} />
+        <Layer id="sb-starts-name" type="symbol" filter={['==', ['get', 'on'], 1]}
+          layout={{
+            'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 1.1],
+            'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 9,
+          }}
+          paint={{ 'text-color': p.ink, 'text-halo-color': p.card, 'text-halo-width': 2 }} />
       </GeoJSONSource>
 
       <GeoJSONSource id="sb-rec" data={recData}>

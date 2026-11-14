@@ -1,6 +1,7 @@
 // Explore, in the sheet: search, filter chips with the choice in plain words, and the hikes on the map
 // grouped by park, as Waymark cards (blazes, the trail's own shape, two lines for a short loop).
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { signal } from '@preact/signals-core';
 import { ScrollView, View } from 'react-native';
 import { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { DIFFICULTIES, DIFFICULTY_TITLE, shortLoops, type Trail } from '@web/lib/trail';
@@ -15,6 +16,8 @@ import { grouped } from '../core/hikeMath';
 import { turnOnLocation } from '../core/locate';
 import { useValue } from '../ui/hooks';
 import { Blazes, Button, Chip, Icon, Note, T, Tap, TrailShape } from '../ui/kit';
+import { CardPhoto } from '../ui/Photos';
+import { loopChoices } from '../core/choice';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -28,6 +31,8 @@ type Row =
   | { kind: 'more'; key: string; left: number };
 
 const PAGE = 120;
+/** The cards on screen now: only these look up a photo. */
+const visibleCards = signal<ReadonlySet<string>>(new Set());
 
 export function SearchBox() {
   const t = useTheme();
@@ -80,27 +85,29 @@ function FilterChips({ u }: { u: Units }) {
   );
 }
 
-/** One trail in the list. */
-export const TrailCard = memo(function TrailCard({ trail, u }: { trail: Trail; u: Units }) {
+/** One trail in the list: blazes, name, one line per way to walk it, and its photo (or its shape). */
+export const TrailCard = memo(function TrailCard({ trail, u, visible }: { trail: Trail; u: Units; visible: boolean }) {
   const t = useTheme();
-  const shorts = useMemo(() => shortLoops(trail), [trail]);
+  const choices = useMemo(() => loopChoices(trail, shortLoops(trail)), [trail]);
   const gain = trail.profile?.gain ?? 0;
-  const line = (length: number, g: number, what: string) => `${fmtDistance(length, u)}${g >= 1 ? ` · ${fmtElevation(g, u)}` : ''} · ${what}`;
+  const line = (length: number, g: number | null, what: string) => `${fmtDistance(length, u)}${g != null && g >= 1 ? ` · ${fmtElevation(g, u)}` : ''} · ${what.toLowerCase()}`;
+  // once a card has been on screen it keeps its photo
+  const seen = useRef(false);
+  if (visible) seen.current = true;
   return (
     <Tap onPress={() => openTrail(trail)} accessibilityRole="button" accessibilityLabel={`${trail.name}, ${DIFFICULTY_TITLE[trail.difficulty]}`}
       style={[{ marginHorizontal: 16, marginBottom: 10, backgroundColor: t.c.card, borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden' }, shadow(t)]}>
       <Blazes difficulty={trail.difficulty} tags={trail.tags} />
       <View style={{ flex: 1, gap: 4 }}>
         <T v="strong" numberOfLines={2} style={{ fontFamily: fonts.numSemibold, fontSize: 16.5 }}>{trail.name}</T>
-        {shorts.length ? (
+        {choices.length ? (
           <View style={{ gap: 6, alignItems: 'flex-start' }}>
-            <Tap onPress={() => openTrail(trail)} style={{ backgroundColor: t.c.tint, borderRadius: radius.chip, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <T v="tiny" style={{ fontFamily: fonts.semibold }}>{line(trail.length, gain, 'full loop')}</T>
-            </Tap>
-            {shorts.map((x) => (
-              <Tap key={x.id} onPress={() => openTrail(trail, x.id)}
-                style={{ borderWidth: 1.2, borderColor: t.c.line2, borderRadius: radius.chip, paddingHorizontal: 10, paddingVertical: 2 }}>
-                <T v="tiny" style={{ fontFamily: fonts.semibold }}>{line(x.length, x.profile?.gain ?? 0, 'short loop')}</T>
+            {choices.map((c) => (
+              <Tap key={c.index} onPress={() => openTrail(trail, c.index)}
+                style={c.index < 0
+                  ? { backgroundColor: t.c.tint, borderRadius: radius.chip, paddingHorizontal: 10, paddingVertical: 3 }
+                  : { borderWidth: 1.2, borderColor: t.c.line2, borderRadius: radius.chip, paddingHorizontal: 10, paddingVertical: 2 }}>
+                <T v="tiny" style={{ fontFamily: fonts.semibold }}>{line(c.length, c.gain, c.name)}</T>
               </Tap>
             ))}
           </View>
@@ -108,7 +115,8 @@ export const TrailCard = memo(function TrailCard({ trail, u }: { trail: Trail; u
           <T v="small" muted>{fmtDistance(trail.length, u)}{gain >= 1 ? ` · ${fmtElevation(gain, u)}` : ''}{trail.isLoop ? ' · Loop' : ''}</T>
         )}
       </View>
-      {trail.path.length > 1 && <TrailShape path={trail.path} color={t.c.muted} />}
+      <CardPhoto trail={trail} active={seen.current}
+        fallback={trail.path.length > 1 ? <TrailShape path={trail.path} color={t.c.muted} /> : null} />
     </Tap>
   );
 });
@@ -193,6 +201,11 @@ export function ExploreSheet() {
   const err = useValue(regionsError);
   const loc = useValue(locationState);
   const [shown, setShown] = useState(PAGE);
+  const onScreen = useValue(visibleCards);
+  const onViewable = useRef(({ viewableItems }: { viewableItems: { key: string }[] }) => {
+    visibleCards.value = new Set(viewableItems.map((v) => v.key));
+  }).current;
+  const viewability = useRef({ itemVisiblePercentThreshold: 20, minimumViewTime: 150 }).current;
   const zoomedOut = (v?.zoom ?? 0) < MIN_TRAIL_ZOOM;
   const center = by === 'closest' ? v?.center ?? null : null;
 
@@ -250,6 +263,9 @@ export function ExploreSheet() {
       initialNumToRender={12}
       windowSize={9}
       removeClippedSubviews
+      onViewableItemsChanged={onViewable}
+      viewabilityConfig={viewability}
+      extraData={onScreen}
       contentContainerStyle={{ paddingBottom: 40 }}
       renderItem={({ item }) => {
         if (item.kind === 'group') {
@@ -263,7 +279,7 @@ export function ExploreSheet() {
         if (item.kind === 'more') {
           return <Button title={`Show more (${item.left.toLocaleString()} left)`} onPress={() => setShown((n) => n + PAGE)} style={{ marginHorizontal: 16 }} />;
         }
-        return <TrailCard trail={item.trail} u={u} />;
+        return <TrailCard trail={item.trail} u={u} visible={onScreen.has(item.key)} />;
       }}
     />
   );

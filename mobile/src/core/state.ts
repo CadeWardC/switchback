@@ -11,7 +11,8 @@ import {
 } from '@web/lib/storage';
 import { filters, passes } from '@web/filters';
 import type { Coord } from '@web/lib/polyline';
-import type { Profile, Trail } from '@web/lib/trail';
+import { accessPoints, type Profile, type Trail } from '@web/lib/trail';
+import { defaultStart } from './choice';
 import type { Stop } from '@web/lib/follow';
 import type { BBox } from '@web/lib/geo';
 import type { Region } from '@web/lib/pack';
@@ -83,8 +84,12 @@ export const loadNote = signal<string | null>(null);
 export const selected = signal<Trail | null>(null);
 /** The open trail as it is being looked at: a short loop of it, or with the walk in from a trailhead. */
 export const shownTrail = signal<Trail | null>(null);
-/** The short loop to show when a trail page opens (set by tapping that line in the list). */
-export const openShort = signal<string | null>(null);
+/** Which of the open trail's short loops is chosen (an index into shortLoops(trail)), or -1 for the full trail. */
+export const chosenShort = signal(-1);
+/** Where the hike starts: an index into accessPoints(trail), or -1 for the trail on its own. */
+export const chosenStart = signal(-1);
+/** How tall the sheet should rest so the open trail's ridge card shows whole (set by the trail page). */
+export const trailRest = signal<number | null>(null);
 export const query = signal('');
 
 /** The hikes to list and to pin on the map: in view, and passing the filters. */
@@ -98,9 +103,12 @@ export const hikesInView = computed(() => {
 });
 
 /** Opens a trail's page: the sheet shows it and the map fits it. */
-export function openTrail(t: Trail, shortId: string | null = null): void {
+export function openTrail(t: Trail, short = -1): void {
   batch(() => {
-    openShort.value = shortId;
+    chosenShort.value = short;
+    // the trailhead nearest you, else the one nearest the trail
+    chosenStart.value = defaultStart(accessPoints(t), myLocation.peek()?.at ?? null);
+    trailRest.value = null;
     selected.value = t;
     tab.value = 'explore';
     if (sheetIndex.peek() === 0) sheetIndex.value = 1;
@@ -113,6 +121,9 @@ export function closeTrail(): void {
   batch(() => {
     selected.value = null;
     shownTrail.value = null;
+    chosenShort.value = -1;
+    chosenStart.value = -1;
+    trailRest.value = null;
     chartPoint.value = null;
   });
 }

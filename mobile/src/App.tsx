@@ -15,7 +15,7 @@ import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
 import { effect } from '@preact/signals-core';
 import {
-  closeTrail, locationState, online, recState, selected, sheetIndex, shownWalk, tab, toast, type Tab,
+  closeTrail, locationState, online, recState, selected, sheetIndex, shownWalk, tab, toast, trailRest, type Tab,
 } from './core/state';
 import { locateMe, turnOnLocation } from './core/locate';
 import { TrailMap } from './map/TrailMap';
@@ -32,6 +32,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Routes = { Home: undefined; Settings: undefined };
 const Stack = createNativeStackNavigator<Routes>();
+
+/** The height of the sheet's grabber (ui/kit.tsx Grabber). */
+const GRABBER = 22;
 
 const TABS: { tab: Tab; label: string }[] = [
   { tab: 'explore', label: 'Explore' }, { tab: 'hike', label: 'Hike' }, { tab: 'saved', label: 'Saved' }, { tab: 'log', label: 'Log' },
@@ -123,7 +126,16 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
   const hiking = rec !== 'idle';
   const rowH = hiking ? 0 : size.tabBar + insets.bottom;
   const sheetShown = current === 'explore' || current === 'hike' || (current === 'log' && !!walk);
-  const snapPoints = useMemo(() => [hiking ? 250 : 160, '52%', '92%'], [hiking]);
+  // The sheet lives in the space above the bottom row, so nothing in it is ever under the row. With a trail
+  // open it rests just tall enough to show the page down to the end of the ridge card (the daylight line).
+  const sel = useValue(selected);
+  const rest = useValue(trailRest);
+  const room = height - rowH;
+  const peek = hiking ? 250 : 160;
+  const middle = current === 'explore' && sel && rest != null
+    ? Math.round(Math.max(room * 0.42, Math.min(room * 0.74, rest + GRABBER + 14)))
+    : Math.round(room * 0.52);
+  const snapPoints = useMemo(() => [peek, middle, Math.round((room - insets.top) * 0.97)], [peek, middle, room, insets.top]);
 
   // a hike in progress keeps the Hike screen (the bottom row steps away)
   useEffect(() => effect(() => { if (recState.value !== 'idle' && tab.peek() !== 'hike') tab.value = 'hike'; }), []);
@@ -147,7 +159,7 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
     return () => sub.remove();
   }, []);
 
-  const bottomInset = rowH + (index <= 0 ? (hiking ? 250 : 160) : height * 0.45);
+  const bottomInset = rowH + (index <= 0 ? peek : Math.min(middle, room * 0.6));
   const openSettings = () => navigation.navigate('Settings');
 
   return (
@@ -157,23 +169,24 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
       <MapChrome />
       {current === 'saved' && <View style={[StyleSheet.absoluteFill, { bottom: rowH }]}><SavedScreen onSettings={openSettings} /></View>}
       {current === 'log' && !walk && <View style={[StyleSheet.absoluteFill, { bottom: rowH }]}><LogScreen onSettings={openSettings} /></View>}
-      <BottomSheet
-        ref={sheet}
-        index={sheetShown ? 1 : -1}
-        snapPoints={snapPoints}
-        enableDynamicSizing={false}
-        bottomInset={rowH}
-        topInset={insets.top}
-        onChange={(i) => { if (i >= 0 && i !== sheetIndex.peek()) sheetIndex.value = i; }}
-        handleComponent={Grabber}
-        backgroundStyle={{ backgroundColor: t.c.bg, borderRadius: radius.sheet }}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
-        style={shadow(t)}
-      >
-        <SheetContent />
-      </BottomSheet>
+      <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { bottom: rowH }]}>
+        <BottomSheet
+          ref={sheet}
+          index={sheetShown ? 1 : -1}
+          snapPoints={snapPoints}
+          enableDynamicSizing={false}
+          topInset={insets.top}
+          onChange={(i) => { if (i >= 0 && i !== sheetIndex.peek()) sheetIndex.value = i; }}
+          handleComponent={Grabber}
+          backgroundStyle={{ backgroundColor: t.c.bg, borderRadius: radius.sheet }}
+          keyboardBehavior="extend"
+          keyboardBlurBehavior="restore"
+          android_keyboardInputMode="adjustResize"
+          style={shadow(t)}
+        >
+          <SheetContent />
+        </BottomSheet>
+      </View>
       {!hiking && <TabRow />}
       <Toast bottom={rowH + 16} />
     </View>

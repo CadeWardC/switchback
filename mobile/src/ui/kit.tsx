@@ -1,6 +1,6 @@
 // The pieces the screens are made of, drawn to the Waymark mock-ups (docs/design/waymark-mockups.html).
 import { memo, useMemo, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextProps, type TextStyle, type ViewProps, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { DIFFICULTY_TITLE, type Difficulty } from '@web/lib/trail';
 import type { Coord } from '@web/lib/polyline';
@@ -98,9 +98,9 @@ export const TrailShape = memo(function TrailShape({ path, size = 40, color }: {
 });
 
 // ── Surfaces and buttons ────────────────────────────────────────────────────────────────────────────────
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Card({ children, style, onLayout }: { children: ReactNode; style?: StyleProp<ViewStyle>; onLayout?: ViewProps['onLayout'] }) {
   const t = useTheme();
-  return <View style={[{ backgroundColor: t.c.card, borderRadius: radius.card, padding: 14 }, shadow(t), style]}>{children}</View>;
+  return <View onLayout={onLayout} style={[{ backgroundColor: t.c.card, borderRadius: radius.card, padding: 14 }, shadow(t), style]}>{children}</View>;
 }
 
 /** A pressable that answers at once: a quick dim on iOS, the ripple on Android. */
@@ -204,21 +204,45 @@ export function Note({ children, warn }: { children: ReactNode; warn?: boolean }
   );
 }
 
-export function Segmented<V extends string>({ value, options, onChange }: { value: V; options: { value: V; label: string }[]; onChange: (v: V) => void }) {
+export function Segmented<V extends string | number>({ value, options, onChange }: {
+  value: V; options: { value: V; label: string; sub?: string }[]; onChange: (v: V) => void;
+}) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: t.c.tint, borderRadius: radius.control, padding: 3, gap: 3 }}>
+    <View style={{ flexDirection: 'row', backgroundColor: t.c.tint, borderRadius: radius.control, padding: 3, gap: 3 }} accessibilityRole="radiogroup">
       {options.map((o) => {
         const on = o.value === value;
         return (
-          <Tap key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-            style={[{ flex: 1, minHeight: 38, borderRadius: radius.control - 3, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+          <Tap key={String(o.value)} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+            style={[{ flex: 1, minHeight: o.sub ? 48 : 38, borderRadius: radius.control - 3, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, paddingVertical: 4 },
               on && { backgroundColor: t.c.card }, on && shadow(t)]}>
             <T v="small" numberOfLines={1} style={{ fontFamily: on ? fonts.semibold : fonts.medium }}>{o.label}</T>
+            {o.sub ? <T v="tiny" muted numberOfLines={1}>{o.sub}</T> : null}
           </Tap>
         );
       })}
     </View>
+  );
+}
+
+/** A radio row: a ring (filled with a dot when chosen), a name and a line under it. */
+export function RadioRow({ on, title, sub, onPress, right, first }: {
+  on: boolean; title: string; sub?: string; onPress: () => void; right?: ReactNode; first?: boolean;
+}) {
+  const t = useTheme();
+  const mark = t.dark ? t.c.green : t.c.primary;
+  return (
+    <Tap onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={sub ? `${title}, ${sub}` : title}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: first ? 0 : 1, borderTopColor: t.c.line }}>
+      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: on ? 2.5 : 2, borderColor: on ? mark : t.c.line2, alignItems: 'center', justifyContent: 'center' }}>
+        {on ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: mark }} /> : null}
+      </View>
+      <View style={{ flex: 1 }}>
+        <T v="strong" numberOfLines={1}>{title}</T>
+        {sub ? <T v="small" muted numberOfLines={1}>{sub}</T> : null}
+      </View>
+      {right}
+    </Tap>
   );
 }
 

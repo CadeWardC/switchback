@@ -1,10 +1,11 @@
-// A trail, in the sheet: name, park line, the three big numbers, the ridge card with its pins and the daylight
-// line, the full or short loop, Start hike, Directions, Share GPX, Save, and "Ready offline".
-import { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+// A trail, in the sheet: its photos, name, park line, the three big numbers, the ridge card with its pins and
+// the daylight line, the full loop or one of its short loops, where to start (radio rows, in step with the
+// radio markers on the map), Start hike, Directions, Share GPX, Save, and "Ready offline".
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
-  accessPoints, estimatedSeconds, facts, isUnwalked, lineCredit, needsVerification, officialFacts, routeType, shortened, shortLoops, summary,
+  accessPoints, estimatedSeconds, facts, isUnwalked, lineCredit, needsVerification, officialFacts, routeType, shortLoops, summary,
   type Trail,
 } from '@web/lib/trail';
 import { fmtDistance, fmtElevation } from '@web/lib/format';
@@ -12,16 +13,18 @@ import { exportGpx } from '@web/lib/gpx';
 import { sunTimes, type Stop } from '@web/lib/follow';
 import { platform } from '../platform';
 import {
-  closeTrail, flyTo, isSaved, openShort, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, units,
+  chosenShort, chosenStart, closeTrail, flyTo, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units,
 } from '../core/state';
 import { start } from '../core/recorder';
 import { stopsFor } from '../core/stops';
 import { trailGpx } from '../core/gpx';
 import { bigTime } from '../core/hikeMath';
 import { split } from '../core/shape';
+import { chosenTrail, loopChoices } from '../core/choice';
 import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
-import { Big, Blazes, Button, Card, GoButton, Icon, Note, Segmented, T, Tap } from '../ui/kit';
+import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
+import { PhotoStrip } from '../ui/Photos';
 import { LightLine, Ridge } from '../ui/Ridge';
 import { fonts, useTheme } from '../ui/theme';
 
@@ -61,36 +64,38 @@ export function TrailSheet() {
   const whole = useValue(selected)!;
   const u = useValue(units);
   useValue(savedTrails);
-  const [shortId, setShortId] = useState('');
-  useEffect(() => {
-    setShortId(openShort.peek() ?? '');
-    openShort.value = null;
-  }, [whole.key]);
+  const short = useValue(chosenShort);
+  const from = useValue(chosenStart);
   const shorts = useMemo(() => shortLoops(whole), [whole]);
-  const tr = useMemo(() => {
-    const s = shorts.find((x) => x.id === shortId);
-    return s ? shortened(whole, s) : whole;
-  }, [whole, shorts, shortId]);
+  const heads = useMemo(() => accessPoints(whole), [whole]);
+  const choices = useMemo(() => loopChoices(whole, shorts), [whole, shorts]);
+  // the trail as chosen: a short loop or the whole, in from the chosen trailhead or on its own
+  const tr = useMemo(() => chosenTrail(whole, shorts, short, heads, from), [whole, shorts, short, heads, from]);
+  useEffect(() => { shownTrail.value = tr !== whole ? tr : null; }, [tr, whole]);
+  useEffect(() => () => { shownTrail.value = null; }, []);
+  // the map fits a newly chosen loop (opening the trail has already fitted it; choosing a start leaves the map be)
+  const fitted = useRef(short);
   useEffect(() => {
-    shownTrail.value = tr !== whole ? tr : null;
-    if (tr !== whole) flyTo.value = { bounds: tr.bbox };
-    return () => { shownTrail.value = null; };
-  }, [tr, whole]);
+    if (fitted.current !== short) { fitted.current = short; flyTo.value = { bounds: tr.bbox }; }
+  }, [short, tr]);
+  const pickShort = (i: number) => { if (i !== chosenShort.peek()) { platform.haptics.tap(); chosenShort.value = i; } };
+  const pickStart = (i: number) => { if (i !== chosenStart.peek()) { platform.haptics.tap(); chosenStart.value = i; } };
   const [stops, setStops] = useState<Stop[]>([]);
   useEffect(() => {
     let live = true;
     setStops([]);
-    void stopsFor(tr, whole, !shortId).then((x) => { if (live) setStops(x); }, () => {});
+    void stopsFor(tr, whole, short < 0).then((x) => { if (live) setStops(x); }, () => {});
     return () => { live = false; };
-  }, [tr, whole, shortId]);
+  }, [tr, whole, short, from]);
 
-  const heads = useMemo(() => accessPoints(whole), [whole]);
   const p = tr.profile;
   const now = new Date();
   const seconds = estimatedSeconds(tr);
   const sun = sunTimes(now, tr.start);
   const saved = isSaved(whole);
-  const to = heads[0]?.point ?? tr.start;
+  const head = heads[from] ?? null;
+  const to = (head ?? heads[0])?.point ?? tr.start;
+  const climbOf = (g: number | null) => (g != null && g >= 1 ? ` · ${fmtElevation(g, u)}` : '');
   const blaze = (whole.tags['switchback:blaze'] ?? '').toLowerCase().split(/[\s;,/]+/)[0];
   const unwalked = isUnwalked(whole), unverified = needsVerification(whole);
   const length = split(fmtDistance(tr.length, u)), climb = split(fmtElevation(p?.gain ?? 0, u)), time = bigTime(seconds);
@@ -117,6 +122,8 @@ export function TrailSheet() {
         </View>
       </View>
 
+      <PhotoStrip trail={whole} />
+
       <View style={{ gap: 4 }}>
         <T v="name">{tr.name}</T>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -125,9 +132,15 @@ export function TrailSheet() {
         </View>
       </View>
 
-      {shorts.length > 0 && (
-        <Segmented value={shortId} onChange={setShortId}
-          options={[{ value: '', label: `Full loop · ${dist(whole.length)}` }, ...shorts.map((x) => ({ value: x.id, label: `${x.name} · ${dist(x.length)}` }))]} />
+      {choices.length === 2 && (
+        <Segmented value={short} onChange={pickShort}
+          options={choices.map((c) => ({ value: c.index, label: c.name, sub: `${dist(c.length)}${climbOf(c.gain)}` }))} />
+      )}
+      {choices.length > 2 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+          accessibilityRole="radiogroup">
+          {choices.map((c) => <Chip key={c.index} on={c.index === short} onPress={() => pickShort(c.index)} label={`${c.name} · ${dist(c.length)}${climbOf(c.gain)}`} />)}
+        </ScrollView>
       )}
 
       <Big items={[
@@ -137,7 +150,7 @@ export function TrailSheet() {
       ]} />
 
       {(p && p.distances.length > 1) || sun ? (
-        <Card>
+        <Card onLayout={(e) => { trailRest.value = Math.round(e.nativeEvent.layout.y + e.nativeEvent.layout.height); }}>
           {p && p.distances.length > 1 ? <Ridge profile={p} path={tr.path} stops={stops} units={u} /> : null}
           <LightLine now={now} back={new Date(now.getTime() + seconds * 1000)} sunset={sun?.sunset ?? null} />
         </Card>
@@ -170,19 +183,21 @@ export function TrailSheet() {
       {heads.length > 0 && (
         <View style={{ gap: 8 }}>
           <T v="section">Where to start</T>
-          <Card style={{ padding: 0 }}>
-            {heads.slice(0, 4).map((h, i) => (
-              <Tap key={`${h.name}-${i}`} onPress={() => platform.links.directions(h.point[0], h.point[1])}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderTopColor: t.c.line }}>
-                <Icon name="flag" size={18} color={t.c.green} />
-                <View style={{ flex: 1 }}>
-                  <T v="strong" numberOfLines={1}>{h.name}</T>
-                  <T v="small" muted>{h.distance < 15 ? 'On the trail' : `${dist(h.distance)} walk to the trail`}</T>
-                </View>
-                <T v="small" color={t.c.link} style={{ fontFamily: fonts.semibold }}>Directions</T>
-              </Tap>
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
+            {heads.map((h, i) => (
+              <RadioRow key={`${h.name}-${i}`} first={i === 0} on={i === from} onPress={() => pickStart(i)} title={h.name}
+                sub={h.distance < 15 || h.line.length < 2 ? 'On the trail' : `${dist(h.distance)} walk in`}
+                right={i === from ? (
+                  <Tap onPress={() => platform.links.directions(h.point[0], h.point[1])} accessibilityRole="button" accessibilityLabel={`Directions to ${h.name}`}>
+                    <T v="small" color={t.c.link} style={{ fontFamily: fonts.semibold }}>Directions</T>
+                  </Tap>
+                ) : undefined} />
             ))}
+            <RadioRow on={from < 0} onPress={() => pickStart(-1)} title="The trail on its own" sub="No walk in" />
           </Card>
+          {head && head.line.length > 1 && head.distance >= 15 ? (
+            <T v="tiny" muted>The distance, climb, time and ridge above include the walk in from {head.name}{whole.isLoop ? ' and back out' : ''}.</T>
+          ) : null}
         </View>
       )}
 
