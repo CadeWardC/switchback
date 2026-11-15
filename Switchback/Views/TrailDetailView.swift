@@ -237,9 +237,11 @@ struct TrailDetailView: View {
                         }
                     }
                     if let from, from.distance >= 30 {
+                        // the trail as walked from here: without its own way out to a trailhead this hike doesn't use
+                        let own = base.hike(from: from, adding: []).length - (base.isLoop ? 2 : 1) * from.distance
                         Text(base.isLoop
-                             ? "\(Fmt.distance(base.length)) loop + \(Fmt.distance(from.distance)) each way from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")"
-                             : "\(Fmt.distance(base.length)) trail + \(Fmt.distance(from.distance)) from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")")
+                             ? "\(Fmt.distance(own)) loop + \(Fmt.distance(from.distance)) each way from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")"
+                             : "\(Fmt.distance(own)) trail + \(Fmt.distance(from.distance)) from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
