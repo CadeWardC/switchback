@@ -76,7 +76,12 @@ struct ExploreView: View {
     // MARK: Map
 
     private var mapMode: some View {
-        let trails = model.filtered
+        // the trail you tapped is drawn as the hike you'd walk: with the way in from its trailhead (the nearest to you)
+        let here = recorder.lastLocation.map { Coord($0.coordinate) }
+        let trails = model.filtered.map { t -> Trail in
+            guard t.id == model.selectedId, let from = t.defaultAccess(near: here) else { return t }
+            return t.hike(from: from, adding: [])
+        }
         return ZStack {
             AppMap(baseMap: baseMap, trails: trails, selectedId: model.selectedId, camera: model.cameraRequest,
                    initialBox: model.initialBox,
