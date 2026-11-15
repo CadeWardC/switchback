@@ -35,6 +35,13 @@ describe('a hike joined in the middle of a trail', () => {
     expect(out.asks).toBe(0);
   });
 
+  it('before you have moved, guesses the nearer end', () => {
+    // like joining a 4-mile trail 1.2 miles from its start
+    const start = stepJourney(null, 1991, 6436, false).journey;
+    expect(start.dir).toBe(-1);
+    expect(planOf(start, 6436, false)).toMatchObject({ left: 1991 * 2, kind: 'out-back' });
+  });
+
   it('follows you when you set off the other way', () => {
     const out = walk(null, 1000, [700], total);
     expect(out.j.dir).toBe(-1);

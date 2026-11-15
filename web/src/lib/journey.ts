@@ -54,8 +54,9 @@ export interface Plan {
 export function stepJourney(j: Journey | null, along: number, total: number, loop: boolean): { journey: Journey; ask: boolean } {
   if (!j) {
     const mid = Math.min(along, total - along) > MID_START;
-    // not seen yet: towards the end of the line, or away from the end you began at
-    const dir = loop || mid || along < total / 2 ? 1 : -1;
+    // not seen yet: joined in the middle, towards the nearer end (the shorter hike); else away from the
+    // end you began at
+    const dir = loop || (mid ? along >= total / 2 : along < total / 2) ? 1 : -1;
     return { journey: { origin: along, mid, along, gone: 0, dir, sure: false, far: 0, away: false }, ask: false };
   }
   let step = along - j.along;
