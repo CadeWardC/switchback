@@ -6,15 +6,22 @@
 //     from its log first, so no point is lost;
 //   - each kept point is appended to the log the moment it arrives;
 //   - the end-of-trail question goes out as a notification with Keep going / Finish buttons whenever the
-//     app is not on screen.
+//     app is not on screen;
+//   - a trail joined in the middle is an out-and-back from there (web/src/lib/journey.ts): the question is
+//     asked when you are back where you joined it;
+//   - on an iPhone the hike shows on the lock screen as a Live Activity (src/platform/liveActivity.ts).
 import { batch } from '@preact/signals-core';
 import { AppState } from 'react-native';
 import { platform, type Fix, type LocationProblem } from '../platform';
 import { attachRecording, recordingRunning, setHeadlessRecorder } from '../platform/location';
 import {
-  addWalk, backLine, endReached, following, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recMarkers, recSeconds, recSegments,
-  recLength, recStarted, recState, say, shownWalk, tab, type Following,
+  addWalk, backLine, endReached, following, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recMarkers, recSeconds, recSegments,
+  recLength, recStarted, recState, say, shownWalk, tab, units, type Following,
 } from './state';
+import { clock, hikeNumbers, leftLabel } from './hikeMath';
+import { liveHike } from '../platform/liveActivity';
+import { fmtDistance } from '@web/lib/format';
+import { stepJourney } from '@web/lib/journey';
 import { bearing, newEndWatch, progressOn, watchEnd, whichWay, type EndWatch } from '@web/lib/follow';
 import { newId, type Marker, type Walk } from '@web/lib/storage';
 import { addFix, emptyTrack, lastPoint, newStretch, restoreLog, type LogLine, type Track } from '@web/lib/track';
@@ -61,8 +68,10 @@ function checkOffTrail(fix: Fix): void {
   const f = following.peek();
   if (!f) return;
   const here: Coord = [fix.lat, fix.lon];
-  const at = progressOn(f.path, here, lastAlong);
+  const j = journey.peek();
+  const at = progressOn(f.path, here, lastAlong, !!j && j.sure && j.dir < 0);
   const d = at.off;
+  const was = offTrail.peek();
   if (!offTrail.peek()) {
     // three fixes in a row, so one stray reading does not raise the alarm
     offCount = d > OFF_TRAIL ? offCount + 1 : 0;
@@ -82,28 +91,69 @@ function checkOffTrail(fix: Fix): void {
     lastAlong = at.along;
     if (offTrailInfo.peek()) offTrailInfo.value = null;
     if (backLine.peek()) backLine.value = null;
+    if (d <= OFF_TRAIL && followTotal > 0) {
+      const r = stepJourney(j, at.along, followTotal, !!f.loop);
+      journey.value = r.journey;
+      if (r.ask && f.id) askToFinish('origin');
+    }
   }
+  if (was !== offTrail.peek()) pushLive(true);
+}
+
+const QUESTIONS = {
+  start: 'You are back at the trailhead',
+  end: 'You have reached the end of the trail',
+  origin: 'You are back where you started',
+};
+
+/** "Finish this hike?": on the hike screen, and as a notification with buttons when the app is put away. */
+function askToFinish(at: 'start' | 'end' | 'origin'): void {
+  if (endReached.peek()) return;
+  endReached.value = at;
+  platform.haptics.success();
+  if (onScreen()) return;
+  void platform.notifications.ask(
+    QUESTIONS[at], 'Finish this hike?',
+    [{ id: 'keep', title: 'Keep going' }, { id: 'finish', title: 'Finish hike' }],
+    (id) => {
+      if (id === 'keep') keepGoing();
+      else if (id === 'finish') void finish().then(showFinished);
+      // a tap on the notification itself opens the app, where the same question is showing
+    },
+  );
 }
 
 function checkEnd(fix: Fix): void {
   const f = following.peek();
   if (!f || !f.id || f.path.length < 2) return;
+  // joined in the middle: the hike ends back where it was joined, not at an end of the trail
+  if (journey.peek()?.mid) return;
   const r = watchEnd(endWatch, [fix.lat, fix.lon], f.path, followTotal, !!f.loop);
   endWatch = r.watch;
-  if (!r.ask || endReached.peek()) return;
-  endReached.value = r.ask;
-  platform.haptics.success();
-  if (!onScreen()) {
-    void platform.notifications.ask(
-      r.ask === 'start' ? 'You are back at the trailhead' : 'You have reached the end of the trail', 'Finish this hike?',
-      [{ id: 'keep', title: 'Keep going' }, { id: 'finish', title: 'Finish hike' }],
-      (id) => {
-        if (id === 'keep') keepGoing();
-        else if (id === 'finish') void finish().then(showFinished);
-        // a tap on the notification itself opens the app, where the same question is showing
-      },
-    );
-  }
+  if (r.ask) askToFinish(r.ask);
+}
+
+// ── The lock screen (iPhone) ──────────────────────────────────────────────────────────────────────────
+let livePushed = 0;
+/** Puts the hike's numbers on the lock screen. Not more often than every 10 s, unless `force`. */
+function pushLive(force = false): void {
+  const state = recState.peek();
+  if (state === 'idle' || !liveHike.available) return;
+  const now = Date.now();
+  if (!force && now - livePushed < 10_000) return;
+  livePushed = now;
+  const u = units.peek(), f = following.peek();
+  const off = offTrail.peek() ? offTrailInfo.peek() : null;
+  const n = f ? hikeNumbers(f, journey.peek(), track.length, state === 'paused' ? banked : secondsAt(now), new Date(now)) : null;
+  liveHike.update(f ? f.name : 'Your hike', {
+    walked: fmtDistance(track.length, u),
+    started,
+    paused: state === 'paused',
+    left: n ? fmtDistance(n.left, u) : null,
+    leftLabel: n ? leftLabel(n.kind) : null,
+    backBy: n ? clock(n.back) : null,
+    offTrail: off ? `${fmtDistance(off.metres, u)} ${off.way}` : null,
+  });
 }
 
 /** After finishing: the Log, with the hike open. */
@@ -132,6 +182,7 @@ function startFollowing(f: Following | null): void {
     offTrailInfo.value = null;
     backLine.value = null;
     endReached.value = null;
+    journey.value = null;
   });
 }
 
@@ -151,6 +202,7 @@ function onFix(fix: Fix): void {
   });
   checkOffTrail(fix);
   checkEnd(fix);
+  pushLive();
 }
 
 function onProblem(p: LocationProblem): void {
@@ -180,6 +232,7 @@ async function run(): Promise<void> {
     title: f && f.id ? `Following ${f.name}` : 'Recording your hike',
     text: 'Switchback is using your location to record. Open the app to pause or finish.',
   });
+  pushLive(true);
 }
 
 export async function start(follow: Following | null = null): Promise<void> {
@@ -212,6 +265,7 @@ export async function pause(): Promise<void> {
   recState.value = 'paused';
   platform.keyValue.remove(LIVE);
   write({ s: Math.round(banked) });
+  pushLive(true);
   await platform.location.stopRecording();
 }
 
@@ -231,12 +285,14 @@ export function headBack(): boolean {
   if (points.length < 2) return false;
   following.value = { region: '', id: '', name: 'Back to the start', path: points.map((p) => [p.lat, p.lon] as Coord).reverse(), profile: null };
   startFollowing(following.peek());
+  pushLive(true);
   return true;
 }
 
 export function stopFollowing(): void {
   following.value = null;
   startFollowing(null);
+  pushLive(true);
 }
 
 /** Marks where you are now, with a name (a spring, a junction, a view). */
@@ -263,6 +319,7 @@ async function reset(): Promise<void> {
     following.value = null;
   });
   startFollowing(null);
+  liveHike.end();
   platform.keyValue.remove(LIVE);
   await platform.documents.removeLog(LOG);
 }
@@ -297,6 +354,20 @@ export async function discard(): Promise<void> {
   await reset();
 }
 
+/** After a restart: where the trail was joined and which way it is being walked, from the points recorded. */
+function retrace(): void {
+  const f = following.peek();
+  if (!f || followTotal <= 0) return;
+  let j = journey.peek();
+  for (const p of track.segments.flat()) {
+    const at = progressOn(f.path, [p.lat, p.lon], lastAlong, !!j && j.sure && j.dir < 0);
+    if (at.off > OFF_TRAIL) continue;
+    lastAlong = at.along;
+    j = stepJourney(j, at.along, followTotal, !!f.loop).journey;
+  }
+  journey.value = j;
+}
+
 /** Rebuilds the recording from its log. `live`: the location service is still running, so it carries on. */
 async function restoreFrom(lines: string[], live: boolean): Promise<boolean> {
   const d = restoreLog(lines);
@@ -321,6 +392,7 @@ async function restoreFrom(lines: string[], live: boolean): Promise<boolean> {
       : null;
   });
   startFollowing(following.peek());
+  retrace();
   if (live) {
     // the clock carries on from the last point written: the time in between was spent walking
     const last = lastPoint(track);
@@ -337,7 +409,11 @@ export async function restoreDraft(): Promise<void> {
   restored = true;
   const lines = await platform.documents.readLog(LOG);
   const live = !!platform.keyValue.get(LIVE) && (await recordingRunning());
-  if (!(await restoreFrom(lines, live))) return;
+  if (!(await restoreFrom(lines, live))) {
+    liveHike.end(); // nothing is being recorded: a lock-screen hike left over from before goes
+    return;
+  }
+  pushLive(true);
   if (live) attachRecording(onFix, onProblem);
   else {
     platform.keyValue.remove(LIVE);

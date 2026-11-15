@@ -14,6 +14,7 @@ import type { Coord } from '@web/lib/polyline';
 import { accessPoints, shortLoops, type Profile, type Trail } from '@web/lib/trail';
 import { baseRoute, defaultStart, usableStarts } from './choice';
 import type { Stop } from '@web/lib/follow';
+import type { Journey } from '@web/lib/journey';
 import type { BBox } from '@web/lib/geo';
 import type { Region } from '@web/lib/pack';
 import { platform } from '../platform';
@@ -157,8 +158,9 @@ export const recLength = signal(0);
 export const recSeconds = signal(0);
 /** When the hike began (ms), for "time on the trail" (pauses included). */
 export const recStarted = signal(0);
-/** Set when the end of the trail being followed is reached: the question "finish this hike?" is showing. */
-export const endReached = signal<'start' | 'end' | null>(null);
+/** Set when the end of the trail being followed is reached, or you are back where you joined it ('origin'):
+ *  the question "finish this hike?" is showing. */
+export const endReached = signal<'start' | 'end' | 'origin' | null>(null);
 export const recAccuracy = signal<number | null>(null);
 export const recError = signal<string | null>(null);
 export const recMarkers = signal<Marker[]>([]);
@@ -169,6 +171,8 @@ export interface Following {
   loop?: boolean;
 }
 export const following = signal<Following | null>(null);
+/** Where you joined the trail being followed and which way you are walking it (null until you are on it). */
+export const journey = signal<Journey | null>(null);
 export const offTrail = signal(false);
 export const offTrailInfo = signal<{ metres: number; way: string } | null>(null);
 

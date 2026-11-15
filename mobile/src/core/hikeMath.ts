@@ -1,7 +1,46 @@
 // Small sums for the hike and trail screens (from web/src/ui/Record.tsx and TrailPage.tsx, which are Preact
 // files). Plain functions, tested in test/hikeMath.test.ts.
-import { profileOf, type Trail } from '@web/lib/trail';
+import { profileOf, type Profile, type Trail } from '@web/lib/trail';
 import type { WalkPoint } from '@web/lib/storage';
+import type { Coord } from '@web/lib/polyline';
+import { progressOn, secondsLeft } from '@web/lib/follow';
+import { climbOver, planOf, type Journey, type Plan } from '@web/lib/journey';
+
+const lengths = new WeakMap<Coord[], number>();
+/** The length of a line, in metres (worked out once for each line). */
+export function lineLength(path: Coord[]): number {
+  let n = lengths.get(path);
+  if (n == null) {
+    n = path.length > 1 ? progressOn(path, path[0]).total : 0;
+    lengths.set(path, n);
+  }
+  return n;
+}
+
+export interface HikeNumbers {
+  /** Metres still to walk. */
+  left: number;
+  /** What `left` is: on to the end, to the end and back to where you joined, or back to where you joined. */
+  kind: Plan['kind'];
+  /** Metres still to climb on the way. */
+  climbAhead: number;
+  /** When you would be done, at your own pace. */
+  back: Date;
+}
+
+/** What is left of a hike that follows a trail, for the hike screen and the lock screen. `j`: null until
+ *  you are on the trail (then it is the whole trail). */
+export function hikeNumbers(
+  f: { path: Coord[]; profile: Profile | null; loop?: boolean }, j: Journey | null, walked: number, seconds: number, now: Date,
+): HikeNumbers {
+  const total = lineLength(f.path);
+  const plan: Plan = j ? planOf(j, total, !!f.loop) : { left: total, legs: [[0, total]], kind: 'onward' };
+  const climbAhead = f.profile ? climbOver(f.profile, plan, total) : 0;
+  return { left: plan.left, kind: plan.kind, climbAhead, back: new Date(now.getTime() + secondsLeft(plan.left, climbAhead, walked, seconds) * 1000) };
+}
+
+/** The words under the distance left. */
+export const leftLabel = (kind: Plan['kind']) => (kind === 'out-back' ? 'Left, out and back' : kind === 'home' ? 'Back to your start' : 'Left');
 
 /** A clock time without AM/PM ("2:48"). */
 export const clock = (d: Date) => {

@@ -1,19 +1,20 @@
 // Hike: where a hike is recorded. While walking it is one card (the ridge with you on it in yellow and the
-// next thing named, two big numbers, one quiet line); pulled up, the six tiles, coordinates with Share and
-// GPS accuracy, then Pause, Mark a spot and Finish (Finish asks once). Off the trail, the card turns yellow.
-import { useEffect, useMemo, useState } from 'react';
+// next thing named, two big numbers: how far you have walked and how long you have been out); pulled up,
+// the tiles (what is left and when you will be back first), coordinates with Share and GPS accuracy, then
+// Pause, Mark a spot and Finish (Finish asks once). Off the trail, the card turns yellow.
+import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { fmtClock, fmtDistance, fmtDuration, fmtElevation } from '@web/lib/format';
-import { climbLeft, nextStop, progressOn, secondsLeft, sunTimes } from '@web/lib/follow';
+import { nextStop, sunTimes } from '@web/lib/follow';
 import { MAX_ACCURACY } from '@web/lib/track';
 import { platform } from '../platform';
 import {
-  endReached, following, flyTo, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments,
+  endReached, following, flyTo, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments,
   recStarted, recState, say, units, walks, tab,
 } from '../core/state';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
-import { climbedSoFar, clock, hm, pace } from '../core/hikeMath';
+import { climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace } from '../core/hikeMath';
 import { split } from '../core/shape';
 import { useValue } from '../ui/hooks';
 import { Big, Button, Card, GoButton, Note, Stat, T, Tap } from '../ui/kit';
@@ -47,7 +48,7 @@ function EndCard({ onFinish }: { onFinish: () => void }) {
   const len = useValue(recLength), secs = useValue(recSeconds);
   return (
     <View style={{ gap: 12, paddingVertical: 8 }} accessibilityRole="alert">
-      <T v="name" style={{ fontSize: 26 }}>{at === 'start' ? 'You are back at the trailhead' : 'You have reached the end of the trail'}</T>
+      <T v="name" style={{ fontSize: 26 }}>{at === 'start' ? 'You are back at the trailhead' : at === 'origin' ? 'You are back where you started' : 'You have reached the end of the trail'}</T>
       <T v="body" muted>{fmtDistance(len, u)} in {fmtDuration(secs)}. Finish this hike?</T>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button big title="Keep going" onPress={keepGoing} style={{ flex: 1 }} />
@@ -110,31 +111,35 @@ function Walking() {
     if (!zoomed) setZoomed(true);
   }, [state, newest?.t]);
 
-  const total = useMemo(() => (f ? progressOn(f.path, f.path[0]).total : 0), [f]);
-  const [along, setAlong] = useState<number | null>(null);
-  useEffect(() => setAlong(null), [f]);
+  // where you joined the trail and which way you are walking it (kept by the recorder)
+  const j = useValue(journey);
+  const along = j?.along ?? null;
+  // the time on the trail keeps counting while paused
+  const [, setBeat] = useState(0);
   useEffect(() => {
-    if (f && newest && !offTrail.peek()) setAlong((was) => progressOn(f.path, [newest.lat, newest.lon], was ?? -Infinity).along);
-  }, [newest?.t, f]);
+    if (state !== 'paused') return;
+    const id = setInterval(() => setBeat((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [state]);
 
   const done = async () => {
     setAsking(null);
     await showFinished(await finish());
   };
 
-  const left = Math.max(0, total - (along ?? 0));
-  const profileTotal = f?.profile ? f.profile.distances[f.profile.distances.length - 1] ?? 0 : 0;
-  const onChart = f?.profile && total > 0 ? ((along ?? 0) / total) * profileTotal : 0;
-  const climbAhead = f?.profile ? climbLeft(f.profile, onChart) : 0;
   const now = new Date();
-  const back = new Date(now.getTime() + secondsLeft(left, climbAhead, len, secs) * 1000);
+  // what is left: the trail from where you are; joined in the middle, out to the end ahead and back
+  const ahead = f ? hikeNumbers(f, j, len, secs, now) : null;
+  const climbAhead = ahead?.climbAhead ?? 0;
+  const back = ahead?.back ?? now;
   const place = newest ? [newest.lat, newest.lon] as [number, number] : f ? f.path[0] : me?.at ?? null;
   const sun = place ? sunTimes(now, place) : null;
   const late = !!f && !!sun && back > sun.sunset;
   const next = f?.stops && along != null ? nextStop(f.stops, along) : f?.stops?.[0] ?? null;
-  const climbed = f?.profile ? Math.max(0, f.profile.gain - climbAhead) : climbedSoFar(segs);
+  // from the trail's own heights while it is walked from its start; else from the heights the phone gave
+  const climbed = f?.profile && j && !j.mid && j.dir > 0 && ahead?.kind === 'onward' ? Math.max(0, f.profile.gain - climbAhead) : climbedSoFar(segs);
   const onTrail = startedAt ? (Date.now() - startedAt) / 1000 : secs;
-  const leftText = split(fmtDistance(left, u)), walkedText = split(fmtDistance(len, u));
+  const walkedText = split(fmtDistance(len, u));
   const spare = sun ? (sun.sunset.getTime() - (f ? back.getTime() : now.getTime())) / 60000 : null;
   const height = me?.ele ?? newest?.ele ?? null;
 
@@ -157,23 +162,16 @@ function Walking() {
         </View>
       ) : null}
 
-      {f ? (
-        <Big huge items={[
-          { value: leftText.value, unit: leftText.unit, label: 'left' },
-          { value: clock(back), label: late ? 'back by, after sunset' : 'back by', late },
-        ]} />
-      ) : (
-        <Big huge items={[
-          { value: walkedText.value, unit: walkedText.unit, label: 'walked' },
-          { value: fmtClock(secs), label: state === 'paused' ? 'paused' : 'moving' },
-        ]} />
-      )}
+      <Big huge items={[
+        { value: walkedText.value, unit: walkedText.unit, label: 'walked' },
+        { value: fmtClock(onTrail), label: state === 'paused' ? 'on the trail, paused' : 'on the trail' },
+      ]} />
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 2, paddingTop: 6, borderTopWidth: 1, borderTopColor: t.c.line }}>
-        <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{fmtClock(onTrail)}</T> on the trail</T>
-        {f && <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{fmtDistance(len, u)}</T> walked</T>}
-        {climbed != null && <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{fmtElevation(climbed, u)}</T> climbed</T>}
-      </View>
+      {climbed != null && (
+        <View style={{ paddingTop: 6, borderTopWidth: 1, borderTopColor: t.c.line }}>
+          <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{fmtElevation(climbed, u)}</T> climbed</T>
+        </View>
+      )}
 
       {err && (
         <Note warn>
@@ -184,9 +182,11 @@ function Walking() {
       {state === 'paused' && !err && <Note>Paused. Nothing is being recorded until you resume.</Note>}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {ahead && <Stat label={leftLabel(ahead.kind)} value={fmtDistance(ahead.left, u)} />}
+        {ahead && <Stat label={late ? 'Back by, after sunset' : 'Back by'} value={clock(back)} />}
+        {f?.profile && <Stat label="Climb left" value={fmtElevation(climbAhead, u)} />}
         <Stat label="Moving" value={fmtClock(secs)} />
         <Stat label={`Pace, min/${imperial ? 'mi' : 'km'}`} value={pace(secs, len, imperial)} />
-        {f?.profile ? <Stat label="Climb left" value={fmtElevation(climbAhead, u)} /> : <Stat label="Walked" value={fmtDistance(len, u)} />}
         <Stat label="Sunset" value={sun ? clock(sun.sunset) : '–'} />
         <Stat label={spare != null && spare < 0 ? 'After sunset' : 'Light to spare'} value={spare != null ? hm(Math.abs(spare)) : '–'} />
         <Stat label="Height now" value={height != null ? fmtElevation(height, u) : '–'} />

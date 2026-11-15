@@ -15,8 +15,10 @@ export interface Progress {
 }
 
 /** The nearest point on a line to a place. `after` (metres): on a loop or an out-and-back, prefer a point
- *  not far behind where you were last, so the start and the end of a loop are not confused. */
-export function progressOn(path: Coord[], c: Coord, after = -Infinity): Progress {
+ *  not far behind where you were last, so the start and the end of a loop are not confused. `back`: the
+ *  line is being walked towards its start, so prefer a point not far ahead of where you were last. */
+export function progressOn(path: Coord[], c: Coord, after = -Infinity, back = false): Progress {
+  const from = back && !Number.isFinite(after) ? Infinity : after;
   const k = Math.cos(c[0] * rad), mLat = 111_320, mLon = 111_320 * k;
   let best = { along: 0, off: Infinity, point: path[0] }, bestScore = Infinity;
   let run = 0;
@@ -27,7 +29,9 @@ export function progressOn(path: Coord[], c: Coord, after = -Infinity): Progress
     const t = len2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
     const off = Math.hypot(ax + t * dx, ay + t * dy), along = run + t * len;
     // going back along the line costs a little, so of two places equally near, the one ahead wins
-    const score = off + (along < after - 30 ? 25 + (after - along) * 0.02 : 0);
+    const behind = back ? along - from : from - along;
+    // (and where a line runs along itself, as the stem of a lollipop does, the stretch nearest ahead wins)
+    const score = off + (behind > 30 ? 25 + behind * 0.02 : Number.isFinite(from) ? -behind * 0.001 : 0);
     if (score < bestScore) {
       bestScore = score;
       best = { along, off, point: [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t] };

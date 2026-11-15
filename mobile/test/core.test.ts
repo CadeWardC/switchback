@@ -3,7 +3,8 @@ import { encodePolyline, type Coord } from '@web/lib/polyline';
 import { makeTrail, type Trail } from '@web/lib/trail';
 import { openPack, readBlock, cellKeys } from '../src/core/pack';
 import { shapePath, split } from '../src/core/shape';
-import { bigTime, clock, climbedSoFar, daylight, dur, grouped, hm, pace } from '../src/core/hikeMath';
+import { bigTime, clock, climbedSoFar, daylight, dur, grouped, hikeNumbers, hm, leftLabel, lineLength, pace } from '../src/core/hikeMath';
+import { stepJourney } from '@web/lib/journey';
 import { EMPTY, headFeatures, lineColor, lineFeature, pickKey, thin, trailFeatures } from '../src/core/trailMap';
 import { trailGpx, walkGpx } from '../src/core/gpx';
 
@@ -135,5 +136,31 @@ describe('GPX', () => {
     });
     expect(w).toContain('Morning &lt;hike&gt;');
     expect(w).toContain('<wpt lat="1.0000000" lon="2.0000000"><time>1970-01-01T00:00:00Z</time><name>Spring</name></wpt>');
+  });
+});
+
+describe('what is left of a hike', () => {
+  // about 2 km due north
+  const path: Coord[] = Array.from({ length: 21 }, (_, i) => [38.9 + i * 0.0009, -92.3]);
+  const total = lineLength(path);
+  const now = new Date(2026, 10, 15, 13, 0);
+  it('is the whole trail before you are on it', () => {
+    const n = hikeNumbers({ path, profile: null }, null, 0, 0, now);
+    expect(n.left).toBeCloseTo(total);
+    expect(n.kind).toBe('onward');
+    // an easy 4.5 km/h
+    expect((n.back.getTime() - now.getTime()) / 60000).toBeCloseTo(total / 75, 0);
+  });
+  it('joined half way, is out to the end and back, then the way back', () => {
+    let j = stepJourney(null, total / 2, total, false).journey;
+    const n = hikeNumbers({ path, profile: null }, j, 0, 0, now);
+    expect(n.left).toBeCloseTo(total);
+    expect(leftLabel(n.kind)).toBe('Left, out and back');
+    for (let a = total / 2; a <= total; a += 10) j = stepJourney(j, a, total, false).journey;
+    for (let a = total; a >= total * 0.75; a -= 10) j = stepJourney(j, a, total, false).journey;
+    const back = hikeNumbers({ path, profile: null }, j, total * 0.75, 1200, now);
+    expect(back.left).toBeGreaterThan(total * 0.24);
+    expect(back.left).toBeLessThan(total * 0.26);
+    expect(leftLabel(back.kind)).toBe('Back to your start');
   });
 });
