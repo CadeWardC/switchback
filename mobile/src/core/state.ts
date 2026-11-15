@@ -200,38 +200,6 @@ export async function updateWalk(id: string, patch: Partial<WalkSummary>): Promi
 
 export const renameWalk = (id: string, name: string) => updateWalk(id, { name });
 
-// ── Who hikes ─────────────────────────────────────────────────────────────────────────────────────────
-/** The people whose totals are kept on this phone, by name. Each hike says who was on it. */
-export const people = signal<string[]>(load<string[]>('people', []));
-effect(() => { save('people', people.value); });
-
-/** Who a new hike is for: the people on the last one, else everyone. */
-export function whoByDefault(): string[] {
-  const last = load<string[] | null>('who-last', null);
-  const still = (last ?? people.peek()).filter((n) => people.peek().includes(n));
-  return still.length ? still : people.peek();
-}
-
-/** Adds a person. The first person added is given the hikes kept so far. Returns the name as kept, or null. */
-export function addPerson(name: string): string | null {
-  const n = name.trim().slice(0, 24);
-  if (!n || people.peek().some((x) => x.toLowerCase() === n.toLowerCase())) return null;
-  const first = people.peek().length === 0;
-  people.value = [...people.peek(), n];
-  if (first) for (const w of walks.peek()) if (!w.who?.length) void updateWalk(w.id, { who: [n] });
-  return n;
-}
-
-export function removePerson(name: string): void {
-  people.value = people.peek().filter((x) => x !== name);
-  for (const w of walks.peek()) if (w.who?.includes(name)) void updateWalk(w.id, { who: w.who.filter((x) => x !== name) });
-}
-
-export function setWalkWho(id: string, who: string[]): void {
-  save('who-last', who);
-  void updateWalk(id, { who });
-}
-
 export async function deleteWalk(id: string): Promise<void> {
   walks.value = walks.peek().filter((x) => x.id !== id);
   await platform.documents.remove(walkDoc(id));

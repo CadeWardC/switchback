@@ -168,27 +168,27 @@ describe('what is left of a hike', () => {
 });
 
 describe('totals in the Log', () => {
-  const hike = (id: string, when: Date, length: number, gain: number, who?: string[], trailId?: string): WalkSummary => ({
+  const hike = (id: string, when: Date, length: number, gain: number, trailId?: string): WalkSummary => ({
     id, name: `Hike ${id}`, started: when.getTime(), ended: when.getTime() + 3600_000, seconds: 3000, length, gain,
-    ...(who ? { who } : {}), ...(trailId ? { trail: { region: 'mo', id: trailId, name: `Trail ${trailId}` } } : {}),
+    ...(trailId ? { trail: { region: 'mo', id: trailId, name: `Trail ${trailId}` } } : {}),
   });
   const log = [
-    hike('a', new Date(2026, 10, 15, 12), 4000, 60, ['Cade', 'Sam'], 't1'),
-    hike('b', new Date(2026, 10, 15, 16), 2000, 10, ['Cade'], 't1'),
-    hike('c', new Date(2026, 3, 2, 9), 9000, 400, ['Sam'], 't2'),
-    hike('d', new Date(2025, 6, 4, 9), 5000, 150, ['Cade']),
+    hike('a', new Date(2026, 10, 15, 12), 4000, 60, 't1'),
+    hike('b', new Date(2026, 10, 15, 16), 2000, 10, 't1'),
+    hike('c', new Date(2026, 3, 2, 9), 9000, 400, 't2'),
+    hike('d', new Date(2025, 6, 4, 9), 5000, 150),
     hike('e', new Date(2025, 6, 5, 9), 1000, 0),
   ];
-  it('counts a person\'s hikes for a year or for all time', () => {
-    expect(hikesOf(log, 'Cade', 2026).map((w) => w.id)).toEqual(['a', 'b']);
-    expect(hikesOf(log, 'Cade', null).map((w) => w.id)).toEqual(['a', 'b', 'd']);
-    expect(hikesOf(log, null, 2025).map((w) => w.id)).toEqual(['d', 'e']);
-    expect(hikesOf(log, 'Sam', 2025)).toEqual([]);
+  it('counts the hikes of a year or of all time', () => {
+    expect(hikesOf(log, 2026).map((w) => w.id)).toEqual(['a', 'b', 'c']);
+    expect(hikesOf(log, 2025).map((w) => w.id)).toEqual(['d', 'e']);
+    expect(hikesOf(log, null)).toHaveLength(5);
+    expect(hikesOf(log, 2024)).toEqual([]);
   });
   it('adds them up', () => {
-    const cade = totals(hikesOf(log, 'Cade', 2026));
-    expect(cade).toMatchObject({ hikes: 2, length: 6000, gain: 70, seconds: 6000, days: 1, trails: 1, favourite: { name: 'Trail t1', times: 2 } });
-    expect(cade.longest?.id).toBe('a');
+    const year = totals(hikesOf(log, 2026));
+    expect(year).toMatchObject({ hikes: 3, length: 15000, gain: 470, seconds: 9000, days: 2, trails: 2, favourite: { name: 'Trail t1', times: 2 } });
+    expect(year.longest?.id).toBe('c');
     const all = totals(log);
     expect(all).toMatchObject({ hikes: 5, length: 21000, gain: 620, days: 4, trails: 2 });
     expect(all.steepest?.id).toBe('c');

@@ -151,10 +151,10 @@ export function GoButton({ title, onPress }: { title: string; onPress: () => voi
   );
 }
 
-export function Chip({ label, on, onPress, onLongPress, left }: { label: string; on?: boolean; onPress: () => void; onLongPress?: () => void; left?: ReactNode }) {
+export function Chip({ label, on, onPress, left }: { label: string; on?: boolean; onPress: () => void; left?: ReactNode }) {
   const t = useTheme();
   return (
-    <Tap onPress={onPress} onLongPress={onLongPress} accessibilityRole="button" accessibilityState={{ selected: !!on }}
+    <Tap onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: !!on }}
       style={{
         height: 36, paddingHorizontal: 13, borderRadius: radius.chip, flexDirection: 'row', alignItems: 'center', gap: 6, overflow: 'hidden',
         backgroundColor: on ? t.c.primary : t.c.card, borderWidth: on ? 0 : StyleSheet.hairlineWidth, borderColor: t.c.line2,

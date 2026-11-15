@@ -27,8 +27,6 @@ export interface WalkSummary {
   trail?: { region: string; id: string; name: string };
   /** Metres climbed, from the heights the phone gave (absent on hikes kept before this was). */
   gain?: number;
-  /** The people who were on the hike, by name (for each person's totals). */
-  who?: string[];
 }
 
 export interface Walk extends WalkSummary {

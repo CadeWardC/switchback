@@ -1,4 +1,4 @@
-// A person's hiking totals from the Log: for a year or for all time. Plain functions, tested in
+// The hiking totals of the Log kept on this phone (its owner's): for a year or for all time. Plain functions, tested in
 // test/core.test.ts.
 import type { WalkSummary } from '@web/lib/storage';
 
@@ -21,9 +21,9 @@ export interface Totals {
   favourite: { name: string; times: number } | null;
 }
 
-/** The hikes that count: `who` null is every hike; `year` null is all time. */
-export function hikesOf(walks: WalkSummary[], who: string | null, year: number | null): WalkSummary[] {
-  return walks.filter((w) => (who == null || !!w.who?.includes(who)) && (year == null || new Date(w.started).getFullYear() === year));
+/** The hikes of a year; `year` null is all time. */
+export function hikesOf(walks: WalkSummary[], year: number | null): WalkSummary[] {
+  return walks.filter((w) => year == null || new Date(w.started).getFullYear() === year);
 }
 
 export function totals(walks: WalkSummary[]): Totals {
