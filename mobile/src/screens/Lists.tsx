@@ -1,23 +1,27 @@
 // Saved and Log: full-screen native lists over the map (which stays loaded underneath, so going back to it
-// is instant). A recorded hike opens on the map, its details in the sheet: rename, share GPX, delete.
-import { useState } from 'react';
+// is instant). The Log opens with totals (miles, hikes, climb) for a person and a year or all time. A
+// recorded hike opens on the map, its details in the sheet: who hiked it, rename, share GPX, delete.
+import { useMemo, useState } from 'react';
 import { Alert, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fmtClock, fmtDate, fmtDistance, fmtElevation } from '@web/lib/format';
+import { fmtClock, fmtDate, fmtDistance, fmtDuration, fmtElevation } from '@web/lib/format';
 import { exportGpx } from '@web/lib/gpx';
 import { bboxOf } from '@web/lib/geo';
 import { profileOf, type Difficulty } from '@web/lib/trail';
-import type { SavedTrail, WalkSummary } from '@web/lib/storage';
+import { load, save, type SavedTrail, type WalkSummary } from '@web/lib/storage';
 import { findTrail } from '@web/data';
 import {
-  deleteWalk, flyTo, loadWalk, openTrail, removeSaved, renameWalk, savedTrails, say, shownWalk, storageFailed, tab, units, walks,
+  addPerson, deleteWalk, flyTo, loadWalk, openTrail, people, removePerson, removeSaved, renameWalk, savedTrails, say, setWalkWho, shownWalk,
+  storageFailed, tab, units, walks,
 } from '../core/state';
+import { climbAs, hikesOf, totals, yearsOf } from '../core/stats';
+import { split } from '../core/shape';
 import { walkGpx } from '../core/gpx';
 import { climbedSoFar } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
-import { Blazes, Button, Card, Icon, Note, Stat, T, Tap } from '../ui/kit';
+import { Big, Blazes, Button, Card, Chip, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
 function Header({ title, onSettings }: { title: string; onSettings: () => void }) {
@@ -93,6 +97,81 @@ export function SavedScreen({ onSettings }: { onSettings: () => void }) {
   );
 }
 
+/** A box to type a new person's name into. */
+function NewPerson({ onDone }: { onDone: (name: string | null) => void }) {
+  const t = useTheme();
+  const [name, setName] = useState('');
+  const add = () => {
+    if (!name.trim()) { onDone(null); return; }
+    const kept = addPerson(name);
+    if (!kept) say('That name is already here.');
+    onDone(kept);
+  };
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+      <TextInput value={name} onChangeText={setName} autoFocus maxLength={24} placeholder="Name" placeholderTextColor={t.c.muted}
+        returnKeyType="done" onSubmitEditing={add} autoCapitalize="words"
+        style={{ flex: 1, height: 42, borderRadius: radius.control, backgroundColor: t.c.tint, paddingHorizontal: 12, color: t.c.ink, fontFamily: fonts.regular, fontSize: 16 }} />
+      <Button kind="primary" title="Add" onPress={add} />
+      <Button kind="quiet" icon="close" onPress={() => onDone(null)} />
+    </View>
+  );
+}
+
+/** The totals at the top of the Log: for everyone or one person, for a year or all time. */
+function Totals() {
+  const t = useTheme();
+  const list = useValue(walks);
+  const names = useValue(people);
+  const u = useValue(units);
+  const [whoPick, setWhoPick] = useState<string | null>(() => load<string | null>('stats-who', null));
+  const who = whoPick && names.includes(whoPick) ? whoPick : null;
+  const years = useMemo(() => yearsOf(list, new Date()), [list]);
+  const [year, setYear] = useState<number | 0>(years[0]); // 0: all time
+  const [adding, setAdding] = useState(false);
+  const pick = (n: string | null) => { setWhoPick(n); save('stats-who', n); };
+  const sum = useMemo(() => totals(hikesOf(list, who, year || null)), [list, who, year]);
+  const miles = split(fmtDistance(sum.length, u)), climb = split(fmtElevation(sum.gain, u));
+  const as = climbAs(sum.gain);
+  const forget = (n: string) => Alert.alert(`Remove ${n}?`, 'Their name comes off the hikes they were on. The hikes stay in the Log.', [
+    { text: 'Keep', style: 'cancel' },
+    { text: 'Remove', style: 'destructive', onPress: () => { removePerson(n); if (who === n) pick(null); } },
+  ]);
+  return (
+    <View style={[{ marginHorizontal: 16, marginBottom: 14, backgroundColor: t.c.card, borderRadius: radius.card, padding: 14, gap: 12 }, shadow(t)]}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {names.length > 0 && <Chip label="Everyone" on={who == null} onPress={() => pick(null)} />}
+        {names.map((n) => <Chip key={n} label={n} on={who === n} onPress={() => pick(n)} onLongPress={() => forget(n)} />)}
+        {!adding && <Chip label={names.length ? '+ Person' : '+ Add a person for their own totals'} onPress={() => setAdding(true)} />}
+      </View>
+      {adding && <NewPerson onDone={(n) => {
+        setAdding(false);
+        if (!n) return;
+        pick(n);
+        if (names.length === 0 && list.length) say(`The hikes so far are ${n}'s. Open a hike to change who was on it.`);
+      }} />}
+      <Segmented value={year} onChange={setYear}
+        options={[...years.slice(0, 3).map((y) => ({ value: y, label: String(y) })), { value: 0, label: 'All time' }]} />
+      <Big items={[
+        { value: miles.value, unit: miles.unit, label: 'hiked' },
+        { value: String(sum.hikes), label: sum.hikes === 1 ? 'hike' : 'hikes' },
+        { value: climb.value, unit: climb.unit, label: 'climbed' },
+      ]} />
+      {sum.hikes > 0 ? (
+        <View style={{ gap: 3, paddingTop: 8, borderTopWidth: 1, borderTopColor: t.c.line }}>
+          <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{fmtDuration(sum.seconds)}</T> on the move, over {sum.days} {sum.days === 1 ? 'day' : 'days'} out</T>
+          {sum.longest && sum.hikes > 1 && <T v="small" muted>Longest: <T v="small" style={{ fontFamily: fonts.semibold }}>{fmtDistance(sum.longest.length, u)}</T>, {sum.longest.name}</T>}
+          {sum.steepest && sum.hikes > 1 && <T v="small" muted>Most climbing: <T v="small" style={{ fontFamily: fonts.semibold }}>{fmtElevation(sum.steepest.gain ?? 0, u)}</T>, {sum.steepest.name}</T>}
+          {sum.trails > 1 && <T v="small" muted><T v="small" style={{ fontFamily: fonts.semibold }}>{sum.trails}</T> different trails{sum.favourite ? `; ${sum.favourite.name} ${sum.favourite.times} times` : ''}</T>}
+          {as && <T v="small" muted>All that climbing is <T v="small" style={{ fontFamily: fonts.semibold }}>{as}</T></T>}
+        </View>
+      ) : (
+        <T v="small" muted>{who ? `No hikes for ${who} ${year ? `in ${year}` : 'yet'}. Open a hike to say who was on it.` : `No hikes ${year ? `in ${year}` : 'yet'}.`}</T>
+      )}
+    </View>
+  );
+}
+
 export function LogScreen({ onSettings }: { onSettings: () => void }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -114,13 +193,14 @@ export function LogScreen({ onSettings }: { onSettings: () => void }) {
         data={list}
         keyExtractor={(w) => w.id}
         contentContainerStyle={{ paddingBottom: 24 }}
+        ListHeaderComponent={list.length ? <Totals /> : null}
         ListEmptyComponent={<Empty title="No hikes yet" text="Hikes you record are kept here, on this phone." action={{ title: 'Go to Hike', onPress: () => { tab.value = 'hike'; } }} />}
         renderItem={({ item: w }) => (
           <Tap onPress={() => void open(w)}
             style={[{ marginHorizontal: 16, marginBottom: 10, backgroundColor: t.c.card, borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden' }, shadow(t)]}>
             <View style={{ flex: 1 }}>
               <T v="strong" style={{ fontFamily: fonts.numSemibold, fontSize: 16.5 }} numberOfLines={1}>{w.name}</T>
-              <T v="small" muted>{fmtDate(w.started)} · {fmtDistance(w.length, u)} · {fmtClock(w.seconds)}</T>
+              <T v="small" muted numberOfLines={1}>{fmtDate(w.started)} · {fmtDistance(w.length, u)} · {fmtClock(w.seconds)}{w.who?.length ? ` · ${w.who.join(', ')}` : ''}</T>
             </View>
             <Icon name="chevron" size={16} color={t.c.muted} />
           </Tap>
@@ -136,6 +216,10 @@ export function WalkSheet() {
   const w = useValue(shownWalk)!;
   const u = useValue(units);
   const [name, setName] = useState<string | null>(null);
+  const names = useValue(people);
+  const [adding, setAdding] = useState(false);
+  const who = (w.who ?? []).filter((n) => names.includes(n));
+  const setWho = (next: string[]) => { setWalkWho(w.id, next); shownWalk.value = { ...w, who: next }; };
   const climbed = climbedSoFar(w.segments);
   const eles = w.segments.flat().map((p) => p.ele).filter((e): e is number => e != null);
   const prof = eles.length > 1 ? profileOf(eles.map((_, i) => i), eles, 5) : null;
@@ -177,6 +261,20 @@ export function WalkSheet() {
         <Stat label="Spots marked" value={String(w.markers?.length ?? 0)} />
       </View>
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
+      <View style={{ gap: 8 }}>
+        <T v="label" muted>Who hiked</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {names.map((n) => (
+            <Chip key={n} label={n} on={who.includes(n)} onPress={() => setWho(who.includes(n) ? who.filter((x) => x !== n) : [...who, n])} />
+          ))}
+          {!adding && <Chip label="+ Person" onPress={() => setAdding(true)} />}
+        </View>
+        {adding && <NewPerson onDone={(n) => {
+          setAdding(false);
+          // (the first person added is given every hike so far, this one too)
+          if (n) setWho(who.includes(n) ? who : [...who, n]);
+        }} />}
+      </View>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />
         <Button icon="trash" kind="danger" title="Delete" onPress={del} style={{ flex: 1 }} />

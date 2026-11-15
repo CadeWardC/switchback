@@ -5,6 +5,8 @@ import { openPack, readBlock, cellKeys } from '../src/core/pack';
 import { shapePath, split } from '../src/core/shape';
 import { bigTime, clock, climbedSoFar, daylight, dur, grouped, hikeNumbers, hm, leftLabel, lineLength, pace } from '../src/core/hikeMath';
 import { stepJourney } from '@web/lib/journey';
+import { climbAs, hikesOf, totals, yearsOf } from '../src/core/stats';
+import type { WalkSummary } from '@web/lib/storage';
 import { EMPTY, headFeatures, lineColor, lineFeature, pickKey, thin, trailFeatures } from '../src/core/trailMap';
 import { trailGpx, walkGpx } from '../src/core/gpx';
 
@@ -162,5 +164,44 @@ describe('what is left of a hike', () => {
     expect(back.left).toBeGreaterThan(total * 0.24);
     expect(back.left).toBeLessThan(total * 0.26);
     expect(leftLabel(back.kind)).toBe('Back to your start');
+  });
+});
+
+describe('totals in the Log', () => {
+  const hike = (id: string, when: Date, length: number, gain: number, who?: string[], trailId?: string): WalkSummary => ({
+    id, name: `Hike ${id}`, started: when.getTime(), ended: when.getTime() + 3600_000, seconds: 3000, length, gain,
+    ...(who ? { who } : {}), ...(trailId ? { trail: { region: 'mo', id: trailId, name: `Trail ${trailId}` } } : {}),
+  });
+  const log = [
+    hike('a', new Date(2026, 10, 15, 12), 4000, 60, ['Cade', 'Sam'], 't1'),
+    hike('b', new Date(2026, 10, 15, 16), 2000, 10, ['Cade'], 't1'),
+    hike('c', new Date(2026, 3, 2, 9), 9000, 400, ['Sam'], 't2'),
+    hike('d', new Date(2025, 6, 4, 9), 5000, 150, ['Cade']),
+    hike('e', new Date(2025, 6, 5, 9), 1000, 0),
+  ];
+  it('counts a person\'s hikes for a year or for all time', () => {
+    expect(hikesOf(log, 'Cade', 2026).map((w) => w.id)).toEqual(['a', 'b']);
+    expect(hikesOf(log, 'Cade', null).map((w) => w.id)).toEqual(['a', 'b', 'd']);
+    expect(hikesOf(log, null, 2025).map((w) => w.id)).toEqual(['d', 'e']);
+    expect(hikesOf(log, 'Sam', 2025)).toEqual([]);
+  });
+  it('adds them up', () => {
+    const cade = totals(hikesOf(log, 'Cade', 2026));
+    expect(cade).toMatchObject({ hikes: 2, length: 6000, gain: 70, seconds: 6000, days: 1, trails: 1, favourite: { name: 'Trail t1', times: 2 } });
+    expect(cade.longest?.id).toBe('a');
+    const all = totals(log);
+    expect(all).toMatchObject({ hikes: 5, length: 21000, gain: 620, days: 4, trails: 2 });
+    expect(all.steepest?.id).toBe('c');
+    expect(totals([])).toMatchObject({ hikes: 0, length: 0, gain: 0, longest: null, steepest: null, favourite: null });
+  });
+  it('lists the years, this one first even with nothing in it', () => {
+    expect(yearsOf(log, new Date(2027, 0, 3))).toEqual([2027, 2026, 2025]);
+    expect(yearsOf([], new Date(2026, 5, 1))).toEqual([2026]);
+  });
+  it('says the climbing as something tall', () => {
+    expect(climbAs(50)).toBeNull();
+    expect(climbAs(100)).toBe('once up the Statue of Liberty');
+    expect(climbAs(620)).toBe('1.4 times up the Empire State Building');
+    expect(climbAs(8849 * 12)).toBe('12 times up Mount Everest');
   });
 });

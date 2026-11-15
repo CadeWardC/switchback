@@ -16,9 +16,9 @@ import { platform, type Fix, type LocationProblem } from '../platform';
 import { attachRecording, recordingRunning, setHeadlessRecorder } from '../platform/location';
 import {
   addWalk, backLine, endReached, following, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recMarkers, recSeconds, recSegments,
-  recLength, recStarted, recState, say, shownWalk, tab, units, type Following,
+  recLength, recStarted, recState, say, shownWalk, tab, units, whoByDefault, type Following,
 } from './state';
-import { clock, hikeNumbers, leftLabel } from './hikeMath';
+import { climbedSoFar, clock, hikeNumbers, leftLabel } from './hikeMath';
 import { liveHike } from '../platform/liveActivity';
 import { fmtDistance } from '@web/lib/format';
 import { stepJourney } from '@web/lib/journey';
@@ -339,6 +339,8 @@ export async function finish(): Promise<Walk | null> {
   const walk: Walk = {
     id: newId(), name: f && f.id ? f.name : `${part} hike`, started, ended: points[points.length - 1].t,
     seconds: Math.round(recSeconds.peek()), length: track.length, segments,
+    gain: Math.round(climbedSoFar(segments) ?? 0),
+    ...(whoByDefault().length ? { who: whoByDefault() } : {}),
     ...(recMarkers.peek().length ? { markers: recMarkers.peek() } : {}),
     ...(f && f.id ? { trail: { region: f.region, id: f.id, name: f.name } } : {}),
   };

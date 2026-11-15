@@ -69,12 +69,14 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
   const style = useMemo(() => styleFor(t.dark, u), [t.dark, u]);
   const p = t.dark ? darkTokens : lightTokens;
 
+  // a hike from the Log is being looked at: only where it went is drawn, no trails
+  const justWalk = currentTab === 'log' && !!walk && rec === 'idle';
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const trailData = useMemo(() => (zoom >= MIN_TRAIL_ZOOM ? trailFeatures(trails, zoom, t.dark) : EMPTY), [trails, zoomBand, t.dark]);
-  const heads = useMemo(() => (zoom >= 11 && rec === 'idle' ? headFeatures(hikes, open?.key ?? null, t.dark) : EMPTY),
+  const trailData = useMemo(() => (zoom >= MIN_TRAIL_ZOOM && !justWalk ? trailFeatures(trails, zoom, t.dark) : EMPTY), [trails, zoomBand, t.dark, justWalk]);
+  const heads = useMemo(() => (zoom >= 11 && rec === 'idle' && !justWalk ? headFeatures(hikes, open?.key ?? null, t.dark) : EMPTY),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hikes, open?.key, t.dark, rec, zoomBand]);
-  const unverifiedData = useMemo(() => linesFeature(unverified.flatMap((x) => x.segments), {}), [unverified]);
+    [hikes, open?.key, t.dark, rec, zoomBand, justWalk]);
+  const unverifiedData = useMemo(() => (justWalk ? EMPTY : linesFeature(unverified.flatMap((x) => x.segments), {})), [unverified, justWalk]);
   // a trail is open: it stands out, the rest step back
   const focused = currentTab === 'explore' && rec === 'idle' && !!open;
   const fade = focused ? FADE : 1, thin = focused ? THIN : 1;
