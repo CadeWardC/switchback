@@ -24,6 +24,8 @@ module.exports = {
       buildNumber: '1',
       infoPlist: {
         UIBackgroundModes: ['location'],
+        // the hike on the lock screen (targets/hike draws it, modules/hike-activity starts it)
+        NSSupportsLiveActivities: true,
         ITSAppUsesNonExemptEncryption: false,
       },
     },
@@ -47,6 +49,8 @@ module.exports = {
       blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW'],
     },
     plugins: [
+      // adds the widget extension in targets/hike to the iPhone project
+      '@bacons/apple-targets',
       '@maplibre/maplibre-react-native',
       [
         'expo-location',

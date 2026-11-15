@@ -65,6 +65,8 @@ jobs:
         run: |
           npx tsc --noEmit
           npx expo export --platform ios --output-dir dist-check > /dev/null
+          # the app's module and the lock-screen widget must agree on what a hike on the lock screen holds
+          cmp modules/hike-activity/ios/HikeAttributes.swift targets/hike/HikeAttributes.swift
 
       - name: Generate the Xcode project
         working-directory: mobile
@@ -113,6 +115,9 @@ jobs:
           test -f "$APP/main.jsbundle"
           ls "$APP/Frameworks" | grep -qi maplibre
           plutil -extract UIBackgroundModes xml1 -o - "$APP/Info.plist" | grep -q location
+          # the hike on the lock screen: the widget extension, and the app allowed to start it
+          test -f "$APP/PlugIns/SwitchbackHike.appex/SwitchbackHike"
+          plutil -extract NSSupportsLiveActivities xml1 -o - "$APP/Info.plist" | grep -q true
           rm -rf build/ipa && mkdir -p build/ipa/Payload
           cp -R "$APP" build/ipa/Payload/
           (cd build/ipa && zip -qry ../Switchback-unsigned.ipa Payload)
