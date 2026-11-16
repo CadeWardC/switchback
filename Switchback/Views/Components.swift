@@ -138,6 +138,9 @@ struct ElevationChart: View {
     /// Where you are along the trail (metres), drawn as a dot.
     var marker: Double? = nil
     var height: CGFloat = 190
+    /// Called with the metres along the profile under the finger while scrubbing, and nil when it lifts,
+    /// so a map can show where on the trail or hike that is.
+    var onScrub: ((Double?) -> Void)? = nil
     @State private var selectedX: Double?
 
     /// The height of the profile at a distance along it.
@@ -199,6 +202,12 @@ struct ElevationChart: View {
         .chartXAxisLabel(Fmt.distanceUnit)
         .chartYAxisLabel(Fmt.elevationUnit)
         .chartXSelection(value: $selectedX)
+        .onChange(of: selectedX) { _, x in
+            guard let onScrub else { return }
+            guard let x, let last = profile.distances.last, last > 0 else { return onScrub(nil) }
+            let shownTotal = Fmt.displayDistance(last)
+            onScrub(shownTotal > 0 ? min(last, max(0, x / shownTotal * last)) : nil)
+        }
         .frame(height: height)
     }
 }

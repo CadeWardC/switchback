@@ -15,6 +15,8 @@ struct AppMap: View {
     var showsRoutes = false
     var pois: [TrailPOI] = []
     var photos: [PhotoPin] = []
+    /// The spot being scrubbed on an elevation chart.
+    var scrub: Coord? = nil
     var onSelect: ((String?) -> Void)? = nil
     var onRegionChange: ((MKCoordinateRegion) -> Void)? = nil
     /// Trails read from the map's own data when it settles (our own map only).
@@ -24,11 +26,11 @@ struct AppMap: View {
         if baseMap == .switchback {
             LibreTrailMap(trails: trails, selectedId: selectedId, track: track, camera: camera, initialBox: initialBox,
                           showsUserButton: showsUserButton, followUser: followUser, pois: pois, photos: photos,
-                          onSelect: onSelect, onRegionChange: onRegionChange, onVisibleTrails: onVisibleTrails)
+                          scrub: scrub, onSelect: onSelect, onRegionChange: onRegionChange, onVisibleTrails: onVisibleTrails)
         } else {
             TrailMapView(baseMap: baseMap, trails: trails, selectedId: selectedId, track: track, camera: camera,
                          initialBox: initialBox, showsUserButton: showsUserButton, followUser: followUser,
-                         showsRoutes: showsRoutes, pois: pois, photos: photos,
+                         showsRoutes: showsRoutes, pois: pois, photos: photos, scrub: scrub,
                          onSelect: onSelect, onRegionChange: onRegionChange)
         }
     }
@@ -46,6 +48,7 @@ struct LibreTrailMap: UIViewRepresentable {
     var followUser = false
     var pois: [TrailPOI] = []
     var photos: [PhotoPin] = []
+    var scrub: Coord? = nil
     var onSelect: ((String?) -> Void)? = nil
     var onRegionChange: ((MKCoordinateRegion) -> Void)? = nil
     var onVisibleTrails: (([Trail]) -> Void)? = nil
@@ -121,6 +124,7 @@ struct LibreTrailMap: UIViewRepresentable {
         private var shownTrack = -1
         private var shownPOIs = ""
         private var shownPhotos = ""
+        private var shownScrub: Coord?? = .none
         private var lastCamera: UUID?
         private var wasFollowing = false
 
@@ -138,7 +142,7 @@ struct LibreTrailMap: UIViewRepresentable {
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             MapIcons.install(in: style)
             sources = [:]
-            for id in ["sb-trails", "sb-heads", "sb-track", "sb-pois", "sb-photos"] {
+            for id in ["sb-trails", "sb-heads", "sb-track", "sb-pois", "sb-photos", "sb-scrub"] {
                 let s = MLNShapeSource(identifier: id, shape: nil, options: nil)
                 style.addSource(s)
                 sources[id] = s
@@ -146,6 +150,7 @@ struct LibreTrailMap: UIViewRepresentable {
             addTrailLayers(style)
             addTrackLayers(style)
             addPinLayers(style)
+            addScrubLayers(style)
 
             // peak heights in the app's units
             let imperial = Units.current == .imperial
@@ -158,6 +163,7 @@ struct LibreTrailMap: UIViewRepresentable {
             shownTrack = -1
             shownPOIs = ""
             shownPhotos = ""
+            shownScrub = .none
             if let p = parent { apply(p, to: mapView) }
         }
 
@@ -223,6 +229,22 @@ struct LibreTrailMap: UIViewRepresentable {
             guard let track = sources["sb-track"] else { return }
             _ = line("sb-track-casing", track, color: .white, width: 8.5, in: style)
             _ = line("sb-track", track, color: .systemBlue, width: 5, in: style)
+        }
+
+        /// The spot under the finger on the elevation chart: a white dot with a dark ring, on top of everything.
+        private func addScrubLayers(_ style: MLNStyle) {
+            guard let src = sources["sb-scrub"] else { return }
+            let halo = MLNCircleStyleLayer(identifier: "sb-scrub-halo", source: src)
+            halo.circleRadius = NSExpression(forConstantValue: 13)
+            halo.circleColor = NSExpression(forConstantValue: UIColor.black)
+            halo.circleOpacity = NSExpression(forConstantValue: 0.18)
+            style.addLayer(halo)
+            let dot = MLNCircleStyleLayer(identifier: "sb-scrub", source: src)
+            dot.circleRadius = NSExpression(forConstantValue: 6.5)
+            dot.circleColor = NSExpression(forConstantValue: UIColor.white)
+            dot.circleStrokeColor = NSExpression(forConstantValue: UIColor(white: 0.12, alpha: 1))
+            dot.circleStrokeWidth = NSExpression(forConstantValue: 3)
+            style.addLayer(dot)
         }
 
         private func addPinLayers(_ style: MLNStyle) {
@@ -325,6 +347,17 @@ struct LibreTrailMap: UIViewRepresentable {
                     return f
                 }
                 sources["sb-photos"]?.shape = MLNShapeCollectionFeature(shapes: feats)
+            }
+
+            if shownScrub != .some(p.scrub) {
+                shownScrub = .some(p.scrub)
+                if let c = p.scrub {
+                    let f = MLNPointFeature()
+                    f.coordinate = c.cl
+                    sources["sb-scrub"]?.shape = f
+                } else {
+                    sources["sb-scrub"]?.shape = nil
+                }
             }
         }
 

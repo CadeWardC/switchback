@@ -31,6 +31,13 @@ struct PhotoPin: Identifiable, Hashable {
     let image: UIImage
 }
 
+/// The spot being scrubbed on an elevation chart; moved in place as the finger moves.
+final class ScrubAnnotation: NSObject, MKAnnotation {
+    @objc dynamic var coordinate: CLLocationCoordinate2D
+
+    init(_ c: Coord) { coordinate = c.cl }
+}
+
 final class PhotoAnnotation: NSObject, MKAnnotation {
     let pin: PhotoPin
     let coordinate: CLLocationCoordinate2D
@@ -97,6 +104,8 @@ struct TrailMapView: UIViewRepresentable {
     var pois: [TrailPOI] = []
     /// Your photos from a hike.
     var photos: [PhotoPin] = []
+    /// The spot being scrubbed on an elevation chart.
+    var scrub: Coord? = nil
     var onSelect: ((String?) -> Void)? = nil
     var onRegionChange: ((MKCoordinateRegion) -> Void)? = nil
 
@@ -150,6 +159,7 @@ struct TrailMapView: UIViewRepresentable {
         private var trackOverlays: [TrailLines] = []
         private var poiAnnotations: [POIAnnotation] = []
         private var photoAnnotations: [PhotoAnnotation] = []
+        private var scrubAnnotation: ScrubAnnotation?
         private var trackCount = -1
         private var lastCamera: UUID?
         private var wasFollowing = false
@@ -312,6 +322,18 @@ struct TrailMapView: UIViewRepresentable {
                 photoAnnotations = p.photos.map(PhotoAnnotation.init)
                 map.addAnnotations(photoAnnotations)
             }
+            if let c = p.scrub {
+                if let a = scrubAnnotation {
+                    a.coordinate = c.cl
+                } else {
+                    let a = ScrubAnnotation(c)
+                    scrubAnnotation = a
+                    map.addAnnotation(a)
+                }
+            } else if let a = scrubAnnotation {
+                map.removeAnnotation(a)
+                scrubAnnotation = nil
+            }
         }
 
         private static func polylines(_ segments: [[Coord]]) -> [MKPolyline] {
@@ -414,6 +436,21 @@ struct TrailMapView: UIViewRepresentable {
                 view.displayPriority = poi.poi.kind.isSight || poi.poi.kind == .water ? .defaultHigh : .defaultLow
                 view.titleVisibility = .adaptive
                 view.canShowCallout = true
+                return view
+            }
+            if annotation is ScrubAnnotation {
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: "scrub")
+                    ?? MKAnnotationView(annotation: annotation, reuseIdentifier: "scrub")
+                view.annotation = annotation
+                let side: CGFloat = 20
+                view.image = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+                    UIColor(white: 0.12, alpha: 1).setFill()
+                    UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: side, height: side)).fill()
+                    UIColor.white.setFill()
+                    UIBezierPath(ovalIn: CGRect(x: 3, y: 3, width: side - 6, height: side - 6)).fill()
+                }
+                view.displayPriority = .required
+                view.isUserInteractionEnabled = false
                 return view
             }
             if let photo = annotation as? PhotoAnnotation {

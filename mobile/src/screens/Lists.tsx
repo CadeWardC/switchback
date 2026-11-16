@@ -8,7 +8,8 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fmtClock, fmtDate, fmtDistance, fmtDuration, fmtElevation } from '@web/lib/format';
 import { exportGpx } from '@web/lib/gpx';
-import { bboxOf } from '@web/lib/geo';
+import { bboxOf, distance } from '@web/lib/geo';
+import type { Coord } from '@web/lib/polyline';
 import { profileOf, type Difficulty } from '@web/lib/trail';
 import type { SavedTrail, WalkSummary } from '@web/lib/storage';
 import { findTrail } from '@web/data';
@@ -20,6 +21,7 @@ import { split } from '../core/shape';
 import { walkGpx } from '../core/gpx';
 import { climbedSoFar } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
+import { Ridge } from '../ui/Ridge';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
@@ -177,6 +179,22 @@ export function WalkSheet() {
   const climbed = climbedSoFar(w.segments);
   const eles = w.segments.flat().map((p) => p.ele).filter((e): e is number => e != null);
   const prof = eles.length > 1 ? profileOf(eles.map((_, i) => i), eles, 5) : null;
+  // the chart: height against distance walked, the same sums as the website's hike page
+  const flat = useMemo(() => w.segments.flat(), [w.id]);
+  const path = useMemo(() => flat.map((p) => [p.lat, p.lon] as Coord), [flat]);
+  const ridge = useMemo(() => {
+    const withEle = flat.filter((p) => p.ele != null);
+    if (withEle.length < 10 || withEle.length < flat.length * 0.8) return null;
+    const ds: number[] = [], es: number[] = [];
+    let run = 0;
+    flat.forEach((p, i) => {
+      if (i > 0) run += distance([flat[i - 1].lat, flat[i - 1].lon], [p.lat, p.lon]);
+      if (p.ele != null) { ds.push(run); es.push(p.ele); }
+    });
+    // phone heights jump about: smooth over five points, and ignore wiggles under 5 m
+    const smooth = es.map((_, i) => { const a = es.slice(Math.max(0, i - 2), i + 3); return a.reduce((x, y) => x + y, 0) / a.length; });
+    return profileOf(ds, smooth, 5);
+  }, [flat]);
   const close = () => { shownWalk.value = null; };
   const del = () => Alert.alert('Delete this hike?', 'It is removed from this phone. Share the GPX first to keep a copy.', [
     { text: 'Keep', style: 'cancel' },
@@ -214,6 +232,7 @@ export function WalkSheet() {
         <Stat label="Highest" value={prof ? fmtElevation(prof.max, u) : '–'} />
         <Stat label="Spots marked" value={String(w.markers?.length ?? 0)} />
       </View>
+      {ridge && path.length > 1 ? <Card><Ridge profile={ridge} path={path} height={84} units={u} /></Card> : null}
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />

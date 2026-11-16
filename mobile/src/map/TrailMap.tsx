@@ -12,7 +12,7 @@ import type { BBox } from '@web/lib/geo';
 import { accessPoints, shortLoops } from '@web/lib/trail';
 import { light as lightTokens, dark as darkTokens, mapColors } from '@web/tokens';
 import {
-  backLine, chosenShort, chosenStart, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
+  backLine, chartPoint, chosenShort, chosenStart, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
   tab, trailsInView, unverifiedInView, units, view, MIN_TRAIL_ZOOM,
 } from '../core/state';
 import { EMPTY, headFeatures, lineColor, lineFeature, linesFeature, pickKey, pointFeatures, trailFeatures } from '../core/trailMap';
@@ -100,6 +100,9 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
     return EMPTY;
   }, [segs, rec, walk, currentTab]);
   const meData = useMemo(() => (me ? pointFeatures([{ at: me.at }]) : EMPTY), [me]);
+  // the spot under the finger on an elevation chart
+  const scrub = useValue(chartPoint);
+  const scrubData = useMemo(() => (scrub ? pointFeatures([{ at: scrub }]) : EMPTY), [scrub]);
   const backData = useMemo(() => (back ? lineFeature(back) : EMPTY), [back]);
 
   // camera requests from anywhere in the app
@@ -217,6 +220,11 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
       <GeoJSONSource id="sb-back" data={backData}>
         <Layer id="sb-back-casing" type="line" layout={round} paint={{ 'line-color': mapColors.meRing, 'line-width': 6, 'line-opacity': 0.35 }} />
         <Layer id="sb-back" type="line" layout={round} paint={{ 'line-color': mapColors.me, 'line-width': 4, 'line-dasharray': [0.1, 2] }} />
+      </GeoJSONSource>
+
+      <GeoJSONSource id="sb-chart" data={scrubData}>
+        <Layer id="sb-chart-halo" type="circle" paint={{ 'circle-radius': 13, 'circle-color': p.ink, 'circle-opacity': 0.18 }} />
+        <Layer id="sb-chart" type="circle" paint={{ 'circle-radius': 6.5, 'circle-color': p.card, 'circle-stroke-color': p.ink, 'circle-stroke-width': 3 }} />
       </GeoJSONSource>
 
       <GeoJSONSource id="sb-me" data={meData}>

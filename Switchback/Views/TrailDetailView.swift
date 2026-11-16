@@ -13,6 +13,8 @@ struct TrailDetailView: View {
     @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
     @AppStorage(BaseMap.showRoutesKey) private var showRoutes = false
     @State private var gpxURL: URL?
+    /// The spot on the map under the finger on the elevation chart.
+    @State private var scrubPoint: Coord?
     @State private var renaming = false
     @State private var newName = ""
     /// The trailhead to start from: nil = the nearest one, "" = the trail on its own.
@@ -49,7 +51,7 @@ struct TrailDetailView: View {
 
                 ZStack(alignment: .bottomLeading) {
                     AppMap(baseMap: baseMap, trails: [t], selectedId: t.id, initialBox: t.bbox, showsUserButton: false,
-                                 showsRoutes: showRoutes, pois: pois)
+                                 showsRoutes: showRoutes, pois: pois, scrub: scrubPoint)
                     MapAttribution(baseMap: baseMap)
                 }
                 .frame(height: 300)
@@ -104,7 +106,15 @@ struct TrailDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Elevation").font(.headline)
                     if let p = t.profile {
-                        ElevationChart(profile: p)
+                        ElevationChart(profile: p) { d in
+                            // the profile runs along the trail's main line; scale in case their lengths differ a little
+                            guard let d, let last = p.distances.last, last > 0 else { return scrubPoint = nil }
+                            let len = Geo.length(t.path)
+                            scrubPoint = Geo.point(along: d / last * len, in: t.path)
+                        }
+                        Text("Drag along the chart to see where that is on the map.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     } else if profiles.isLoading(t) {
                         HStack { ProgressView(); Text("Loading elevation…").foregroundStyle(.secondary) }
                             .frame(maxWidth: .infinity, minHeight: 120)

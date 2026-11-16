@@ -133,6 +133,23 @@ enum Geo {
         return out
     }
 
+    /// The point `d` metres along the line (clamped to its ends).
+    static func point(along d: Double, in pts: [Coord]) -> Coord? {
+        guard let first = pts.first else { return nil }
+        if d <= 0 { return first }
+        var run = 0.0
+        for i in 1..<max(1, pts.count) {
+            let step = distance(pts[i - 1], pts[i])
+            if run + step >= d, step > 0 {
+                let t = (d - run) / step
+                return Coord(lat: pts[i - 1].lat + (pts[i].lat - pts[i - 1].lat) * t,
+                             lon: pts[i - 1].lon + (pts[i].lon - pts[i - 1].lon) * t)
+            }
+            run += step
+        }
+        return pts.last
+    }
+
     /// `count` points spread evenly along the line, with their distance from the start.
     static func resample(_ pts: [Coord], count: Int) -> [(coord: Coord, distance: Double)] {
         guard pts.count > 1, count > 1 else { return pts.map { (coord: $0, distance: 0) } }

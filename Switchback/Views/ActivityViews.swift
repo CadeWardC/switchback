@@ -61,6 +61,7 @@ struct ActivityDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
     @State private var gpxURL: URL?
+    @State private var scrubPoint: Coord?
     @State private var renaming = false
     @State private var newName = ""
     @State private var confirmDelete = false
@@ -119,7 +120,7 @@ struct ActivityDetailView: View {
             VStack(alignment: .leading, spacing: 18) {
                 ZStack(alignment: .bottomLeading) {
                     AppMap(baseMap: baseMap, track: a.coordSegments, initialBox: a.bbox, showsUserButton: false,
-                                 photos: photoPins)
+                                 photos: photoPins, scrub: scrubPoint)
                     MapAttribution(baseMap: baseMap)
                 }
                 .frame(height: 300)
@@ -167,8 +168,11 @@ struct ActivityDetailView: View {
                 if let p = a.profile {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Elevation").font(.headline)
-                        ElevationChart(profile: p)
-                        Text("From the phone's GPS altitude.")
+                        ElevationChart(profile: p) { d in
+                            // the profile's distances run over every recorded point in order, pauses included
+                            scrubPoint = d.flatMap { Geo.point(along: $0, in: a.segments.flatMap { $0.map(\.coord) }) }
+                        }
+                        Text("From the phone's GPS altitude. Drag along the chart to see where you were.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
