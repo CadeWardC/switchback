@@ -1,4 +1,4 @@
-// Keeps saved trails and recorded hikes in step with the Switchback server, when signed in.
+// Keeps saved trails and recorded hikes in step with your account on the Switchback server, when logged in.
 //
 // Everything works on the phone first. This module watches the two lists (savedTrails, walks): whatever is
 // added or changed is queued for upload, whatever is removed is queued for deletion. The queue is sent when
@@ -12,11 +12,13 @@
 //
 // Collections:  saved_trails  { v: 2, trail: SavedTrail }
 //               activities    { v: 2, walk: <a recorded hike, compact: lines as 1e-6° polylines> }
+// They are your own documents on the server (/v1/me/docs/<collection>): nobody else can read them.
 import { effect, signal } from '@preact/signals-core';
 import { load, loadDoc, save, saveDoc, summaryOf, walkDoc, type SavedTrail, type Walk, type WalkSummary } from '@web/lib/storage';
 import { platform } from '../platform';
 import { online, savedTrails, say, walks } from './state';
-import { api, fingerprint, isSignedIn, ServerError, serverUrl } from './server';
+import { account, api, fingerprint, isSignedIn, ServerError, serverUrl } from './server';
+import { uploadPhotos } from './myPhotos';
 import { compactWalk, expandWalk, trailDocId, trailKey, walkDocId, type CompactWalk } from './syncFormat';
 
 export { compactWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, walkDocId } from './syncFormat';
@@ -138,6 +140,8 @@ async function run(): Promise<void> {
     for (const c of COLLECTIONS) await pull(c);
     state.lastSync = Date.now();
     lastSync.value = state.lastSync;
+    // photos waiting on this phone go up after the hikes they belong to
+    void uploadPhotos();
     syncOffline.value = false;
     syncError.value = null;
     persist();
@@ -155,7 +159,7 @@ async function run(): Promise<void> {
 
 async function firstSync(c: Collection): Promise<void> {
   if (c === 'saved_trails') {
-    const list = await api.list<TrailDoc>(c);
+    const list = await api.docs.list<TrailDoc>(c);
     const there = new Set(list.items.filter((d) => !d.deleted).map((d) => d.id));
     for (const d of list.items) if (!d.deleted) applyTrail(d.id, false, d.data);
     for (const t of savedTrails.peek()) {
@@ -164,7 +168,7 @@ async function firstSync(c: Collection): Promise<void> {
     }
     state.since[c] = list.server_time;
   } else {
-    const list = await api.list<WalkDocBody>(c);
+    const list = await api.docs.list<WalkDocBody>(c);
     const there = new Set(list.items.filter((d) => !d.deleted).map((d) => d.id));
     for (const d of list.items) if (!d.deleted) await applyWalk(d.id, false, d.data);
     for (const w of walks.peek()) if (!there.has(walkDocId(w.id))) enqueue({ c, doc: walkDocId(w.id), local: w.id, del: false }, true);
@@ -179,15 +183,15 @@ async function push(): Promise<void> {
     const p = state.pending[0];
     try {
       if (p.del) {
-        await api.remove(p.c, p.doc);
+        await api.docs.remove(p.c, p.doc);
       } else if (p.c === 'saved_trails') {
         const t = savedTrails.peek().find((x) => trailKey(x) === p.local);
-        if (t) await api.put(p.c, p.doc, { v: 2, trail: t } satisfies TrailDoc);
+        if (t) await api.docs.put(p.c, p.doc, { v: 2, trail: t } satisfies TrailDoc);
       } else {
         const w = await loadDoc<Walk | null>(walkDoc(p.local), null);
         const summary = walks.peek().find((x) => x.id === p.local);
         // the list holds the latest name and submission; the hike's own file holds its points
-        if (w && summary) await api.put(p.c, p.doc, { v: 2, walk: compactWalk({ ...w, ...summary }) } satisfies WalkDocBody);
+        if (w && summary) await api.docs.put(p.c, p.doc, { v: 2, walk: compactWalk({ ...w, ...summary }) } satisfies WalkDocBody);
       }
     } catch (e) {
       const err = e as ServerError;
@@ -203,8 +207,8 @@ async function push(): Promise<void> {
 
 async function pull(c: Collection): Promise<void> {
   const list = c === 'saved_trails'
-    ? await api.list<TrailDoc>(c, state.since[c])
-    : await api.list<WalkDocBody>(c, state.since[c]);
+    ? await api.docs.list<TrailDoc>(c, state.since[c])
+    : await api.docs.list<WalkDocBody>(c, state.since[c]);
   const waiting = new Set(state.pending.filter((p) => p.c === c).map((p) => p.doc));
   for (const d of list.items) {
     if (waiting.has(d.id)) continue;
@@ -228,9 +232,10 @@ export function startSync(): void {
     if (now && !wasOnline) syncSoon(0);
     wasOnline = now;
   });
-  // signing in or out
+  // logging in or out, or another server
   let first = true;
   effect(() => {
+    void account.value;
     void serverUrl.value;
     if (first) { first = false; return; }
     syncError.value = null;

@@ -15,6 +15,9 @@ module.exports = {
     scheme: 'switchback',
     version: '1.0.0',
     orientation: 'portrait',
+    // the Switchback server the app talks to for accounts (not a secret; changeable on the Account screen).
+    // CI sets it from the repository variable SWITCHBACK_SERVER_URL.
+    extra: { serverUrl: process.env.SWITCHBACK_SERVER_URL || '' },
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
     backgroundColor: STONE,
@@ -64,6 +67,14 @@ module.exports = {
         },
       ],
       ['expo-notifications', { color: '#12543f' }],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Switchback adds the photos you choose to your hikes and to trails you have walked.',
+          cameraPermission: 'Switchback takes photos on your hike and keeps them with it.',
+          microphonePermission: false,
+        },
+      ],
       [
         'expo-splash-screen',
         {

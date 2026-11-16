@@ -28,6 +28,9 @@ concurrency:
 jobs:
   ipa:
     runs-on: macos-latest
+    env:
+      # the account server's address built into the app (Settings › Secrets and variables › Actions › Variables)
+      SWITCHBACK_SERVER_URL: ${{ vars.SWITCHBACK_SERVER_URL }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4

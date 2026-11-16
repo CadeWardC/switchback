@@ -4,18 +4,19 @@
 // has been checked and approved (web/review.html). The hiker agrees first that what they submit may be shown
 // publicly and that photos they submit are for public use.
 //
-// It goes to the server's `submissions` collection, with the same submission file docs/SUBMISSIONS.md
-// describes (web/src/lib/submit.ts builds it), so the existing checks can run on it.
+// It goes to the server as a new trail (PUT /v1/submissions/{id}, from your account), waiting for approval on
+// web/review.html; the hike's page in the Log shows where it stands and any reply.
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
 import { signal } from '@preact/signals-core';
-import Constants from 'expo-constants';
 import { fmtDistance, fmtElevation } from '@web/lib/format';
 import type { Walk } from '@web/lib/storage';
 import { platform } from '../platform';
 import { renameWalk, say, shownWalk, units, updateWalk } from '../core/state';
-import { api, isSignedIn, serverUrl } from '../core/server';
-import { submissionDoc } from '../core/syncFormat';
+import { account, api, isSignedIn } from '../core/server';
+import { trailSubmission, uuid } from '../core/syncFormat';
+import { difficultyOf } from '@web/lib/trail';
+import type { Coord } from '@web/lib/polyline';
 import { useValue } from '../ui/hooks';
 import { Button, Icon, Note, T, Tap } from '../ui/kit';
 import { fonts, radius, useTheme } from '../ui/theme';
@@ -29,10 +30,12 @@ export const isRealName = (n: string) => n.trim().length >= 3 && !PLACEHOLDERS.t
 /** The hike being offered for submission (null: the dialog is closed). */
 export const submitting = signal<Walk | null>(null);
 
-/** Sends a hike in; returns the submission's id. */
+/** Sends a hike in as a new trail; returns the submission's id. Needs an account. */
 export async function submitHike(w: Walk, name: string, review: { rating: number | null; text: string } | null): Promise<string> {
-  const id = `s.${w.id}.${Date.now().toString(36)}`;
-  await api.put('submissions', id, submissionDoc(w, name, review, `${platform.name} ${Constants.expoConfig?.version ?? ''}`.trim()));
+  const id = uuid();
+  const path = w.segments.flat().map((p) => [p.lat, p.lon] as Coord);
+  const difficulty = difficultyOf(w.length, w.gain ?? 0, {});
+  await api.call('PUT', `/v1/submissions/${id}`, trailSubmission(w, name, review, path.length > 1 ? difficulty : undefined));
   return id;
 }
 
@@ -40,7 +43,7 @@ export function SubmitModal() {
   const t = useTheme();
   const w = useValue(submitting);
   const u = useValue(units);
-  const signedIn = !!useValue(serverUrl) && isSignedIn();
+  const signedIn = !!useValue(account) && isSignedIn();
   const [name, setName] = useState('');
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
@@ -129,7 +132,7 @@ export function SubmitModal() {
             <T v="small" muted>{PUBLIC_USE}</T>
           </View>
 
-          {!signedIn && <Note>Sign in under Settings › Account & sync to submit hikes. Your hike is already saved on this phone.</Note>}
+          {!signedIn && <Note>Log in or create an account (Settings › Account) to submit hikes. Your hike is already saved on this phone.</Note>}
           {error && <Note warn>{error}</Note>}
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -146,11 +149,15 @@ export function SubmitModal() {
 export function SubmissionRow({ walk }: { walk: Walk }) {
   const t = useTheme();
   const [status, setStatus] = useState<string | null>(null);
+  const [reply, setReply] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
     if (walk.submission && isSignedIn()) {
-      void api.get<{ status?: string }>('submissions', walk.submission)
-        .then((d) => { if (live) setStatus(d?.data?.status ?? null); }, () => {});
+      void (api.call('GET', '/v1/me/submissions') as Promise<{ submissions: { id: string; status: string; reply: string }[] }>)
+        .then((d) => {
+          const mine = d.submissions.find((x) => x.id === walk.submission);
+          if (live && mine) { setStatus(mine.status); setReply(mine.reply || null); }
+        }, () => {});
     }
     return () => { live = false; };
   }, [walk.submission]);
@@ -160,5 +167,10 @@ export function SubmissionRow({ walk }: { walk: Walk }) {
   const label = status === 'approved' ? 'Submitted: approved and added to the trail data'
     : status === 'rejected' ? 'Submitted: not added after review'
       : status ? 'Submitted: waiting for review' : 'Submitted for review';
-  return <T v="small" color={status === 'approved' ? t.c.green : t.c.muted}>{label}</T>;
+  return (
+    <View style={{ gap: 2 }}>
+      <T v="small" color={status === 'approved' ? t.c.green : t.c.muted}>{label}</T>
+      {reply ? <T v="small" muted>“{reply}”</T> : null}
+    </View>
+  );
 }

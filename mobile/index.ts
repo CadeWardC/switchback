@@ -12,11 +12,11 @@ import { restoreDraft } from './src/core/recorder';
 import { startController } from './src/core/controller';
 import { startOffline } from './src/core/offline';
 import { locationAtLaunch, retryLocation } from './src/core/locate';
-import { loadServerKey } from './src/core/server';
+import { loadSession } from './src/core/server';
 import { startSync } from './src/core/sync';
 
 // the lists first, then the server key; sync starts watching the lists only once they are loaded
-void Promise.all([hydrate(), loadServerKey()]).then(() => { void restoreDraft(); startSync(); });
+void Promise.all([hydrate(), loadSession()]).then(() => { void restoreDraft(); startSync(); });
 startController();
 startOffline();
 // (location is asked for only with the app on screen, not when Android starts just the recording task)

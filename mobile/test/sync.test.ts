@@ -7,7 +7,7 @@ const { execFileSync } = require('node:child_process') as { execFileSync: (cmd: 
 const { writeFileSync } = require('node:fs') as { writeFileSync: (file: string, data: string) => void };
 declare const process: { env: Record<string, string | undefined> };
 import type { SavedTrail, Walk } from '@web/lib/storage';
-import { compactWalk, decodeTrack, encodeTrack, expandWalk, submissionDoc, trailDocId, trailKey, validName, walkDocId } from '../src/core/syncFormat';
+import { compactWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, trailSubmission, uuid, validName, walkDocId } from '../src/core/syncFormat';
 
 // a 30 km hike, a point every 4 m, in two stretches, with heights (some missing) and two marked spots
 function longHike(): Walk {
@@ -65,30 +65,43 @@ describe('compact hikes', () => {
     expect(Math.abs(b.t - a.t)).toBeLessThanOrEqual(100);
     expect(back.segments[0][97].ele).toBeNull();
   });
-  test('a submission has the shape the review page reads', () => {
-    const d = submissionDoc(longHike(), 'Test hike', { rating: 4, text: 'Nice' }, 'test', 1794900000000);
-    expect(d.status).toBe('pending');
-    expect(d.public_use_consent).toBe(true);
-    expect(d.hike.points.map((p) => p.note)).toEqual(['spring', 'junction']);
-    expect(d.hike.segments).toHaveLength(2);
-    expect(d.gpx).toContain('<sb:kind>walked</sb:kind>');
-    expect(JSON.stringify(d).length).toBeLessThan(2_000_000);
+  test('a hike is sent in as a new trail the server takes', () => {
+    const d = trailSubmission(longHike(), 'Test hike', { rating: 4, text: 'Nice' }, 'veryHard');
+    expect(d.kind).toBe('new_trail');
+    expect(d.difficulty).toBe('very_hard');
+    expect(d.line.length).toBeLessThanOrEqual(200_000);
+    expect(decodeTrack(d.line, 1e5).length).toBeGreaterThan(2);
+    expect(d.note).toContain('★★★★☆');
+    expect(d.note).toContain('spring (38.51000, -92.31000)');
+    expect(d.note).toContain('public');
+    expect(d.note.length).toBeLessThanOrEqual(2000);
+  });
+  test('a very long hike is thinned to fit', () => {
+    const w = longHike();
+    const many = { ...w, segments: [Array.from({ length: 60000 }, (_, i) => ({ ...w.segments[0][i % 4000], lat: 38.5 + i * 1e-5 }))] };
+    const d = trailSubmission(many, 'Long', null);
+    expect(d.line.length).toBeLessThanOrEqual(200_000);
+  });
+  test('ids for new records are version 4 UUIDs', () => {
+    const ids = new Set(Array.from({ length: 200 }, uuid));
+    expect(ids.size).toBe(200);
+    for (const id of ids) expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 });
 
-// ── Against a live server ─────────────────────────────────────────────────────────────────────────────
-const URL = process.env.SB_URL, KEY = process.env.SB_KEY;
-const live = URL && KEY ? describe : describe.skip;
+// ── Against a live server (server/: accounts) ─────────────────────────────────────────────────────────
+// SB_URL is the server (e.g. http://localhost:8080 for one run with `go run ./cmd/switchback-api`). Each run
+// creates two throwaway accounts.
+const URL = process.env.SB_URL;
+const live = URL ? describe : describe.skip;
 
 live('live server', () => {
   const run = Date.now().toString(36);
-  const T = `sbtest_${run}_saved_trails`, A = `sbtest_${run}_activities`;
-  // plain curl, as the manual checks used (the tunnel in front of the server turns some clients away)
-  const call = (method: string, path: string, body?: unknown, auth = true): { status: number; json: any } => {
+  const call = (method: string, path: string, body?: unknown, token?: string): { status: number; json: any } => {
     const args = ['-sS', '-m', '60', '-X', method, '-w', '\n%{http_code}', `${URL}${path}`];
-    if (auth) args.push('-H', `Authorization: Bearer ${KEY}`);
+    if (token) args.push('-H', `Authorization: Bearer ${token}`);
     if (body !== undefined) {
-      const file = `/tmp/sbtest-${run}.json`;
+      const file = `/tmp/sbtest-${run}-${Math.random().toString(36).slice(2)}.json`;
       writeFileSync(file, JSON.stringify(body));
       args.push('-H', 'Content-Type: application/json', '--data-binary', `@${file}`);
     }
@@ -99,53 +112,41 @@ live('live server', () => {
     try { json = JSON.parse(text); } catch { /* not json */ }
     return { status: Number(out.slice(at + 1)), json };
   };
-  afterAll(() => {
-    for (const [c, id] of [[T, trailDocId('own/a|b')], [A, walkDocId('mhx3k2abc123')]]) call('DELETE', `/v1/${c}/${id}`);
+  const signUp = (who: string) => {
+    const r = call('POST', '/v1/auth/register', { email: `${who}-${run}@example.com`, password: 'correct horse battery', display_name: who, device: 'test' });
+    expect(r.status).toBe(200);
+    return r.json.access_token as string;
+  };
+
+  test('register, log in, and the wrong password', () => {
+    signUp('ann');
+    expect(call('POST', '/v1/auth/register', { email: `ann-${run}@example.com`, password: 'another password' }).status).toBe(409);
+    expect(call('POST', '/v1/auth/login', { email: `ann-${run}@example.com`, password: 'correct horse battery' }).status).toBe(200);
+    expect(call('POST', '/v1/auth/login', { email: `ann-${run}@example.com`, password: 'wrong wrong' }).json.error.code).toBe('wrong_login');
   });
 
-  test('health, and a key is needed', () => {
-    expect(call('GET', '/health', undefined, false).json).toBe('ok');
-    expect(call('GET', `/v1/${T}`, undefined, false).status).toBe(401);
-  });
-
-  test('first sync, upload, the since feed, a rename elsewhere, and a deletion', () => {
-    const first = call('GET', `/v1/${A}`);
-    expect(first.status).toBe(200);
+  test('a hike round-trips through your own documents, and nobody else sees it', () => {
+    const me = signUp('bea'), other = signUp('cal');
+    const first = call('GET', '/v1/me/docs/activities', undefined, me);
     expect(first.json.items).toEqual([]);
-    const since = first.json.server_time;
-
     const w = longHike();
     const id = walkDocId(w.id);
-    expect(call('PUT', `/v1/${A}/${id}`, { v: 2, walk: compactWalk(w) }).status).toBe(200);
-    const own = { region: 'own', id: 'a|b', walk: 'a|b', name: 'Mine', area: null, length: 1, gain: 0, difficulty: 'easy', loop: false, start: [38, -92], saved: 1 };
-    expect(call('PUT', `/v1/${T}/${trailDocId('own/a|b')}`, { v: 2, trail: own }).status).toBe(200);
-
-    const changed = call('GET', `/v1/${A}?since=${since}`).json;
+    expect(call('PUT', `/v1/me/docs/activities/${id}`, { v: 2, walk: compactWalk(w) }, me).status).toBe(200);
+    const changed = call('GET', `/v1/me/docs/activities?since=${first.json.server_time}`, undefined, me).json;
     expect(changed.items.map((d: any) => d.id)).toEqual([id]);
-    const back = expandWalk(changed.items[0].data.walk);
-    expect(back.segments.flat()).toHaveLength(7500);
-    expect(back.markers).toEqual(w.markers);
-    expect(call('GET', `/v1/${A}?since=${changed.server_time}`).json.items).toEqual([]);
-    expect(call('GET', `/v1/${T}`).json.items[0].data.trail).toEqual(own);
-
-    // another phone renames it: the whole document is replaced, and the change comes through the feed
-    call('PUT', `/v1/${A}/${id}`, { v: 2, walk: compactWalk({ ...w, name: 'Renamed on the other phone' }) });
-    const renamed = call('GET', `/v1/${A}?since=${changed.server_time}`).json;
-    expect(renamed.items[0].data.walk.name).toBe('Renamed on the other phone');
-
-    call('DELETE', `/v1/${A}/${id}`);
-    const gone = call('GET', `/v1/${A}?since=${renamed.server_time}`).json;
+    expect(expandWalk(changed.items[0].data.walk).segments.flat()).toHaveLength(7500);
+    expect(call('GET', '/v1/me/docs/activities', undefined, other).json.items).toEqual([]);
+    call('DELETE', `/v1/me/docs/activities/${id}`, undefined, me);
+    const gone = call('GET', `/v1/me/docs/activities?since=${changed.server_time}`, undefined, me).json;
     expect(gone.items).toEqual([expect.objectContaining({ id, deleted: true, data: null })]);
-    expect(call('GET', `/v1/${A}/${id}`).status).toBe(404);
   });
 
-  test('a submission is accepted as the app builds it', () => {
-    const d = submissionDoc(longHike(), 'Test hike', { rating: 4, text: 'Nice' }, 'test');
-    const sid = `sbtest-${run}`;
-    expect(call('PUT', `/v1/sbtest_${run}_submissions/${sid}`, d).status).toBe(200);
-    expect(call('GET', `/v1/sbtest_${run}_submissions/${sid}`).json.data).toEqual(d);
-    call('DELETE', `/v1/sbtest_${run}_submissions/${sid}`);
-    // for the review page check
-    if (process.env.SB_DOC_OUT) writeFileSync(process.env.SB_DOC_OUT, JSON.stringify(d));
+  test('a hike is accepted as a new-trail submission and listed as pending', () => {
+    const me = signUp('dee');
+    const id = uuid();
+    const r = call('PUT', `/v1/submissions/${id}`, trailSubmission(longHike(), 'Test hike', { rating: 5, text: 'Lovely' }, 'moderate'), me);
+    expect(r.status).toBe(200);
+    const mine = call('GET', '/v1/me/submissions', undefined, me).json.submissions;
+    expect(mine).toEqual([expect.objectContaining({ id, status: 'pending', kind: 'new_trail' })]);
   });
 });

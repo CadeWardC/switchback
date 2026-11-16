@@ -34,6 +34,7 @@ const PATHS: Record<string, string> = {
   hike: 'M3 20 9.5 9l3.5 5 2.5-3.5L21 20H3Zm6.5-11V4m0 0 4 1.5-4 1.5',
   log: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
   record: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  camera: 'M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm8 9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
 };
 
 export const Icon = memo(function Icon({ name, size = 20, color, filled }: { name: string; size?: number; color: string; filled?: boolean }) {
@@ -122,15 +123,15 @@ export function Tap({ style, children, ...rest }: PressableProps & { style?: Sty
   );
 }
 
-export function Button({ title, icon, kind = 'secondary', onPress, big, style, disabled }: {
+export function Button({ title, icon, kind = 'secondary', onPress, big, style, disabled, accessibilityLabel }: {
   title?: string; icon?: string; kind?: 'primary' | 'secondary' | 'quiet' | 'danger'; onPress: () => void; big?: boolean;
-  style?: StyleProp<ViewStyle>; disabled?: boolean;
+  style?: StyleProp<ViewStyle>; disabled?: boolean; accessibilityLabel?: string;
 }) {
   const t = useTheme();
   const bg = kind === 'primary' ? t.c.primary : kind === 'secondary' ? t.c.tint : kind === 'danger' ? t.c.hardSoft : 'transparent';
   const fg = kind === 'primary' ? t.c.onPrimary : kind === 'danger' ? t.c.hard : kind === 'quiet' ? t.c.link : t.c.ink;
   return (
-    <Tap onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={title}
+    <Tap onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? title}
       style={[{
         minHeight: big ? 52 : 44, paddingHorizontal: title ? 16 : 10, borderRadius: radius.control, backgroundColor: bg,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: disabled ? 0.45 : 1, overflow: 'hidden',

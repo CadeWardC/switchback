@@ -1,7 +1,7 @@
 // Saved and Log: full-screen native lists over the map (which stays loaded underneath, so going back to it
 // is instant). The Log opens with this phone's totals (miles, hikes, climb) for a year or all time. A
 // recorded hike opens on the map, its details in the sheet: rename, share GPX, delete.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -11,7 +11,7 @@ import { exportGpx } from '@web/lib/gpx';
 import { bboxOf, distance } from '@web/lib/geo';
 import type { Coord } from '@web/lib/polyline';
 import { profileOf, type Difficulty } from '@web/lib/trail';
-import type { SavedTrail, WalkSummary } from '@web/lib/storage';
+import type { SavedTrail, Walk, WalkSummary } from '@web/lib/storage';
 import { findTrail } from '@web/data';
 import {
   deleteWalk, flyTo, loadWalk, openTrail, removeSaved, renameWalk, savedTrails, say, shownWalk, storageFailed, tab, units, walks, scrubbing,
@@ -23,6 +23,9 @@ import { averageSpeed, climbedSoFar, pace } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
 import { Ridge } from '../ui/Ridge';
 import { SubmissionRow } from './Submit';
+import { account } from '../core/server';
+import { accountPhotos, loadMyPhotos, myPhotos, pickPhotos, type RemotePhoto } from '../core/myPhotos';
+import { PhotoGrid } from '../ui/MyPhotos';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
@@ -143,7 +146,8 @@ function Totals() {
   );
 }
 
-export function LogScreen({ onSettings }: { onSettings: () => void }) {
+export function LogScreen({ onSettings, onAccount }: { onSettings: () => void; onAccount: () => void }) {
+  const me = useValue(account);
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const list = useValue(walks);
@@ -159,6 +163,12 @@ export function LogScreen({ onSettings }: { onSettings: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: t.c.bg, paddingTop: insets.top + 8 }}>
       <Header title="Log" onSettings={onSettings} />
+      {!me && (
+        <Tap onPress={onAccount} accessibilityRole="button" style={{ marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: radius.control, backgroundColor: t.c.tint }}>
+          <T v="strong">Create an account to save your hikes</T>
+          <T v="small" muted>Keep them safe if you reinstall or change phones, and add photos. Optional: they stay on this phone either way.</T>
+        </Tap>
+      )}
       {failed && <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}><Note warn>A hike could not be written to this phone (is it full?). Share GPX files to keep them.</Note></View>}
       <FlashList
         data={list}
@@ -248,11 +258,44 @@ export function WalkSheet() {
       </View>
       {ridge && path.length > 1 ? <Card><Ridge profile={ridge} path={path} height={84} units={u} /></Card> : null}
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
+      <HikePhotos walk={w} />
       <SubmissionRow walk={w} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />
         <Button icon="trash" kind="danger" title="Delete" onPress={del} style={{ flex: 1 }} />
       </View>
     </BottomSheetScrollView>
+  );
+}
+
+/** A kept hike's photos: taken on the way or added from the library; also ones on your account (a reinstall). */
+function HikePhotos({ walk }: { walk: Walk }) {
+  const mine = useValue(myPhotos).filter((p) => p.walk === walk.id);
+  const me = useValue(account);
+  const [remote, setRemote] = useState<RemotePhoto[]>([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void loadMyPhotos();
+    if (me) void accountPhotos(walk.id).then((p) => { if (live) setRemote(p); }, () => {});
+    return () => { live = false; };
+  }, [walk.id, me?.id]);
+  const add = async () => {
+    setBusy(true);
+    try {
+      const n = await pickPhotos({ walk });
+      if (n) say(n === 1 ? 'Photo added' : `${n} photos added`);
+    } catch (e) {
+      Alert.alert("Couldn't add photos", (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={{ gap: 8 }}>
+      <PhotoGrid mine={mine} remote={remote} />
+      <Button icon="camera" title={busy ? 'Adding…' : mine.length || remote.length ? 'Add more photos' : 'Add photos'} onPress={() => void add()} disabled={busy} />
+      {!me && (mine.length > 0) && <T v="tiny" muted>Kept on this phone. Log in (Settings › Account) to keep them on your account too.</T>}
+    </View>
   );
 }

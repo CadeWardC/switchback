@@ -1,7 +1,6 @@
 // How saved trails and hikes look on the server: document ids and compact hikes. No React Native in here, so
 // tests (and anything else) can use it as is.
 import type { SavedTrail, Walk, WalkPoint } from '@web/lib/storage';
-import { submissionGpx } from '@web/lib/submit';
 
 /** Names and ids the server takes: 1-128 of A-Z a-z 0-9 _ - . */
 export const validName = (s: string) => /^[A-Za-z0-9_.-]{1,128}$/.test(s);
@@ -85,32 +84,47 @@ export function expandWalk(c: CompactWalk): Walk {
 }
 
 
-/** A hike sent in for review, in the shape web/review.html reads; with the submission file
- * (docs/SUBMISSIONS.md) the existing checks take. */
-export function submissionDoc(w: Walk, name: string, review: { rating: number | null; text: string } | null, appVersion: string, now = Date.now()) {
-  const markers = w.markers ?? [];
+/** A random id in the form the server wants for new records (a version 4 UUID). */
+export function uuid(): string {
+  const h = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16));
+  h[12] = '4';
+  h[16] = ((parseInt(h[16], 16) & 0x3) | 0x8).toString(16);
+  const s = h.join('');
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`;
+}
+
+const MAX_LINE = 200_000;
+const MAX_NOTE = 2000;
+const DIFFICULTY: Record<string, string> = { easy: 'easy', moderate: 'moderate', hard: 'hard', veryHard: 'very_hard' };
+
+/**
+ * A recorded hike sent in as a new trail (PUT /v1/submissions/{uuid} on the server): the walked line (Google's
+ * 1e-5° polyline, thinned if it would be longer than the server takes), the name, and a note with the review, the
+ * spots marked on the way and the hiker's agreement to public use.
+ */
+export function trailSubmission(w: Walk, name: string, review: { rating: number | null; text: string } | null, difficulty?: string) {
+  let pts = w.segments.flat();
+  let line = encodeTrack(pts, 1e5);
+  for (let step = 2; line.length > MAX_LINE && pts.length > 2; step++) {
+    const all = w.segments.flat();
+    pts = all.filter((_, i) => i % step === 0 || i === all.length - 1);
+    line = encodeTrack(pts, 1e5);
+  }
+  const parts: string[] = [];
+  if (review?.rating) parts.push(`Rating: ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}`);
+  if (review?.text.trim()) parts.push(review.text.trim());
+  const spots = w.markers ?? [];
+  if (spots.length) parts.push(`Spots marked: ${spots.map((m) => `${m.name || 'spot'} (${m.lat.toFixed(5)}, ${m.lon.toFixed(5)})`).join('; ')}`);
+  const km = (w.length / 1000).toFixed(2);
+  parts.push(`Recorded on ${new Date(w.started).toISOString().slice(0, 10)}: ${km} km${w.gain != null ? `, ${Math.round(w.gain)} m climbed` : ''}, ${pts.length} points${w.trail ? `, following ${w.trail.name}` : ''}.`);
+  parts.push('The hiker agreed that this may be shown publicly and that photos they submit are for public use.');
+  let note = parts.join('\n\n');
+  if (note.length > MAX_NOTE) note = `${note.slice(0, MAX_NOTE - 1)}…`;
   return {
-    v: 2,
-    status: 'pending' as const,
-    submitted_at: now,
-    name,
-    review,
-    public_use_consent: true,
-    app_version: appVersion,
-    hike: {
-      id: w.id, name, start: w.started, end: w.ended, distance: Math.round(w.length * 10) / 10,
-      moving_time: w.seconds, elapsed_time: Math.round((w.ended - w.started) / 1000), gain: w.gain ?? null,
-      trail_id: w.trail?.id ?? null, trail_name: w.trail?.name ?? null,
-      segments: w.segments.filter((s) => s.length).map((s) => ({
-        line: encodeTrack(s),
-        alt: s.map((p) => (p.ele == null ? null : Math.round(p.ele * 10) / 10)),
-        t: s.map((p) => Math.round((p.t - w.started) / 100) / 10),
-      })),
-      points: markers.map((m, i) => ({ id: `${w.id}-${i}`, kind: 'spot', note: m.name, lat: m.lat, lon: m.lon, time: m.t })),
-    },
-    gpx: submissionGpx({
-      name, notes: review?.text ?? '', kind: 'walked', publicAccess: true, lengthMetres: w.length,
-      points: w.segments.flat().map((p) => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: p.t })),
-    }, now),
+    kind: 'new_trail' as const,
+    name: name.slice(0, 120),
+    line,
+    note,
+    ...(difficulty && DIFFICULTY[difficulty] ? { difficulty: DIFFICULTY[difficulty] } : {}),
   };
 }

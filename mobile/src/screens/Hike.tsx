@@ -14,6 +14,7 @@ import {
   recStarted, recState, saveOwnTrail, say, units, walks, tab, scrubbing,
 } from '../core/state';
 import { submitting } from './Submit';
+import { claimRecordingPhotos, myPhotos, releaseRecordingPhotos, takePhoto } from '../core/myPhotos';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
 import { averageSpeed, climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace, speed, speedNow } from '../core/hikeMath';
 import { split } from '../core/shape';
@@ -128,12 +129,22 @@ function Walking() {
     return () => clearInterval(id);
   }, [state]);
 
+  const shots = useValue(myPhotos).filter((p) => p.recording).length;
+  const snap = async () => {
+    try {
+      if (await takePhoto()) say('Photo kept with this hike');
+    } catch (e) {
+      say((e as Error).message);
+    }
+  };
   const done = async () => {
     setAsking(null);
     const w = await finish();
     await showFinished(w);
     if (w) {
-      // your own hike also goes to Saved, as a trail; then the offer to submit it for review
+      // the photos taken on the way become the hike's; your own hike also goes to Saved, as a trail; then the
+      // offer to submit it for review
+      await claimRecordingPhotos(w);
       saveOwnTrail(w);
       submitting.value = w;
     }
@@ -239,10 +250,12 @@ function Walking() {
             ? <Button big title="Pause" onPress={() => void pause()} style={{ flex: 1 }} />
             : <Button big title="Resume" onPress={() => void resume()} style={{ flex: 1 }} />}
           <Button big title="Mark a spot" onPress={() => setMarking(true)} style={{ flex: 1.2 }} />
+          <Button big icon="camera" accessibilityLabel="Take a photo" onPress={() => void snap()} />
           <Button big kind="primary" title="Finish" onPress={() => { platform.haptics.tap(); setAsking('finish'); }} style={{ flex: 1 }} />
         </View>
       )}
       {markers.length > 0 && <T v="small" muted>{markers.length} {markers.length === 1 ? 'spot' : 'spots'} marked: {markers.map((m) => m.name).join(', ')}</T>}
+      {shots > 0 && <T v="small" muted>{shots} {shots === 1 ? 'photo' : 'photos'} taken on this hike</T>}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
         {segs.some((s) => s.length > 1) && (!f || !!f.id) && (
@@ -255,7 +268,7 @@ function Walking() {
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <T v="strong" style={{ flex: 1 }}>Throw this hike away?</T>
           <Button title="Keep" onPress={() => setAsking(null)} />
-          <Button kind="danger" title="Discard" onPress={() => { void discard(); setAsking(null); }} />
+          <Button kind="danger" title="Discard" onPress={() => { void discard(); void releaseRecordingPhotos(); setAsking(null); }} />
         </View>
       )}
     </BottomSheetScrollView>

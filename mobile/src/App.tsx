@@ -25,6 +25,7 @@ import { TrailSheet } from './screens/TrailPage';
 import { HikeSheet } from './screens/Hike';
 import { LogScreen, SavedScreen, WalkSheet } from './screens/Lists';
 import { SettingsScreen } from './screens/Settings';
+import { AccountScreen } from './screens/Account';
 import { SubmitModal } from './screens/Submit';
 import { useValue } from './ui/hooks';
 import { Grabber, Icon, T, Tap } from './ui/kit';
@@ -32,7 +33,7 @@ import { fontFiles, fonts, mapColors, radius, shadow, size, useTheme } from './u
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
-type Routes = { Home: undefined; Settings: undefined };
+type Routes = { Home: undefined; Settings: undefined; Account: undefined };
 const Stack = createNativeStackNavigator<Routes>();
 
 /** The height of the sheet's grabber (ui/kit.tsx Grabber). */
@@ -168,6 +169,7 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
 
   const bottomInset = rowH + (index <= 0 ? peek : Math.min(middle, room * 0.6));
   const openSettings = () => navigation.navigate('Settings');
+  const openAccount = () => navigation.navigate('Account');
 
   return (
     <View style={{ flex: 1, backgroundColor: t.c.mapLand }}>
@@ -175,7 +177,7 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
       <TrailMap bottomInset={bottomInset} />
       <MapChrome />
       {current === 'saved' && <View style={[StyleSheet.absoluteFill, { bottom: rowH }]}><SavedScreen onSettings={openSettings} /></View>}
-      {current === 'log' && !walk && <View style={[StyleSheet.absoluteFill, { bottom: rowH }]}><LogScreen onSettings={openSettings} /></View>}
+      {current === 'log' && !walk && <View style={[StyleSheet.absoluteFill, { bottom: rowH }]}><LogScreen onSettings={openSettings} onAccount={openAccount} /></View>}
       <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { bottom: rowH }]}>
         <BottomSheet
           ref={sheet}
@@ -204,7 +206,11 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
 }
 
 function SettingsRoute({ navigation }: { navigation: NavigationProp<Routes> }) {
-  return <SettingsScreen onBack={() => navigation.goBack()} />;
+  return <SettingsScreen onBack={() => navigation.goBack()} onAccount={() => navigation.navigate('Account')} />;
+}
+
+function AccountRoute({ navigation }: { navigation: NavigationProp<Routes> }) {
+  return <AccountScreen onBack={() => navigation.goBack()} />;
 }
 
 export default function App() {
@@ -225,6 +231,7 @@ export default function App() {
           <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.bg } }}>
             <Stack.Screen name="Home" component={Home} />
             <Stack.Screen name="Settings" component={SettingsRoute} />
+            <Stack.Screen name="Account" component={AccountRoute} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

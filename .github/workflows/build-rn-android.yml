@@ -31,6 +31,9 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      # the account server's address built into the app (Settings › Secrets and variables › Actions › Variables)
+      SWITCHBACK_SERVER_URL: ${{ vars.SWITCHBACK_SERVER_URL }}
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
