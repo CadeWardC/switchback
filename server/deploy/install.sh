@@ -21,12 +21,16 @@ die()  { printf '\033[1;31mxx  %s\033[0m\n' "$*"; exit 1; }
 
 say "Getting the Switchback code"
 command -v git >/dev/null || { apt-get update -qq && apt-get install -y -qq git >/dev/null; }
-if [[ -d $SRC/.git ]]; then
-  git -C "$SRC" fetch -q --depth 1 origin main && git -C "$SRC" reset -q --hard FETCH_HEAD
-else
+# Always fetch from GitHub by URL: an older checkout's "origin" may point somewhere stale.
+if ! { [[ -d $SRC/.git ]] \
+       && git -C "$SRC" remote set-url origin "$REPO" 2>/dev/null \
+       && git -C "$SRC" fetch -q --depth 1 "$REPO" main \
+       && git -C "$SRC" reset -q --hard FETCH_HEAD; }; then
   rm -rf "$SRC"
-  git clone -q --depth 1 "$REPO" "$SRC"
+  git clone -q --depth 1 --branch main "$REPO" "$SRC"
 fi
+[[ -f $SRC/server/deploy/setup-pi.sh ]] \
+  || die "$SRC doesn't have server/deploy/setup-pi.sh. Remove it (sudo rm -rf $SRC) and run this again."
 echo "    $SRC at $(git -C "$SRC" log -1 --format='%h %s' | cut -c1-70)"
 
 say "Freeing port 8080"
