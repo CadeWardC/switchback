@@ -2,6 +2,7 @@ import CryptoKit
 import MapKit
 import Photos
 import UIKit
+import Vision
 
 /// A photo of (or near) a trail, from Wikimedia Commons.
 struct TrailPhoto: Codable, Hashable, Identifiable {
@@ -50,7 +51,7 @@ enum Commons {
             URLQueryItem(name: "prop", value: "imageinfo"),
             URLQueryItem(name: "iiprop", value: "url|mime|size|extmetadata"),
             URLQueryItem(name: "iiurlwidth", value: "1000"),
-            URLQueryItem(name: "iiextmetadatafilter", value: "Artist|LicenseShortName"),
+            URLQueryItem(name: "iiextmetadatafilter", value: "Artist|LicenseShortName|Categories|ImageDescription|ObjectName"),
         ] + items
         guard let url = c.url else { throw URLError(.badURL) }
         var req = URLRequest(url: url, timeoutInterval: 20)
@@ -69,11 +70,18 @@ enum Commons {
         if ["map", "karte", "carte", "diagram", "logo", "sign", "plan", "profile", "locator"].contains(where: { lower.contains($0) }) {
             return nil
         }
+        // no pictures of people: portraits, family snaps, events
+        let about = [page.title] + ["Categories", "ImageDescription", "ObjectName"].compactMap { info.extmetadata?[$0]?.value?.text }
+        if about.contains(where: { $0.range(of: peopleWords, options: [.regularExpression, .caseInsensitive]) != nil }) {
+            return nil
+        }
         let artist = info.extmetadata?["Artist"]?.value?.text.map(stripHTML)
         let license = info.extmetadata?["LicenseShortName"]?.value?.text
         return TrailPhoto(id: page.title, thumb: thumb, page: info.descriptionurl.flatMap(URL.init(string:)),
                           author: artist.flatMap { $0.isEmpty ? nil : String($0.prefix(60)) }, license: license)
     }
+
+    private static let peopleWords = #"\b(people|persons?|portraits?|selfies?|famil(y|ies)|men|women|children|girls?|boys?|bab(y|ies)|weddings?|couples?|friends|groups? of|crowds?|politicians|athletes|marathons?|runners|players|students|graduation|parties|party|festivals?|parades?|ceremon(y|ies)|meetings?|visitors|tourists|self-portrait)\b"#
 
     private static func stripHTML(_ s: String) -> String {
         s.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
@@ -122,9 +130,11 @@ final class TrailPhotos: ObservableObject {
 
     @Published private(set) var byId: [String: [TrailPhoto]] = [:]
     private var inFlight = Set<String>()
-    private let url = Files.caches.appendingPathComponent("trail-photos.json")
+    // v2: photos are checked for people; the old list (unchecked) is thrown away
+    private let url = Files.caches.appendingPathComponent("trail-photos-v2.json")
 
     init() {
+        try? FileManager.default.removeItem(at: Files.caches.appendingPathComponent("trail-photos.json"))
         byId = Files.load([String: [TrailPhoto]].self, from: url) ?? [:]
     }
 
@@ -151,14 +161,19 @@ final class TrailPhotos: ObservableObject {
         let samples = Geo.resample(trail.path, count: trail.isLoop ? 3 : 4).map(\.coord)
         spots += samples.map { (coord: $0, radius: 300) }
         for s in spots {
-            if photos.count >= 14 { break }
+            if photos.count >= 24 { break }
             for p in await Commons.photos(near: s.coord, radius: s.radius) where !photos.contains(where: { $0.id == p.id }) {
                 photos.append(p)
             }
         }
+        // 3. look at each picture and drop the ones of people
+        let checks = await PeopleFilter.check(photos)
+        let kept = zip(photos, checks).filter { $0.1 == false }.map(\.0)
         // a search cut short (you left the page) isn't saved, so it runs again next time
         if Task.isCancelled { return }
-        byId[trail.id] = Array(photos.prefix(14))
+        byId[trail.id] = Array(kept.prefix(14))
+        // a picture that couldn't be downloaded to check isn't shown; try again next launch
+        if checks.contains(nil) { return }
         if byId.count > 1500 { byId = Dictionary(uniqueKeysWithValues: byId.suffix(1000).map { ($0.key, $0.value) }) }
         Files.save(byId, to: url)
     }
@@ -167,6 +182,47 @@ final class TrailPhotos: ObservableObject {
     private func commonsTitle(_ s: String) -> String? {
         guard let r = s.range(of: "File:") else { return nil }
         return String(s[r.lowerBound...]).removingPercentEncoding
+    }
+}
+
+/// Finds photos that are of people (faces or people filling the frame) rather than of the trail, on the phone.
+enum PeopleFilter {
+    /// For each photo: true if it shows people, false if not, nil if it couldn't be downloaded.
+    static func check(_ photos: [TrailPhoto]) async -> [Bool?] {
+        await withTaskGroup(of: (Int, Bool?).self) { group in
+            for (i, p) in photos.enumerated() {
+                group.addTask { (i, await showsPeople(p.thumb)) }
+            }
+            var out = [Bool?](repeating: nil, count: photos.count)
+            for await (i, r) in group { out[i] = r }
+            return out
+        }
+    }
+
+    private static func showsPeople(_ url: URL) async -> Bool? {
+        var req = URLRequest(url: url, timeoutInterval: 20)
+        req.setValue(Net.userAgent, forHTTPHeaderField: "User-Agent")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let image = UIImage(data: data)?.cgImage else { return nil }
+        return await Task.detached(priority: .utility) { detect(in: image) }.value
+    }
+
+    private static func detect(in image: CGImage) -> Bool {
+        let faces = VNDetectFaceRectanglesRequest()
+        let humans = VNDetectHumanRectanglesRequest()
+        humans.upperBodyOnly = false
+        do {
+            try VNImageRequestHandler(cgImage: image).perform([faces, humans])
+        } catch {
+            return false
+        }
+        // a hiker far off in a landscape is fine; a face you can make out or a person taking up the picture isn't
+        let face = (faces.results ?? []).contains { $0.boundingBox.width >= 0.035 }
+        let person = (humans.results ?? []).contains {
+            $0.confidence >= 0.3 && ($0.boundingBox.height >= 0.25 || $0.boundingBox.width * $0.boundingBox.height >= 0.04)
+        }
+        return face || person
     }
 }
 
