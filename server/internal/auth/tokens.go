@@ -108,3 +108,11 @@ func NewUUIDv7() string {
 	u[8] = u[8]&0x3f | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
 }
+
+// EmailHash stands in for an email address, which is never stored: a keyed hash (HMAC-SHA256) of the lower-cased
+// address. Without the key it can't be reversed or checked against a list of addresses.
+func EmailHash(key []byte, email string) []byte {
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return m.Sum(nil)
+}

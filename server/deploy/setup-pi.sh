@@ -12,7 +12,8 @@
 #   --repo OWNER/NAME      GitHub repository to download releases from (default CadeWardC/switchback)
 #   --keep-radios          leave Wi-Fi and Bluetooth on (they're turned off when the Pi is on Ethernet)
 #
-# Backups: copy backup.env.example to /etc/switchback/backup.env, fill it in, and run this script again.
+# Backups: fill in github-backup.env.example (database, nightly, to a private GitHub repo) and/or backup.env.example
+# (database continuously and photos, to Cloudflare R2), save it in /etc/switchback/ without .example, run this again.
 set -euo pipefail
 
 DOMAIN=""
@@ -79,7 +80,7 @@ fi
 say "Installing packages"
 apt-get update -qq
 apt-get install -y -qq ca-certificates curl gnupg lsb-release postgresql-common chrony ufw unattended-upgrades \
-  apt-listchanges rclone jq zstd btop openssl >/dev/null
+  apt-listchanges rclone jq zstd btop openssl age >/dev/null
 if [[ ! -f /etc/apt/sources.list.d/pgdg.sources && ! -f /etc/apt/sources.list.d/pgdg.list ]]; then
   note "Adding PostgreSQL's own package repository (for Postgres $PG)"
   /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
@@ -186,6 +187,9 @@ DATABASE_URL=postgres:///switchback?host=/run/postgresql
 LISTEN=127.0.0.1:8080
 PUBLIC_URL=https://$DOMAIN
 TOKEN_SECRET=$(openssl rand -hex 32)
+# Email addresses are never stored, only a hash made with this key. NEVER change it: email sign-ins would stop
+# matching their accounts. It's in the GitHub/R2 backups' restore instructions too.
+EMAIL_HASH_KEY=$(openssl rand -hex 32)
 PHOTO_DIR=$PHOTOS
 TRUST_CLOUDFLARE=1
 DB_MAX_CONNS=10
@@ -198,6 +202,7 @@ EOF
   note "Created $ETC/api.env (with a new secret). Add Google and email settings there later."
 else
   sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=https://$DOMAIN|" $ETC/api.env
+  grep -q '^EMAIL_HASH_KEY=.' $ETC/api.env || echo "EMAIL_HASH_KEY=$(openssl rand -hex 32)" >> $ETC/api.env
   note "Kept $ETC/api.env"
 fi
 chown root:switchback $ETC/api.env
@@ -303,9 +308,26 @@ EOF
   chmod 0640 $ETC/rclone.conf
   note "Database: every change goes to R2; full backup weekly, changes-only nightly"
   note "Photos: copied to R2 nightly"
-else
+fi
+
+# MARK: database backups to GitHub
+
+install -m 0700 "$(dirname "$0")/github-backup.sh" /usr/local/sbin/switchback-github-backup
+GH_BACKUPS=0
+if [[ -f $ETC/github-backup.env ]]; then
+  say "Database backups to GitHub"
+  chown root:root $ETC/github-backup.env
+  chmod 0600 $ETC/github-backup.env
+  /usr/local/sbin/switchback-github-backup check || die "Fix $ETC/github-backup.env and run this again."
+  note "Taking a backup now to make sure it works"
+  /usr/local/sbin/switchback-github-backup | sed 's/^/    /'
+  GH_BACKUPS=1
+  note "Every night: encrypted on the Pi, then uploaded; the last 14 days are kept"
+fi
+if [[ $BACKUPS -eq 0 && $GH_BACKUPS -eq 0 ]]; then
   say "Backups: not set up yet"
-  note "Copy backup.env.example to $ETC/backup.env, fill in your R2 details, then run this script again."
+  note "Fill in github-backup.env.example (free, nightly) or backup.env.example (R2), save it in $ETC/"
+  note "without .example, and run this script again."
 fi
 
 # MARK: the API
@@ -401,10 +423,12 @@ log() { echo "switchback-nightly: $*"; }
 HEALTHCHECK_URL=""
 # shellcheck disable=SC1091
 [[ -f $ETC/backup.env ]] && . $ETC/backup.env
+if [[ -z "$HEALTHCHECK_URL" && -f $ETC/github-backup.env ]]; then
+  HEALTHCHECK_URL=$(sed -n 's/^HEALTHCHECK_URL=//p' $ETC/github-backup.env | tail -1)
+fi
 
-# tidy the database: old activity (kept a year), expired sessions and codes, photos never finished uploading
+# tidy the database: expired sessions and codes, photos never finished uploading
 runuser -u postgres -- psql -q -d switchback -c "
-  DELETE FROM account_events WHERE created_at < now() - interval '1 year';
   DELETE FROM sessions WHERE expires_at < now();
   DELETE FROM email_codes WHERE expires_at < now();
   DELETE FROM photos WHERE status = 'uploading' AND created_at < now() - interval '3 days';" || STATUS=1
@@ -413,6 +437,11 @@ runuser -u postgres -- psql -q -d switchback -c "
 if [[ -f /etc/pgbackrest.conf ]]; then
   TYPE="diff"; [[ $(date +%u) -eq 7 ]] && TYPE="full"
   runuser -u postgres -- pgbackrest --stanza=switchback --type=$TYPE backup || { log "database backup failed"; STATUS=1; }
+fi
+
+# encrypted database backup to the private GitHub repo
+if [[ -f $ETC/github-backup.env ]]; then
+  /usr/local/sbin/switchback-github-backup || { log "GitHub backup failed"; STATUS=1; }
 fi
 
 # photos to R2 (new files only; photos are never changed in place)
@@ -514,7 +543,7 @@ cat <<EOF
     Public:     https://$DOMAIN (once the tunnel has its public hostname)
     Settings:   $ETC/api.env   (then: sudo systemctl restart switchback-api)
     Logs:       journalctl -u switchback-api -f
-    Backups:    $([[ $BACKUPS -eq 1 ]] && echo "on" || echo "off: fill in $ETC/backup.env and run this again")
+    Backups:    $(B=(); [[ $BACKUPS -eq 1 ]] && B+=("R2, continuous"); [[ $GH_BACKUPS -eq 1 ]] && B+=("GitHub, nightly"); [[ ${#B[@]} -gt 0 ]] && (IFS=';'; echo "${B[*]}" | sed 's/;/ + /') || echo "off: see github-backup.env.example")
     Storage:    $STORAGE ($(df -h --output=avail / | tail -1 | tr -d ' ') free)
     Update the API later by running this script again.
 EOF

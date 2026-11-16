@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"switchback/server/internal/auth"
 	"switchback/server/internal/db"
 	"switchback/server/internal/ratelimit"
@@ -41,6 +43,7 @@ func (m *codeMailer) SendCode(_ context.Context, to, code string) error {
 }
 
 type env struct {
+	pool  *pgxpool.Pool
 	t     *testing.T
 	url   string
 	mail  *codeMailer
@@ -67,11 +70,11 @@ func setup(t *testing.T) *env {
 	signer, _ := auth.NewSigner(bytes.Repeat([]byte{7}, 32), 15*time.Minute)
 	mail := &codeMailer{codes: map[string]string{}}
 	store := storage.Disk{Dir: t.TempDir()}
-	srv := &Server{DB: pool, Tokens: signer, Google: auth.NewGoogle(nil), Mail: mail, Store: store,
+	srv := &Server{EmailKey: bytes.Repeat([]byte{9}, 32), DB: pool, Tokens: signer, Google: auth.NewGoogle(nil), Mail: mail, Store: store,
 		Limit: ratelimit.New(), Cfg: Config{PublicURL: "https://api.test"}}
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
-	return &env{t: t, url: ts.URL, mail: mail, store: store}
+	return &env{pool: pool, t: t, url: ts.URL, mail: mail, store: store}
 }
 
 type resp struct {
@@ -177,8 +180,8 @@ func TestEverything(t *testing.T) {
 		t.Fatal("signing in again made a new account")
 	}
 	me := e.expect(e.do("GET", "/v1/me", ana.access, nil), 200).json(t)
-	if me["display_name"] != "ana" {
-		t.Fatalf("display name %v", me["display_name"])
+	if me["display_name"] != "Hiker" || len(me["sign_ins"].([]any)) != 1 || strings.Contains(string(e.do("GET", "/v1/me", ana.access, nil).body), "example.com") {
+		t.Fatalf("me %v", me)
 	}
 	e.expect(e.do("GET", "/v1/me", "", nil), 401)
 	e.expect(e.do("GET", "/v1/me", "garbage", nil), 401)
@@ -294,19 +297,13 @@ func TestEverything(t *testing.T) {
 		t.Fatalf("hidden review still listed: %d", n)
 	}
 
-	// activity history
-	act := e.expect(e.do("GET", "/v1/me/activity", ana.access, nil), 200).json(t)["items"].([]any)
-	kinds := map[string]bool{}
-	for _, a := range act {
-		kinds[a.(map[string]any)["kind"].(string)] = true
-	}
-	for _, k := range []string{"signed_in", "review_posted", "review_edited", "hike_logged", "photo_added", "post_hidden", "report_made"} {
-		if !kinds[k] {
-			t.Fatalf("activity missing %s: %v", k, kinds)
-		}
+	// deleting the account removes its posts and photo files
+	// no email address is stored anywhere
+	var stored int
+	if err := e.pool.QueryRow(context.Background(), `SELECT count(*) FROM identities WHERE position('example.com' in encode(email_hash, 'escape')) > 0 OR subject LIKE '%@%'`).Scan(&stored); err != nil || stored != 0 {
+		t.Fatalf("an email address was stored (%d, %v)", stored, err)
 	}
 
-	// deleting the account removes its posts and photo files
 	e.expect(e.do("DELETE", "/v1/me", ana.access, nil), 204)
 	e.expect(e.do("GET", key, "", nil), 404)
 	cell = e.expect(e.do("GET", "/v1/cells/179_-374/stats", "", nil), 200).json(t)

@@ -6,6 +6,7 @@
 //	LISTEN             127.0.0.1:8080 (cloudflared connects here; never exposed directly)
 //	PUBLIC_URL         https://api.example.com
 //	TOKEN_SECRET       64 hex characters (openssl rand -hex 32)
+//	EMAIL_HASH_KEY     64 hex characters; stands in for email addresses, which are never stored. Never change it.
 //	PHOTO_DIR          /srv/switchback/photos
 //	GOOGLE_CLIENT_IDS  comma-separated OAuth client ids (iOS) that may sign in; empty turns Google off
 //	RESEND_API_KEY     to email sign-in codes; empty logs them instead (for development)
@@ -57,6 +58,10 @@ func run() error {
 	if err != nil || len(secret) < 32 {
 		return errors.New("TOKEN_SECRET must be at least 64 hex characters (openssl rand -hex 32)")
 	}
+	emailKey, err := hex.DecodeString(env("EMAIL_HASH_KEY", ""))
+	if err != nil || len(emailKey) < 32 {
+		return errors.New("EMAIL_HASH_KEY must be at least 64 hex characters (openssl rand -hex 32), and must never change")
+	}
 	signer, err := auth.NewSigner(secret, 15*time.Minute)
 	if err != nil {
 		return err
@@ -87,12 +92,13 @@ func run() error {
 	}
 
 	srv := &api.Server{
-		DB:     pool,
-		Tokens: signer,
-		Google: auth.NewGoogle(clientIDs),
-		Mail:   mailer,
-		Store:  storage.Disk{Dir: photoDir},
-		Limit:  ratelimit.New(),
+		EmailKey: emailKey,
+		DB:       pool,
+		Tokens:   signer,
+		Google:   auth.NewGoogle(clientIDs),
+		Mail:     mailer,
+		Store:    storage.Disk{Dir: photoDir},
+		Limit:    ratelimit.New(),
 		Cfg: api.Config{
 			PublicURL: env("PUBLIC_URL", "http://localhost:8080"),
 			TrustCF:   env("TRUST_CLOUDFLARE", "") == "1",

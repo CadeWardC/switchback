@@ -241,11 +241,6 @@ func (s *Server) putSubmission(w http.ResponseWriter, r *http.Request, c caller)
 		if err != nil {
 			return err
 		}
-		if created {
-			if err := logEvent(r.Context(), tx, c.UserID, evTrailSubmitted, &id); err != nil {
-				return err
-			}
-		}
 		out, err = scanSubmission(tx.QueryRow(r.Context(), submissionSelect+` WHERE id = $1`, id))
 		return err
 	})
@@ -316,9 +311,6 @@ func (s *Server) postReport(w http.ResponseWriter, r *http.Request, c caller) {
 		if err != nil || tag.RowsAffected() == 0 {
 			return err // already reported by this person: nothing more to do
 		}
-		if err := logEvent(r.Context(), tx, c.UserID, evReportMade, &in.TargetID); err != nil {
-			return err
-		}
 		var n int
 		if err := tx.QueryRow(r.Context(), `SELECT count(*) FROM reports WHERE target_kind = $1 AND target_id = $2 AND status = 'open'`,
 			in.TargetKind, in.TargetID).Scan(&n); err != nil {
@@ -327,15 +319,14 @@ func (s *Server) postReport(w http.ResponseWriter, r *http.Request, c caller) {
 		if n < reportsToHide {
 			return nil
 		}
-		var owner string
 		var trail *string
 		switch in.TargetKind {
 		case "review":
-			err = tx.QueryRow(r.Context(), `UPDATE reviews SET hidden = true WHERE id = $1 AND NOT hidden RETURNING user_id, trail_id`,
-				in.TargetID).Scan(&owner, &trail)
+			err = tx.QueryRow(r.Context(), `UPDATE reviews SET hidden = true WHERE id = $1 AND NOT hidden RETURNING trail_id`,
+				in.TargetID).Scan(&trail)
 		case "photo":
-			err = tx.QueryRow(r.Context(), `UPDATE photos SET status = 'hidden' WHERE id = $1 AND status <> 'hidden' RETURNING user_id, trail_id`,
-				in.TargetID).Scan(&owner, &trail)
+			err = tx.QueryRow(r.Context(), `UPDATE photos SET status = 'hidden' WHERE id = $1 AND status <> 'hidden' RETURNING trail_id`,
+				in.TargetID).Scan(&trail)
 		default:
 			return nil // users and submissions wait for a person to look
 		}
@@ -345,10 +336,7 @@ func (s *Server) postReport(w http.ResponseWriter, r *http.Request, c caller) {
 		if err != nil {
 			return err
 		}
-		if err := refreshStats(r.Context(), tx, trail); err != nil {
-			return err
-		}
-		return logEvent(r.Context(), tx, owner, evPostHidden, &in.TargetID)
+		return refreshStats(r.Context(), tx, trail)
 	})
 	if err != nil {
 		writeErr(w, r, err)

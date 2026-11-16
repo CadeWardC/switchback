@@ -216,13 +216,6 @@ func (s *Server) putReview(w http.ResponseWriter, r *http.Request, c caller) {
 		if err := refreshStats(r.Context(), tx, &in.Trail.ID); err != nil {
 			return err
 		}
-		kind := int16(evReviewEdited)
-		if created {
-			kind = evReviewPosted
-		}
-		if err := logEvent(r.Context(), tx, c.UserID, kind, &id); err != nil {
-			return err
-		}
 		out, err = scanReview(tx.QueryRow(r.Context(), reviewSelect+` WHERE r.id = $1`, id))
 		return err
 	})
@@ -261,7 +254,7 @@ func (s *Server) deleteReview(w http.ResponseWriter, r *http.Request, c caller) 
 		if err := refreshStats(r.Context(), tx, &trail); err != nil {
 			return err
 		}
-		return logEvent(r.Context(), tx, c.UserID, evReviewDeleted, &id)
+		return nil
 	})
 	if err != nil {
 		writeErr(w, r, err)
@@ -349,9 +342,6 @@ func (s *Server) putLog(w http.ResponseWriter, r *http.Request, c caller) {
 				return err
 			}
 			created = true
-			if err := logEvent(r.Context(), tx, c.UserID, evHikeLogged, &id); err != nil {
-				return err
-			}
 		case err != nil:
 			return err
 		case owner != c.UserID:
@@ -406,7 +396,7 @@ func (s *Server) deleteLog(w http.ResponseWriter, r *http.Request, c caller) {
 		if err := refreshStats(r.Context(), tx, &trail); err != nil {
 			return err
 		}
-		return logEvent(r.Context(), tx, c.UserID, evHikeLogDeleted, &id)
+		return nil
 	})
 	if err != nil {
 		writeErr(w, r, err)

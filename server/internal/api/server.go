@@ -34,13 +34,16 @@ type Config struct {
 }
 
 type Server struct {
-	DB     *pgxpool.Pool
-	Tokens *auth.Signer
-	Google *auth.Google
-	Mail   auth.Mailer
-	Store  storage.Store
-	Limit  *ratelimit.Limiter
-	Cfg    Config
+	// EmailKey keys the hash that stands in for email addresses. It must never change, or email sign-ins stop
+	// matching their accounts.
+	EmailKey []byte
+	DB       *pgxpool.Pool
+	Tokens   *auth.Signer
+	Google   *auth.Google
+	Mail     auth.Mailer
+	Store    storage.Store
+	Limit    *ratelimit.Limiter
+	Cfg      Config
 }
 
 func (s *Server) Handler() http.Handler {
@@ -57,7 +60,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/me", s.authed(s.getMe))
 	mux.HandleFunc("PATCH /v1/me", s.authed(s.patchMe))
 	mux.HandleFunc("DELETE /v1/me", s.authed(s.deleteMe))
-	mux.HandleFunc("GET /v1/me/activity", s.authed(s.myActivity))
 	mux.HandleFunc("GET /v1/me/logs", s.authed(s.myLogs))
 	mux.HandleFunc("GET /v1/me/submissions", s.authed(s.mySubmissions))
 
@@ -354,34 +356,6 @@ func refreshStats(ctx context.Context, tx pgx.Tx, trailID *string) error {
 		    cell = excluded.cell, review_count = excluded.review_count, rating_sum = excluded.rating_sum,
 		    photo_count = excluded.photo_count, hiker_count = excluded.hiker_count,
 		    last_review_at = excluded.last_review_at`, *trailID)
-	return err
-}
-
-// MARK: activity history
-
-const (
-	evSignedIn       = 1
-	evReviewPosted   = 2
-	evReviewEdited   = 3
-	evReviewDeleted  = 4
-	evPhotoAdded     = 5
-	evPhotoDeleted   = 6
-	evHikeLogged     = 7
-	evHikeLogDeleted = 8
-	evTrailSubmitted = 9
-	evReportMade     = 10
-	evPostHidden     = 11
-)
-
-var eventNames = map[int16]string{
-	evSignedIn: "signed_in", evReviewPosted: "review_posted", evReviewEdited: "review_edited",
-	evReviewDeleted: "review_deleted", evPhotoAdded: "photo_added", evPhotoDeleted: "photo_deleted",
-	evHikeLogged: "hike_logged", evHikeLogDeleted: "hike_log_deleted", evTrailSubmitted: "trail_submitted",
-	evReportMade: "report_made", evPostHidden: "post_hidden",
-}
-
-func logEvent(ctx context.Context, tx pgx.Tx, userID string, kind int16, target *string) error {
-	_, err := tx.Exec(ctx, `INSERT INTO account_events (user_id, kind, target) VALUES ($1, $2, $3)`, userID, kind, target)
 	return err
 }
 

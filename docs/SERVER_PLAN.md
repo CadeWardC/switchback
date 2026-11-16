@@ -107,7 +107,7 @@ by creation time.
 | Table | Main fields |
 |---|---|
 | `users` | id, display name, avatar photo, created, deleted_at |
-| `identities` | user, provider (`email`, `google`), provider id/email |
+| `identities` | user, provider (`email`, `google`), provider id, a keyed hash of the email (never the address) |
 | `sessions` | user, refresh token hash, device name, last used, expires |
 | `trail_refs` | trail_id, name, start point, bounding box, source (see "Trail IDs" below) |
 | `reviews` | id, user, trail_id, rating 1–5, text, hiked_on, conditions (muddy, snow, overgrown, blowdown, …), created, updated. One per user per trail |
@@ -115,7 +115,6 @@ by creation time.
 | `hikes` | id (= the app's Activity id), user, name, start, end, distance, gain, moving time, track (encoded polyline + bounding box), trail_id, visibility (`private` backup / `link` / `public`) |
 | `photos` | id, user, trail_id?, hike_id?, review_id?, location, taken_at, width, height, file keys, status (`uploading`, `ready`, `hidden`) |
 | `hike_logs` | id, user, trail_id, hiked_on, hike_id? (if it was recorded), short note, visibility. "I hiked this", with or without a recording |
-| `account_events` | user, kind, target id, created. A light activity history (below) |
 | `trail_submissions` | id, user, kind (`new_trail` / `correction`), status, trail_id (corrections), field, proposed value, note, line (new trails), photos, reviewed_by, reviewed_at, reply |
 | `trail_overrides` | trail_id, field, value: approved corrections, applied on top of the map data |
 | `community_trails` | id, name, line, difficulty, submitted_by, approved_at: approved new trails |
@@ -127,21 +126,11 @@ Each account has a list of hikes done: **trail, date, a short note**, and the re
 "I hiked this" on a trail page adds one without recording. Hike logs power a "Hikes" tab on a profile and the
 "hiked by N people" count on a trail (kept in `trail_stats`). Private by default; a log can be public.
 
-### Activity history (kept light)
+### What isn't stored
 
-One small row per action, about 40 bytes, with **no IP addresses, no text and no copies of content**:
-
-| Kind | Target |
-|---|---|
-| signed in on a new device | session |
-| review posted / edited / deleted | review |
-| photo added / deleted | photo |
-| hike logged / shared | hike log or hike |
-| trail submitted | submission |
-| report made / post hidden | report |
-
-Used for a "Your activity" list in Settings, and for moderation (what has this account been doing?). Rows older than
-**one year are deleted** by a nightly job. A million actions take about 40 MB.
+No email addresses (a keyed hash stands in for them), no ages or birthdays, no IP addresses and no
+activity history. The server keeps reviews, photos and what's needed to run them: accounts, sign-in, hike logs,
+trail submissions and reports.
 
 ### Trail submissions
 
@@ -171,7 +160,7 @@ when they first post (in the terms of use and on the posting screen).
 | Ratings and reviews | Yes, with display names, no account ids or emails | ODbL |
 | Photos (display size and thumbnail) | Yes, credited to the display name | CC BY-SA 4.0, the same as most of Wikimedia Commons |
 | Hike logs and shared hikes | Only the ones a person made public | ODbL |
-| Accounts, emails, sessions, private hikes and logs, activity history, reports | **Never** | Private |
+| Accounts, sign-in data, private hikes and logs, reports | **Never** | Private |
 
 - **Monthly open-data release**, built next to the trail packs (`.github/workflows/trail-packs.yml` downloads an
   export from `GET /v1/export` at build time): reviews and ratings, community trails and corrections, and public hike
@@ -199,7 +188,6 @@ box. When a monthly trail-pack build finds that an ID has gone, a job matches th
 | Me | `GET/PATCH/DELETE /v1/me` (delete removes everything they posted) | no |
 | Ratings for the map | `GET /v1/cells/{cell}/stats`: every trail's rating, photo count and "hiked by" count in one 0.25° cell (the same cells as the trail packs), plus approved corrections and community trails there | **5 min** |
 | Hike logs | `PUT /v1/logs/{id}` · `DELETE /v1/logs/{id}` · `GET /v1/me/logs?cursor=` · `GET /v1/users/{id}/logs` (public ones) | no / public 1 min |
-| Activity | `GET /v1/me/activity?cursor=` | no |
 | Submissions | `PUT /v1/submissions/{id}` · `GET /v1/me/submissions` (with status and reply) | no |
 | Trail page | `GET /v1/trails/reviews?trail=<id>&cursor=` · `GET /v1/trails/photos?trail=<id>&cursor=` (trail ids can contain `/`, so they go in the query) | **1 min** |
 | Post | `PUT /v1/reviews/{id}` · `DELETE /v1/reviews/{id}` | no |
@@ -266,7 +254,9 @@ That's comfortably enough for tens of thousands of users posting at a normal rat
 
 ## Backups and recovery
 
-- **Database:** pgBackRest sends each change to R2 as it happens (continuous archiving) plus a full backup each night.
+- **Database (now):** nightly, encrypted with age on the Pi, to a private GitHub repo, 14 days kept; the server's
+  settings (with `EMAIL_HASH_KEY`) go in the same encrypted file.
+- **Database (later, optional):** pgBackRest sends each change to R2 as it happens (continuous archiving) plus a full backup each night.
   We can restore to any moment in the last 14 days.
 - **Photos:** rclone copies new files to R2 each night.
 - **Config:** everything that sets up the Pi is a script in this repo, so a new Pi (or a cloud server) is set up the
@@ -283,7 +273,7 @@ That's comfortably enough for tens of thousands of users posting at a normal rat
 - Every query runs with the user it's for; tests check that nobody can edit or delete someone else's posts.
 - **Report** button on every review, photo and profile. Three reports hide a post until it's checked.
   An admin page (on the home network or behind Cloudflare Access, free for up to 50 users) shows reports and the
-  trail submission queue, an account's activity history, and can approve, hide, delete or ban.
+  trail submission queue, and can approve, hide, delete or ban.
 - Health check: **Healthchecks.io** (free) pings us if the Pi stops answering or a backup doesn't run.
 
 ## Growing past the Pi
@@ -312,7 +302,7 @@ Each step changes settings and where things run, not the app.
 | Hike logs | "I hiked this" on a trail page; a Hikes list for your account | `TrailDetailView.swift`, new `LogsView.swift` |
 | Submissions | "Suggest a correction" on a trail page; "Add a missing trail" from the map (draw) or from a recorded hike; "My submissions" with status | `TrailDetailView.swift`, `ExploreView.swift`, new `SubmitTrailView.swift` |
 | Community data | Apply approved corrections and draw community trails from the cell endpoint | `TrailPacks.swift`, `TileTrails.swift` |
-| Settings | Account (Google or email), sign out, delete account, "Your activity", "Back up my hikes" toggle | `SettingsView.swift` |
+| Settings | Account (Google or email), sign out, delete account, "Back up my hikes" toggle | `SettingsView.swift` |
 
 ## Status
 
@@ -338,7 +328,7 @@ server/
 ## Build order
 
 1. **Contract and database:** `openapi.yaml`, migrations, and a local Docker Compose (Postgres + API) for working on a laptop.
-2. **API core:** auth (Google and email code), activity history, reviews, hike logs, cell stats, ETags, rate limits, tests.
+2. **API core:** auth (Google and email code), reviews, hike logs, cell stats, ETags, rate limits, tests.
 3. **Photos:** upload, storage drivers (disk, R2), serving.
 4. **Pi:** `setup-pi.sh`, Cloudflare Tunnel on our domain, backups, health checks, load test.
 5. **App:** API client, account (Google and email), outbox, reviews and "I hiked this" on trail pages, stars on the list.

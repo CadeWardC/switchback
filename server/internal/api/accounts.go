@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 	"crypto/hmac"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -62,9 +62,9 @@ func (s *Server) emailStart(w http.ResponseWriter, r *http.Request) {
 	}
 	code := auth.NewCode()
 	_, err := s.DB.Exec(r.Context(), `
-		INSERT INTO email_codes (email, code_hash, expires_at, attempts) VALUES ($1, $2, $3, 0)
-		ON CONFLICT (email) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at, attempts = 0`,
-		email, s.Tokens.HashSecret("code", email+"|"+code), time.Now().Add(codeTTL))
+		INSERT INTO email_codes (email_hash, code_hash, expires_at, attempts) VALUES ($1, $2, $3, 0)
+		ON CONFLICT (email_hash) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at, attempts = 0`,
+		auth.EmailHash(s.EmailKey, email), s.Tokens.HashSecret("code", email+"|"+code), time.Now().Add(codeTTL))
 	if err != nil {
 		writeErr(w, r, err)
 		return
@@ -92,6 +92,7 @@ func (s *Server) emailVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := strings.ToLower(strings.TrimSpace(in.Email))
+	emailHash := auth.EmailHash(s.EmailKey, email)
 	code := strings.TrimSpace(in.Code)
 	var out tokensOut
 	wrongCode := false
@@ -99,8 +100,8 @@ func (s *Server) emailVerify(w http.ResponseWriter, r *http.Request) {
 		var hash []byte
 		var expires time.Time
 		var attempts int
-		err := tx.QueryRow(r.Context(), `SELECT code_hash, expires_at, attempts FROM email_codes WHERE email = $1 FOR UPDATE`,
-			email).Scan(&hash, &expires, &attempts)
+		err := tx.QueryRow(r.Context(), `SELECT code_hash, expires_at, attempts FROM email_codes WHERE email_hash = $1 FOR UPDATE`,
+			emailHash).Scan(&hash, &expires, &attempts)
 		if errors.Is(err, pgx.ErrNoRows) || (err == nil && time.Now().After(expires)) {
 			return fail(http.StatusUnauthorized, "code_expired", "That code has expired. Ask for a new one.")
 		}
@@ -112,14 +113,14 @@ func (s *Server) emailVerify(w http.ResponseWriter, r *http.Request) {
 		}
 		if !hmac.Equal(hash, s.Tokens.HashSecret("code", email+"|"+code)) {
 			wrongCode = true
-			_, err := tx.Exec(r.Context(), `UPDATE email_codes SET attempts = attempts + 1 WHERE email = $1`, email)
+			_, err := tx.Exec(r.Context(), `UPDATE email_codes SET attempts = attempts + 1 WHERE email_hash = $1`, emailHash)
 			return err
 		}
-		if _, err := tx.Exec(r.Context(), `DELETE FROM email_codes WHERE email = $1`, email); err != nil {
+		if _, err := tx.Exec(r.Context(), `DELETE FROM email_codes WHERE email_hash = $1`, emailHash); err != nil {
 			return err
 		}
-		name, _, _ := strings.Cut(email, "@")
-		user, created, err := findOrCreateUser(r.Context(), tx, "email", email, email, name)
+		// the subject is the hash too; new accounts are "Hiker" until the person picks a name
+		user, created, err := findOrCreateUser(r.Context(), tx, "email", hex.EncodeToString(emailHash), emailHash, "")
 		if err != nil {
 			return err
 		}
@@ -161,7 +162,11 @@ func (s *Server) googleSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 	var out tokensOut
 	err = s.inTx(r.Context(), func(tx pgx.Tx) error {
-		user, created, err := findOrCreateUser(r.Context(), tx, "google", id.Subject, id.Email, id.Name)
+		var emailHash []byte
+		if id.Email != "" {
+			emailHash = auth.EmailHash(s.EmailKey, id.Email)
+		}
+		user, created, err := findOrCreateUser(r.Context(), tx, "google", id.Subject, emailHash, id.Name)
 		if err != nil {
 			return err
 		}
@@ -178,7 +183,7 @@ func (s *Server) googleSignIn(w http.ResponseWriter, r *http.Request) {
 
 // findOrCreateUser finds the account for an identity, links it to an account with the same verified email, or makes
 // a new account.
-func findOrCreateUser(ctx context.Context, tx pgx.Tx, provider, subject, email, name string) (userOut, bool, error) {
+func findOrCreateUser(ctx context.Context, tx pgx.Tx, provider, subject string, emailHash []byte, name string) (userOut, bool, error) {
 	var u userOut
 	err := tx.QueryRow(ctx, `
 		SELECT u.id, u.display_name FROM identities i JOIN users u ON u.id = i.user_id
@@ -189,13 +194,13 @@ func findOrCreateUser(ctx context.Context, tx pgx.Tx, provider, subject, email, 
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return u, false, err
 	}
-	if email != "" {
+	if emailHash != nil {
 		err = tx.QueryRow(ctx, `
 			SELECT u.id, u.display_name FROM identities i JOIN users u ON u.id = i.user_id
-			WHERE i.email = $1 ORDER BY i.created_at LIMIT 1`, email).Scan(&u.ID, &u.DisplayName)
+			WHERE i.email_hash = $1 ORDER BY i.created_at LIMIT 1`, emailHash).Scan(&u.ID, &u.DisplayName)
 		if err == nil {
-			_, err = tx.Exec(ctx, `INSERT INTO identities (provider, subject, user_id, email) VALUES ($1, $2, $3, $4)`,
-				provider, subject, u.ID, nullIfEmpty(email))
+			_, err = tx.Exec(ctx, `INSERT INTO identities (provider, subject, user_id, email_hash) VALUES ($1, $2, $3, $4)`,
+				provider, subject, u.ID, emailHash)
 			return u, false, err
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
@@ -206,8 +211,8 @@ func findOrCreateUser(ctx context.Context, tx pgx.Tx, provider, subject, email, 
 	if _, err := tx.Exec(ctx, `INSERT INTO users (id, display_name) VALUES ($1, $2)`, u.ID, u.DisplayName); err != nil {
 		return u, false, err
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO identities (provider, subject, user_id, email) VALUES ($1, $2, $3, $4)`,
-		provider, subject, u.ID, nullIfEmpty(email))
+	_, err = tx.Exec(ctx, `INSERT INTO identities (provider, subject, user_id, email_hash) VALUES ($1, $2, $3, $4)`,
+		provider, subject, u.ID, emailHash)
 	return u, true, err
 }
 
@@ -222,13 +227,6 @@ func cleanName(name string) string {
 	return name
 }
 
-func nullIfEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
 func (s *Server) newSession(ctx context.Context, tx pgx.Tx, u userOut, device string) (tokensOut, error) {
 	id := auth.NewUUIDv7()
 	refresh := auth.NewRefreshToken()
@@ -238,9 +236,6 @@ func (s *Server) newSession(ctx context.Context, tx pgx.Tx, u userOut, device st
 	_, err := tx.Exec(ctx, `INSERT INTO sessions (id, user_id, token_hash, device, expires_at) VALUES ($1, $2, $3, $4, $5)`,
 		id, u.ID, s.Tokens.HashSecret("refresh", refresh), strings.TrimSpace(device), time.Now().Add(sessionTTL))
 	if err != nil {
-		return tokensOut{}, err
-	}
-	if err := logEvent(ctx, tx, u.ID, evSignedIn, &id); err != nil {
 		return tokensOut{}, err
 	}
 	return s.tokens(u, id, refresh), nil
@@ -309,10 +304,7 @@ func (s *Server) getMe(w http.ResponseWriter, r *http.Request, c caller) {
 	var out struct {
 		userOut
 		CreatedAt time.Time `json:"created_at"`
-		SignIns   []struct {
-			Provider string  `json:"provider"`
-			Email    *string `json:"email"`
-		} `json:"sign_ins"`
+		SignIns   []string  `json:"sign_ins"`
 	}
 	err := s.DB.QueryRow(r.Context(), `SELECT id, display_name, created_at FROM users WHERE id = $1`, c.UserID).
 		Scan(&out.ID, &out.DisplayName, &out.CreatedAt)
@@ -320,22 +312,16 @@ func (s *Server) getMe(w http.ResponseWriter, r *http.Request, c caller) {
 		writeErr(w, r, err)
 		return
 	}
-	rows, err := s.DB.Query(r.Context(), `SELECT provider, email FROM identities WHERE user_id = $1 ORDER BY created_at`, c.UserID)
+	rows, err := s.DB.Query(r.Context(), `SELECT provider FROM identities WHERE user_id = $1 ORDER BY created_at`, c.UserID)
 	if err != nil {
 		writeErr(w, r, err)
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var p struct {
-			Provider string  `json:"provider"`
-			Email    *string `json:"email"`
-		}
-		if err := rows.Scan(&p.Provider, &p.Email); err != nil {
-			writeErr(w, r, err)
-			return
-		}
-		out.SignIns = append(out.SignIns, p)
+	out.SignIns, err = pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		writeErr(w, r, err)
+		return
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -408,49 +394,4 @@ func (s *Server) deleteMe(w http.ResponseWriter, r *http.Request, c caller) {
 	}
 	s.removeUnusedFiles(r.Context(), keys)
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) myActivity(w http.ResponseWriter, r *http.Request, c caller) {
-	before := int64(1<<63 - 1)
-	if cur := r.URL.Query().Get("cursor"); cur != "" {
-		n, err := strconv.ParseInt(cur, 10, 64)
-		if err != nil {
-			writeErr(w, r, fail(http.StatusBadRequest, "bad_cursor", "The cursor isn't valid."))
-			return
-		}
-		before = n
-	}
-	rows, err := s.DB.Query(r.Context(), `
-		SELECT id, kind, target, created_at FROM account_events
-		WHERE user_id = $1 AND id < $2 ORDER BY id DESC LIMIT 51`, c.UserID, before)
-	if err != nil {
-		writeErr(w, r, err)
-		return
-	}
-	defer rows.Close()
-	type item struct {
-		Kind   string    `json:"kind"`
-		Target *string   `json:"target"`
-		At     time.Time `json:"at"`
-	}
-	items := []item{}
-	var lastID int64
-	for rows.Next() {
-		var id int64
-		var kind int16
-		var it item
-		if err := rows.Scan(&id, &kind, &it.Target, &it.At); err != nil {
-			writeErr(w, r, err)
-			return
-		}
-		it.Kind = eventNames[kind]
-		items = append(items, it)
-		lastID = id
-	}
-	out := map[string]any{"items": items, "cursor": nil}
-	if len(items) == 51 {
-		out["items"] = items[:50]
-		out["cursor"] = strconv.FormatInt(lastID+1, 10) // the 51st row starts the next page
-	}
-	writeJSON(w, http.StatusOK, out)
 }

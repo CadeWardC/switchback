@@ -282,9 +282,6 @@ func (s *Server) putPhotoFile(w http.ResponseWriter, r *http.Request, c caller) 
 			if err := refreshStats(r.Context(), tx, trail); err != nil {
 				return err
 			}
-			if err := logEvent(r.Context(), tx, c.UserID, evPhotoAdded, &id); err != nil {
-				return err
-			}
 		}
 		out, err = s.scanPhoto(tx.QueryRow(r.Context(), photoSelect+` WHERE p.id = $1`, id))
 		return err
@@ -331,7 +328,7 @@ func (s *Server) deletePhoto(w http.ResponseWriter, r *http.Request, c caller) {
 		if err := refreshStats(r.Context(), tx, trail); err != nil {
 			return err
 		}
-		return logEvent(r.Context(), tx, c.UserID, evPhotoDeleted, &id)
+		return nil
 	})
 	if err != nil {
 		writeErr(w, r, err)

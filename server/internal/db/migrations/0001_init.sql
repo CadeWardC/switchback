@@ -6,21 +6,22 @@ CREATE TABLE users (
     created_at   timestamptz NOT NULL DEFAULT now()
 );
 
--- How someone signs in. An email and a Google account with the same verified email are one user.
+-- How someone signs in. Email addresses are never stored: only a keyed hash (HMAC) of them, enough to sign in and
+-- to make an email and a Google account with the same verified email one user.
 CREATE TABLE identities (
     provider   text NOT NULL CHECK (provider IN ('email', 'google')),
     subject    text NOT NULL,
     user_id    uuid NOT NULL REFERENCES users ON DELETE CASCADE,
-    email      text,
+    email_hash bytea,
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (provider, subject)
 );
 CREATE INDEX identities_user ON identities (user_id);
-CREATE INDEX identities_email ON identities (email);
+CREATE INDEX identities_email ON identities (email_hash);
 
--- Sign-in codes sent by email (only a hash is kept).
+-- Sign-in codes waiting to be entered (only hashes are kept).
 CREATE TABLE email_codes (
-    email      text PRIMARY KEY,
+    email_hash bytea PRIMARY KEY,
     code_hash  bytea NOT NULL,
     expires_at timestamptz NOT NULL,
     attempts   int NOT NULL DEFAULT 0
@@ -115,17 +116,6 @@ CREATE TABLE photos (
 );
 CREATE INDEX photos_trail ON photos (trail_id, created_at DESC, id DESC) WHERE status = 'ready';
 CREATE INDEX photos_user ON photos (user_id);
-
--- A light activity history: who did what, when. No IPs, no text. Rows older than a year are deleted nightly.
-CREATE TABLE account_events (
-    id         bigserial PRIMARY KEY,
-    user_id    uuid NOT NULL REFERENCES users ON DELETE CASCADE,
-    kind       smallint NOT NULL,
-    target     uuid,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX account_events_user ON account_events (user_id, id DESC);
-CREATE INDEX account_events_age ON account_events (created_at);
 
 -- Trail submissions: new trails and corrections, approved before anyone else sees them.
 
