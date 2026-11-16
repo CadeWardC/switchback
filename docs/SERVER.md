@@ -69,9 +69,9 @@ accounts server replaces it (the document store's data was only tests).
    `ok`. (If the app ever reports a 403 "blocked before it reached the server", turn off Cloudflare's Browser
    Integrity Check for this host.)
 5. **The admin token** for the review page: `sudo grep ADMIN_TOKEN /etc/switchback/api.env`.
-6. **Build the address into the app**: GitHub › the repository › Settings › Secrets and variables › Actions ›
-   Variables › New repository variable `SWITCHBACK_SERVER_URL` = `https://switchback2.opcw032522.uk`. The next app
-   builds use it (anyone can still change it on the Account screen, under Server).
+6. **Nothing to set in the app**: `https://switchback2.opcw032522.uk` is built in (`mobile/app.config.js`), so
+   people just create an account or log in. (A build can point elsewhere, e.g. a test server, with the
+   environment variable or GitHub repository variable `SWITCHBACK_SERVER_URL`.)
 
 ## Notes
 

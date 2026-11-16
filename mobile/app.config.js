@@ -15,9 +15,9 @@ module.exports = {
     scheme: 'switchback',
     version: '1.0.0',
     orientation: 'portrait',
-    // the Switchback server the app talks to for accounts (not a secret; changeable on the Account screen).
-    // CI sets it from the repository variable SWITCHBACK_SERVER_URL.
-    extra: { serverUrl: process.env.SWITCHBACK_SERVER_URL || '' },
+    // the Switchback server the app talks to for accounts: the Orange Pi, behind its Cloudflare tunnel. Not a
+    // secret (accounts log in with their own passwords). SWITCHBACK_SERVER_URL overrides it, e.g. for a test server.
+    extra: { serverUrl: process.env.SWITCHBACK_SERVER_URL || 'https://switchback2.opcw032522.uk' },
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
     backgroundColor: STONE,

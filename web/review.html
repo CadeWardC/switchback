@@ -197,7 +197,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(
 $("#filter").onchange = load;
 $("#reload").onclick = load;
 $("#filter").innerHTML = FILTERS.submissions.map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
-$("#url").value = store.get("sb.url") || "";
+$("#url").value = store.get("sb.url") || "https://switchback2.opcw032522.uk";
 $("#key").value = store.get("sb.key") || "";
 if ($("#url").value && $("#key").value) $("#login").requestSubmit();
 </script>

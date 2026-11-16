@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { account, api, logIn, logOut, register, rename, serverUrl, setServerUrl } from '../core/server';
+import { account, api, logIn, logOut, register, rename } from '../core/server';
 import { lastSync, pendingCount, syncError, syncNow, syncOffline, syncing } from '../core/sync';
 import { useValue } from '../ui/hooks';
 import { Button, Card, Icon, Note, Segmented, T, Tap } from '../ui/kit';
@@ -43,23 +43,17 @@ function Field({ label, ...props }: { label: string } & React.ComponentProps<typ
 }
 
 function SignUpOrIn({ onDone }: { onDone: () => void }) {
-  const t = useTheme();
-  const url = useValue(serverUrl);
   const [mode, setMode] = useState<Mode>('register');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [address, setAddress] = useState(url ?? '');
-  const [showServer, setShowServer] = useState(!url);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [check, setCheck] = useState<string | null>(null);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.trim());
   const passwordOk = password.length >= 8;
   const go = async () => {
     setError(null);
-    if (!setServerUrl(address)) { setError('Enter the server address (https only).'); setShowServer(true); return; }
     setBusy(true);
     try {
       if (mode === 'register') await register(email, password, name);
@@ -97,16 +91,6 @@ function SignUpOrIn({ onDone }: { onDone: () => void }) {
         disabled={busy || !emailOk || !passwordOk} />
       <T v="tiny" muted>Your email is only used to log you in: the server keeps a scrambled form of it, never the address itself, and never emails you.</T>
 
-      <Tap onPress={() => setShowServer(!showServer)} accessibilityRole="button" style={{ paddingVertical: 4 }}>
-        <T v="small" color={t.c.link}>{showServer ? 'Hide server' : `Server: ${url ? url.replace(/^https:\/\//, '') : 'not set'}`}</T>
-      </Tap>
-      {showServer && (
-        <Card style={{ gap: 10 }}>
-          <Field label="Server address" value={address} onChangeText={setAddress} placeholder="https://your-server.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
-          <Button title="Check connection" onPress={async () => setCheck(await api.health(setServerUrl(address)))} />
-          {check && <T v="small" muted>{check}</T>}
-        </Card>
-      )}
     </>
   );
 }
@@ -114,7 +98,6 @@ function SignUpOrIn({ onDone }: { onDone: () => void }) {
 function LoggedIn() {
   const t = useTheme();
   const me = useValue(account)!;
-  const url = useValue(serverUrl);
   const busy = useValue(syncing);
   const err = useValue(syncError);
   const offline = useValue(syncOffline);
@@ -149,7 +132,7 @@ function LoggedIn() {
             <Icon name="pencil" size={16} color={t.c.muted} />
           </Tap>
         )}
-        <T v="small" muted>Logged in on {url?.replace(/^https:\/\//, '')}. Your hikes, saved trails and photos are kept on your account and synced whenever there's a connection.</T>
+        <T v="small" muted>Your hikes, saved trails and photos are kept on your account and synced whenever there's a connection.</T>
       </Card>
       <Card style={{ gap: 10 }}>
         {err ? <T v="small" color={offline ? t.c.muted : t.c.hard}>{err}</T>

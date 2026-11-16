@@ -6,15 +6,13 @@
 // store (Keychain / Android Keystore), the access token only in memory. A request that finds its access token
 // expired gets a new one with the refresh token and is tried once more.
 //
-// The server's address comes from the build (app.config.js extra.serverUrl, from SWITCHBACK_SERVER_URL) and
-// can be changed on the account screen. Nothing secret is built into the app.
+// The server's address is built in (app.config.js extra.serverUrl: the Orange Pi, unless SWITCHBACK_SERVER_URL
+// says otherwise); people never type it. Nothing secret is built into the app.
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { signal } from '@preact/signals-core';
-import { load, save } from '@web/lib/storage';
 import { platform } from '../platform';
 
-const URL_KEY = 'server-url';
 const SESSION_KEY = 'switchback-session';
 
 export interface Account { id: string; display_name: string }
@@ -23,7 +21,7 @@ interface Session { refresh: string; user: Account }
 const built = String((Constants.expoConfig?.extra as { serverUrl?: string } | undefined)?.serverUrl ?? '').trim();
 
 /** The server's address in use (normalised), or null when none is known yet. */
-export const serverUrl = signal<string | null>(load<string | null>(URL_KEY, null) ?? normaliseUrl(built));
+export const serverUrl = signal<string | null>(normaliseUrl(built));
 /** Who is logged in; null when nobody is. */
 export const account = signal<Account | null>(null);
 
@@ -57,15 +55,6 @@ export function normaliseUrl(raw: string): string | null {
   if (!/^[a-z]+:\/\//i.test(s)) s = `https://${s}`;
   s = s.replace(/\/+$/, '');
   return /^https:\/\/[^/\s]+(\/[^\s]*)?$/i.test(s) ? s : null;
-}
-
-export function setServerUrl(raw: string): string | null {
-  const u = normaliseUrl(raw);
-  if (u && u !== serverUrl.peek()) {
-    save(URL_KEY, u);
-    serverUrl.value = u;
-  }
-  return u;
 }
 
 export const isSignedIn = () => !!serverUrl.peek() && !!session;
