@@ -7,7 +7,7 @@ const { execFileSync } = require('node:child_process') as { execFileSync: (cmd: 
 const { writeFileSync } = require('node:fs') as { writeFileSync: (file: string, data: string) => void };
 declare const process: { env: Record<string, string | undefined> };
 import type { SavedTrail, Walk } from '@web/lib/storage';
-import { compactWalk, trailRefOfWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, trailSubmission, uuid, validName, walkDocId } from '../src/core/syncFormat';
+import { compactWalk, trailRefOfWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, trailProblem, trailSubmission, uuid, validName, walkDocId } from '../src/core/syncFormat';
 
 // a 30 km hike, a point every 4 m, in two stretches, with heights (some missing) and two marked spots
 function longHike(): Walk {
@@ -74,6 +74,15 @@ describe('compact hikes', () => {
     expect(d.note).toContain('★★★★☆');
     expect(d.note).toContain('spring (38.51000, -92.31000)');
     expect(d.note).toContain('public');
+    expect(d.note.length).toBeLessThanOrEqual(2000);
+  });
+  test('a problem with a trail carries the trail, what is wrong and the walked line', () => {
+    const w = longHike();
+    const d = trailProblem(w, trailRefOfWalk(w)!, 'closed', ' Bridge out at the creek ');
+    expect(d).toEqual(expect.objectContaining({ kind: 'correction', field: 'closed' }));
+    expect(d.trail.id).toBe('missouri/r123');
+    expect(decodeTrack(d.line, 1e5).length).toBeGreaterThan(2);
+    expect(d.note.startsWith('It is closed.\n\nBridge out at the creek')).toBe(true);
     expect(d.note.length).toBeLessThanOrEqual(2000);
   });
   test('a very long hike is thinned to fit', () => {
@@ -148,6 +157,15 @@ live('live server', () => {
     expect([200, 201]).toContain(r.status);
     const mine = call('GET', '/v1/me/submissions', undefined, me).json.submissions;
     expect(mine).toEqual([expect.objectContaining({ id, status: 'pending', kind: 'new_trail' })]);
+  });
+
+  test('a problem with a trail is accepted with its line, as a correction', () => {
+    const me = signUp('fay');
+    const w = longHike();
+    const id = uuid();
+    const r = call('PUT', `/v1/submissions/${id}`, trailProblem(w, trailRefOfWalk(w)!, 'line', 'The loop turns left at the creek now'), me);
+    expect([200, 201]).toContain(r.status);
+    expect(call('GET', '/v1/me/submissions', undefined, me).json.submissions).toEqual([expect.objectContaining({ id, status: 'pending', kind: 'correction' })]);
   });
 
   test('a review of a trail you hiked is public, one per person, and the owner can hide it', () => {

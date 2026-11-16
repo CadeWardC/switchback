@@ -46,6 +46,12 @@ const photoSelect = `
 	       p.height, round(p.lat::numeric, 4)::float8, round(p.lon::numeric, 4)::float8, p.taken_at, p.status, p.created_at
 	FROM photos p JOIN users u ON u.id = p.user_id`
 
+// Photos are listed oldest first: by when each was taken, or when it was uploaded if that isn't known.
+const (
+	photoWhen  = `coalesce(p.taken_at, p.created_at)`
+	photoOrder = ` ORDER BY ` + photoWhen + `, p.id`
+)
+
 func (s *Server) scanPhoto(row pgx.Row) (photoOut, error) {
 	var o photoOut
 	var display, thumb *string
@@ -61,13 +67,14 @@ func (s *Server) trailPhotos(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, fail(http.StatusBadRequest, "no_trail", "Add ?trail=<trail id>."))
 		return
 	}
+	// oldest first, by when the photo was taken (when it was uploaded, if that isn't known): the newest come last
 	args := []any{trail}
 	where := ` WHERE p.trail_id = $1 AND p.status = 'ready'`
 	if t, id, ok := decodeCursor(r.URL.Query().Get("cursor")); ok {
-		where += ` AND (p.created_at, p.id) < ($2, $3)`
+		where += ` AND (` + photoWhen + `, p.id) > ($2, $3)`
 		args = append(args, t, id)
 	}
-	rows, err := s.DB.Query(r.Context(), photoSelect+where+` ORDER BY p.created_at DESC, p.id DESC LIMIT 31`, args...)
+	rows, err := s.DB.Query(r.Context(), photoSelect+where+photoOrder+` LIMIT 31`, args...)
 	if err != nil {
 		writeErr(w, r, err)
 		return
@@ -90,13 +97,17 @@ func (s *Server) trailPhotos(w http.ResponseWriter, r *http.Request) {
 	var cursor *string
 	if len(photos) == 31 {
 		photos = photos[:30]
-		c := encodeCursor(photos[29].CreatedAt, photos[29].ID)
+		at := photos[29].CreatedAt
+		if photos[29].TakenAt != nil {
+			at = *photos[29].TakenAt
+		}
+		c := encodeCursor(at, photos[29].ID)
 		cursor = &c
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"photos": photos, "cursor": cursor})
 }
 
-// myPhotos lists the caller's own photos (whatever their state), newest first; ?walk= keeps one recorded hike's.
+// myPhotos lists the caller's own photos (whatever their state), oldest first; ?walk= keeps one recorded hike's.
 func (s *Server) myPhotos(w http.ResponseWriter, r *http.Request, c caller) {
 	where, args := ` WHERE p.user_id = $1`, []any{c.UserID}
 	if walk := r.URL.Query().Get("walk"); walk != "" {
@@ -107,7 +118,7 @@ func (s *Server) myPhotos(w http.ResponseWriter, r *http.Request, c caller) {
 		where += ` AND p.walk_id = $2`
 		args = append(args, walk)
 	}
-	s.writePhotos(w, r, photoSelect+where+` ORDER BY p.created_at DESC, p.id DESC LIMIT 2000`, args...)
+	s.writePhotos(w, r, photoSelect+where+photoOrder+` LIMIT 2000`, args...)
 }
 
 // writePhotos answers {"photos": [...]} for a photo query.

@@ -129,21 +129,21 @@ same request twice is harmless. Lists take `?cursor=` from the previous page.
 | `GET` / `PATCH {display_name}` / `DELETE /v1/me` | account; delete removes everything posted | |
 | `POST /v1/me/password` `{current_password, new_password}` | 204; signs out your other devices. 401 `wrong_password`, 422 `weak_password`, 409 `no_password` | |
 | `GET /v1/me/logs` · `GET /v1/me/submissions` | your hike logs, your submissions with status and reply | |
-| `GET /v1/me/photos?walk=<hike id>` | your own photos (any status), newest first, optionally one recorded hike's | |
+| `GET /v1/me/photos?walk=<hike id>` | your own photos (any status), oldest first, optionally one recorded hike's | |
 | `GET /v1/me/docs/{collection}` | your live documents: `{items: [{id, updated_at, deleted: false, data}], server_time}` | |
 | `GET /v1/me/docs/{collection}?since=<server_time>` | what changed since then, deleted ones as `{id, updated_at, deleted: true, data: null}` | |
 | `PUT /v1/me/docs/{collection}/{id}` | any JSON up to 2 MB (413 `too_large`), replacing the document → `{id, updated_at, deleted: false}` | |
 | `DELETE /v1/me/docs/{collection}/{id}` | leaves a tombstone → `{id, updated_at, deleted: true}` (also if it wasn't there) | |
 | `GET /v1/cells/{row}_{col}/stats` | ratings, photo and hiker counts, corrections and community trails in a 0.25° cell | 5 min |
 | `GET /v1/trails/reviews?trail=<id>` | stats and reviews, newest first | 1 min |
-| `GET /v1/trails/photos?trail=<id>` | photos, newest first | 1 min |
+| `GET /v1/trails/photos?trail=<id>` | photos, oldest first (by when taken), 30 at a time with `cursor` | 1 min |
 | `GET /v1/users/{id}/logs` | someone's public hike logs | 1 min |
 | `PUT` / `DELETE /v1/reviews/{id}` | `{trail, rating, body, hiked_on, conditions}`; one per person per trail | |
 | `PUT` / `DELETE /v1/logs/{id}` | `{trail, hiked_on, hike_id, note, public}` | |
 | `PUT /v1/photos/{id}` | `{trail, review_id, log_id, walk_id, lat, lon, taken_at}`, all optional | |
 | `PUT /v1/photos/{id}/file?size=display\|thumb` | the raw HEIC or JPEG bytes as the body (any Content-Type); a JPEG's metadata (EXIF, XMP, IPTC) is removed before it is stored, a HEIC with EXIF is refused; display ≤ 1 MB and ≤ 1,100 px on the short side, thumb ≤ 200 KB and ≤ 440 px; ready when both are in | |
 | `DELETE /v1/photos/{id}` | | |
-| `PUT /v1/submissions/{id}` | `{kind: "new_trail", name, line, difficulty, note}` or `{kind: "correction", trail, field, value, note}` | |
+| `PUT /v1/submissions/{id}` | `{kind: "new_trail", name, line, difficulty, note}` or `{kind: "correction", trail, field, value, note, line?}` (the walked line is optional) | |
 | `POST /v1/reports` `{target_kind, target_id, reason}` | three reports hide a review or photo | |
 | `GET /p/{key}` | a photo file | forever |
 | `GET /v1/admin/submissions?status=pending\|approved\|rejected\|all` | every submission with who sent it (`user_display_name`), its line and box | |

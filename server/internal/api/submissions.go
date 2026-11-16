@@ -117,7 +117,7 @@ func scanSubmission(row pgx.Row) (submissionOut, error) {
 	return o, err
 }
 
-// putSubmission sends a new trail or a correction to the review queue. It can be changed until it's reviewed.
+// putSubmission sends a new trail or a correction (a problem with a trail) to the review queue. It can be changed until it's reviewed.
 func (s *Server) putSubmission(w http.ResponseWriter, r *http.Request, c caller) {
 	id, err := pathID(r)
 	if err != nil {
@@ -195,7 +195,15 @@ func (s *Server) putSubmission(w http.ResponseWriter, r *http.Request, c caller)
 			writeErr(w, r, fail(http.StatusUnprocessableEntity, "too_long", "Values are up to 500 characters."))
 			return
 		}
-		in.Name, in.Line = nil, nil
+		// the walked line may come with it (the hiker chose to send it, to show what is wrong); it is only kept for
+		// the reviewer to look at
+		if in.Line != nil {
+			if pts, ok := decodePolyline(*in.Line); !ok || len(pts) < 2 || len(*in.Line) > 200000 {
+				writeErr(w, r, fail(http.StatusUnprocessableEntity, "bad_line", "The line isn't valid."))
+				return
+			}
+		}
+		in.Name = nil
 	default:
 		writeErr(w, r, fail(http.StatusUnprocessableEntity, "bad_kind", "kind is new_trail or correction."))
 		return

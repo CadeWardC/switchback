@@ -1,4 +1,4 @@
-// A trail, in the sheet: its name, park line, the three big numbers, the ridge card with its pins and
+// A trail, in the sheet: its name, park line, everyone's photos of it in a tall row, the three big numbers, the ridge card with its pins and
 // the daylight line, the full loop or one of its short loops, where to start (radio rows, in step with the
 // radio markers on the map), Start hike, Directions, Share GPX, Save, and "Ready offline".
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -25,7 +25,7 @@ import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
 import { LightLine, Ridge } from '../ui/Ridge';
-import { TrailCommunity } from '../ui/Community';
+import { TrailCommunity, TrailPhotos } from '../ui/Community';
 import { fonts, useTheme } from '../ui/theme';
 
 const WEBSITE = 'https://cadewardc.github.io/switchback/';
@@ -145,6 +145,8 @@ export function TrailSheet() {
           <T v="small" muted style={{ flex: 1 }} numberOfLines={2}>{[tr.area, blaze ? `${blaze} blazes` : null].filter(Boolean).join(' · ') || routeType(tr)}</T>
         </View>
       </View>
+
+      <TrailPhotos trail={whole} />
 
       {choices.length === 2 && (
         <Segmented value={short} onChange={pickShort}

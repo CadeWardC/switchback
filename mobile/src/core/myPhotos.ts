@@ -37,7 +37,10 @@ export interface MyPhoto {
 }
 
 /** A photo on your account (from the server), for ones this phone doesn't have (after a reinstall or on another phone). */
-export interface RemotePhoto { id: string; display_name?: string; walk_id: string | null; trail_id: string | null; url: string | null; thumb_url: string | null; lat: number | null; lon: number | null; taken_at: string | null }
+export interface RemotePhoto {
+  id: string; display_name?: string; walk_id: string | null; trail_id: string | null; url: string | null; thumb_url: string | null;
+  width?: number | null; height?: number | null; lat: number | null; lon: number | null; taken_at: string | null; created_at?: string;
+}
 
 const DOC = 'my-photos.json';
 export const myPhotos = signal<MyPhoto[]>([]);

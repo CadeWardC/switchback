@@ -1,7 +1,7 @@
 // Saved and Log: full-screen native lists over the map (which stays loaded underneath, so going back to it
 // is instant). The Log opens with this phone's totals (miles, hikes, climb) for a year or all time. A
 // recorded hike opens on the map, its details in the sheet: rename, share GPX, delete.
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -11,7 +11,7 @@ import { exportGpx } from '@web/lib/gpx';
 import { bboxOf, distance } from '@web/lib/geo';
 import type { Coord } from '@web/lib/polyline';
 import { profileOf, type Difficulty } from '@web/lib/trail';
-import type { SavedTrail, Walk, WalkSummary } from '@web/lib/storage';
+import type { SavedTrail, WalkSummary } from '@web/lib/storage';
 import { findTrail } from '@web/data';
 import {
   deleteWalk, flyTo, loadWalk, openTrail, removeSaved, renameWalk, savedTrails, say, shownWalk, storageFailed, tab, units, walks,
@@ -22,12 +22,9 @@ import { walkGpx } from '../core/gpx';
 import { averageSpeed, climbedSoFar, pace } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
 import { Ridge } from '../ui/Ridge';
-import { SubmissionRow } from './Submit';
+import { followUp, SubmissionRow } from './AfterHike';
 import { account } from '../core/server';
-import { accountPhotos, loadMyPhotos, myPhotos, photoError, pickPhotos, uploadPhotos, type RemotePhoto } from '../core/myPhotos';
-import { PhotoGrid } from '../ui/MyPhotos';
-import { writeReview } from '../ui/Community';
-import { trailRefOfWalk } from '../core/community';
+import { HikePhotos } from '../ui/MyPhotos';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
@@ -260,53 +257,12 @@ export function WalkSheet() {
       {ridge && path.length > 1 ? <Card><Ridge profile={ridge} path={path} height={84} units={u} /></Card> : null}
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
       <HikePhotos walk={w} />
-      {w.trail ? (
-        <Button icon="pencil" title={`Review ${w.trail.name}`} onPress={() => { const ref = trailRefOfWalk(w); if (ref) void writeReview(ref, w.started); }} />
-      ) : null}
+      {w.trail ? <Button icon="pencil" title={`Review ${w.trail.name}`} onPress={() => { followUp.value = { walk: w }; }} /> : null}
       <SubmissionRow walk={w} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />
         <Button icon="trash" kind="danger" title="Delete" onPress={del} style={{ flex: 1 }} />
       </View>
     </BottomSheetScrollView>
-  );
-}
-
-/** A kept hike's photos: taken on the way or added from the library; also ones on your account (a reinstall). */
-function HikePhotos({ walk }: { walk: Walk }) {
-  const mine = useValue(myPhotos).filter((p) => p.walk === walk.id);
-  const me = useValue(account);
-  const failed = useValue(photoError);
-  const t = useTheme();
-  const [remote, setRemote] = useState<RemotePhoto[]>([]);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    let live = true;
-    // opening the hike tries again for any photo still waiting to go up
-    void loadMyPhotos().then(() => uploadPhotos());
-    if (me) void accountPhotos(walk.id).then((p) => { if (live) setRemote(p); }, () => {});
-    return () => { live = false; };
-  }, [walk.id, me?.id]);
-  const add = async () => {
-    setBusy(true);
-    try {
-      const n = await pickPhotos({ walk });
-      if (n) say(n === 1 ? 'Photo added' : `${n} photos added`);
-    } catch (e) {
-      Alert.alert("Couldn't add photos", (e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <View style={{ gap: 8 }}>
-      <PhotoGrid mine={mine} remote={remote} />
-      <Button icon="camera" title={busy ? 'Adding…' : mine.length || remote.length ? 'Add more photos' : 'Add photos'} onPress={() => void add()} disabled={busy} />
-      {!me && (mine.length > 0) && <T v="tiny" muted>Kept on this phone. Log in (Settings › Account) to upload them.</T>}
-      {me && failed && mine.some((p) => !p.uploaded) && <T v="tiny" color={t.c.hard}>{failed}</T>}
-      <T v="tiny" muted>{walk.trail
-        ? `Photos you add here are shown publicly on ${walk.trail.name}'s page: anyone may see, share and reuse them.`
-        : 'Photos here are seen only by you, until this hike is added as a trail.'}</T>
-    </View>
   );
 }

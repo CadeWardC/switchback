@@ -26,8 +26,7 @@ import { HikeSheet } from './screens/Hike';
 import { LogScreen, SavedScreen, WalkSheet } from './screens/Lists';
 import { SettingsScreen } from './screens/Settings';
 import { AccountScreen } from './screens/Account';
-import { SubmitModal } from './screens/Submit';
-import { ReviewModal } from './ui/Community';
+import { AfterHikeModal } from './screens/AfterHike';
 import { useValue } from './ui/hooks';
 import { Grabber, Icon, T, Tap } from './ui/kit';
 import { fontFiles, fonts, mapColors, radius, shadow, size, useTheme } from './ui/theme';
@@ -198,8 +197,7 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
       </View>
       {!hiking && <TabRow />}
       <Toast bottom={rowH + 16} />
-      <SubmitModal />
-      <ReviewModal />
+      <AfterHikeModal />
     </View>
   );
 }

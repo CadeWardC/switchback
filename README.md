@@ -17,7 +17,10 @@ The original iPhone app (Swift) has been removed; it is in the git history. Its 
 - **Accounts (phone app, optional):** create an account or log in (email and password) to keep your hikes, saved
   trails and hike photos on your account on the Switchback server (`server/`), synced to every phone you log in on;
   without one everything stays on the phone. Take photos while recording or add them to a kept hike. A finished
-  hike is kept in Saved as your own trail and can be submitted as a new trail, approved on the server's review page (`/review`, unlocked with a PIN). See
+  hike is kept in Saved as your own trail; you can then review the trail and add photos, which sends no GPS track. The
+  track is only sent in if you say there is a problem with the trail or that it is a new one, and that is checked on
+  the server's review page (`/review`, unlocked with a PIN). A trail's page opens with everyone's photos of it, the
+  earliest first; they open full screen to swipe through. See
   [docs/SERVER.md](docs/SERVER.md).
 - **Hike tab:** the map and the recorder share one tab (Hike, Saved and Log, each with an icon); tap Record a hike
   on the map's sheet to start. Drag along any elevation chart to see that spot on the map.

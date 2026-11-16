@@ -348,7 +348,7 @@ func TestAdminAndHikePhotos(t *testing.T) {
 		t.Helper()
 		return e.expect(e.do("GET", "/v1/me/photos"+query, a.access, nil), 200).json(t)["photos"].([]any)
 	}
-	if ps := myPhotos(ana, ""); len(ps) != 3 || ps[2].(map[string]any)["id"] != hikePhoto {
+	if ps := myPhotos(ana, ""); len(ps) != 3 || ps[0].(map[string]any)["id"] != hikePhoto { // oldest first
 		t.Fatalf("my photos %v", ps)
 	}
 	if ps := myPhotos(ana, "?walk=w.abc"); len(ps) != 2 {

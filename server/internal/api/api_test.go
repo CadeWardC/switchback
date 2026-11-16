@@ -275,6 +275,21 @@ func TestEverything(t *testing.T) {
 	if n := len(photos["photos"].([]any)); n != 1 {
 		t.Fatalf("%d trail photos", n)
 	}
+	// the oldest photo comes first and the newest last, by when each was taken (the first one has no date, so it
+	// counts from its upload, just now), whatever order they were uploaded in
+	early, late := uuid(), uuid()
+	for _, x := range []struct{ id, at string }{{late, "2026-11-01T10:00:00Z"}, {early, "2019-05-01T10:00:00Z"}} {
+		e.expect(e.do("PUT", "/v1/photos/"+x.id, ana.access, map[string]any{"trail": trail, "taken_at": x.at}), 200)
+		e.expect(e.do("PUT", "/v1/photos/"+x.id+"/file?size=display", ana.access, jpegBytes(t, 1000, 1333, false)), 200)
+		e.expect(e.do("PUT", "/v1/photos/"+x.id+"/file?size=thumb", ana.access, jpegBytes(t, 400, 533, false)), 200)
+	}
+	photos = e.expect(e.do("GET", "/v1/trails/photos?trail="+strings.ReplaceAll(trail["id"].(string), " ", "%20"), "", nil), 200).json(t)
+	order := photos["photos"].([]any)
+	if len(order) != 3 || order[0].(map[string]any)["id"] != early || order[1].(map[string]any)["id"] != late {
+		t.Fatalf("trail photos out of order: %v", order)
+	}
+	e.expect(e.do("DELETE", "/v1/photos/"+early, ana.access, nil), 204)
+	e.expect(e.do("DELETE", "/v1/photos/"+late, ana.access, nil), 204)
 	r = e.expect(e.do("GET", path, "", nil), 200).json(t)
 	if ids := r["reviews"].([]any)[1].(map[string]any)["photo_ids"].([]any); len(ids) != 1 && len(r["reviews"].([]any)[0].(map[string]any)["photo_ids"].([]any)) != 1 {
 		t.Fatalf("review photos %v", r)
@@ -289,8 +304,22 @@ func TestEverything(t *testing.T) {
 	sub["line"] = "!!!"
 	e.expect(e.do("PUT", "/v1/submissions/"+uuid(), bo.access, sub), 422)
 	corr := map[string]any{"kind": "correction", "trail": trail, "field": "closed", "note": "Bridge out"}
-	e.expect(e.do("PUT", "/v1/submissions/"+uuid(), bo.access, corr), 201)
-	if subs := e.expect(e.do("GET", "/v1/me/submissions", bo.access, nil), 200).json(t)["submissions"].([]any); len(subs) != 2 {
+	c := e.expect(e.do("PUT", "/v1/submissions/"+uuid(), bo.access, corr), 201).json(t)
+	if c["line"] != nil {
+		t.Fatalf("a correction without a line has one: %v", c)
+	}
+	// a problem with a trail can carry the walked line, when the hiker sends it
+	corr["field"], corr["line"] = "other", "oenqG~yexPg^g^g^g^"
+	cid := uuid()
+	c = e.expect(e.do("PUT", "/v1/submissions/"+cid, bo.access, corr), 201).json(t)
+	if c["line"] != corr["line"] || c["kind"] != "correction" {
+		t.Fatalf("correction with a line %v", c)
+	}
+	corr["line"] = "!!!"
+	e.expect(e.do("PUT", "/v1/submissions/"+uuid(), bo.access, corr), 422)
+	delete(corr, "line")
+	corr["field"] = "closed"
+	if subs := e.expect(e.do("GET", "/v1/me/submissions", bo.access, nil), 200).json(t)["submissions"].([]any); len(subs) != 3 {
 		t.Fatalf("submissions %v", subs)
 	}
 

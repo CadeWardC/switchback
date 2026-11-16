@@ -99,35 +99,72 @@ const MAX_LINE = 200_000;
 const MAX_NOTE = 2000;
 const DIFFICULTY: Record<string, string> = { easy: 'easy', moderate: 'moderate', hard: 'hard', veryHard: 'very_hard' };
 
-/**
- * A recorded hike sent in as a new trail (PUT /v1/submissions/{uuid} on the server): the walked line (Google's
- * 1e-5° polyline, thinned if it would be longer than the server takes), the name, and a note with the review, the
- * spots marked on the way and the hiker's agreement to public use.
- */
-export function trailSubmission(w: Walk, name: string, review: { rating: number | null; text: string } | null, difficulty?: string) {
-  let pts = w.segments.flat();
+/** A recorded hike's line as the server takes it (Google's 1e-5° polyline), thinned if it would be too long. */
+function submissionLine(w: Walk): { line: string; points: number } {
+  const all = w.segments.flat();
+  let pts = all;
   let line = encodeTrack(pts, 1e5);
   for (let step = 2; line.length > MAX_LINE && pts.length > 2; step++) {
-    const all = w.segments.flat();
     pts = all.filter((_, i) => i % step === 0 || i === all.length - 1);
     line = encodeTrack(pts, 1e5);
   }
+  return { line, points: pts.length };
+}
+
+/** What every submission's note ends with: the hike it came from, the spots marked on the way, the agreement. */
+function hikeNote(w: Walk, points: number): string[] {
   const parts: string[] = [];
-  if (review?.rating) parts.push(`Rating: ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}`);
-  if (review?.text.trim()) parts.push(review.text.trim());
   const spots = w.markers ?? [];
   if (spots.length) parts.push(`Spots marked: ${spots.map((m) => `${m.name || 'spot'} (${m.lat.toFixed(5)}, ${m.lon.toFixed(5)})`).join('; ')}`);
   const km = (w.length / 1000).toFixed(2);
-  parts.push(`Recorded on ${new Date(w.started).toISOString().slice(0, 10)}: ${km} km${w.gain != null ? `, ${Math.round(w.gain)} m climbed` : ''}, ${pts.length} points${w.trail ? `, following ${w.trail.name}` : ''}.`);
+  parts.push(`Recorded on ${new Date(w.started).toISOString().slice(0, 10)}: ${km} km${w.gain != null ? `, ${Math.round(w.gain)} m climbed` : ''}, ${points} points${w.trail ? `, following ${w.trail.name}` : ''}.`);
   parts.push('The hiker agreed that this may be shown publicly and that photos they submit are for public use.');
-  let note = parts.join('\n\n');
-  if (note.length > MAX_NOTE) note = `${note.slice(0, MAX_NOTE - 1)}…`;
+  return parts;
+}
+
+const clip = (note: string) => (note.length > MAX_NOTE ? `${note.slice(0, MAX_NOTE - 1)}…` : note);
+
+/**
+ * A recorded hike sent in as a new trail (PUT /v1/submissions/{uuid} on the server): the walked line, the name, and
+ * a note with the review, the spots marked on the way and the hiker's agreement to public use. Only sent when the
+ * hiker says the hike is a trail the map doesn't have.
+ */
+export function trailSubmission(w: Walk, name: string, review: { rating: number | null; text: string } | null, difficulty?: string) {
+  const { line, points } = submissionLine(w);
+  const parts: string[] = [];
+  if (review?.rating) parts.push(`Rating: ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}`);
+  if (review?.text.trim()) parts.push(review.text.trim());
   return {
     kind: 'new_trail' as const,
     name: name.slice(0, 120),
     line,
-    note,
+    note: clip([...parts, ...hikeNote(w, points)].join('\n\n')),
     ...(difficulty && DIFFICULTY[difficulty] ? { difficulty: DIFFICULTY[difficulty] } : {}),
+  };
+}
+
+/** What can be wrong with a trail, as the hiker reads it, and the server's name for it (its correction fields). */
+export const PROBLEMS = [
+  { key: 'line', field: 'other', label: 'The line is wrong' },
+  { key: 'closed', field: 'closed', label: 'It is closed' },
+  { key: 'gone', field: 'not_exists', label: 'It is not there' },
+  { key: 'else', field: 'other', label: 'Something else' },
+] as const;
+export type ProblemKey = (typeof PROBLEMS)[number]['key'];
+
+/**
+ * A problem with a trail, sent in from a hike of it (PUT /v1/submissions/{uuid}, kind "correction"): which trail,
+ * what is wrong, what the hiker wrote, and the walked line so whoever checks it can see what was really there.
+ */
+export function trailProblem(w: Walk, ref: TrailRef, key: ProblemKey, text: string) {
+  const { line, points } = submissionLine(w);
+  const what = PROBLEMS.find((p) => p.key === key) ?? PROBLEMS[PROBLEMS.length - 1];
+  return {
+    kind: 'correction' as const,
+    trail: ref,
+    field: what.field,
+    line,
+    note: clip([`${what.label}.`, ...(text.trim() ? [text.trim()] : []), ...hikeNote(w, points)].join('\n\n')),
   };
 }
 

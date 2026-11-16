@@ -13,7 +13,7 @@ import {
   endReached, following, flyTo, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments,
   recStarted, recState, saveOwnTrail, say, units, walks, tab,
 } from '../core/state';
-import { submitting } from './Submit';
+import { followUp } from './AfterHike';
 import { claimRecordingPhotos, myPhotos, releaseRecordingPhotos, takePhoto } from '../core/myPhotos';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
 import { averageSpeed, climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace, speed, speedNow } from '../core/hikeMath';
@@ -142,10 +142,11 @@ function Walking() {
     await showFinished(w);
     if (w) {
       // the photos taken on the way become the hike's; your own hike also goes to Saved, as a trail; then the
-      // offer to submit it for review
+      // sheet to review the trail and add photos (the track is only sent in if you say there is a problem with the
+      // trail, or that it is a new one)
       await claimRecordingPhotos(w);
       saveOwnTrail(w);
-      submitting.value = w;
+      followUp.value = { walk: w, fresh: true };
     }
   };
 

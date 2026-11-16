@@ -3,12 +3,16 @@
 // from someone who recorded a hike of that trail. Both are public as soon as they are sent; the owner can hide
 // any of them on the review page.
 import type { Trail } from '@web/lib/trail';
+import { signal } from '@preact/signals-core';
 import { api } from './server';
 import { uuid } from './syncFormat';
 import type { RemotePhoto } from './myPhotos';
 
 export { trailRefOfWalk, type TrailRef } from './syncFormat';
 import type { TrailRef } from './syncFormat';
+
+/** Bumped when a review or photo is posted or removed, so a trail's page shows it at once. */
+export const communityChanged = signal(0);
 
 export const trailRefOf = (t: Trail): TrailRef => ({ id: t.key, name: t.name, start: [t.start[0], t.start[1]], bbox: t.bbox });
 
@@ -24,9 +28,28 @@ export async function trailReviews(trailId: string): Promise<{ stats: TrailStats
   return { stats: r.stats, reviews: r.reviews ?? [] };
 }
 
+/** Oldest first, newest last: by when each photo was taken (when it was uploaded, if that isn't known). */
+export function oldestFirst<P>(list: P[], when: (p: P) => number): P[] {
+  return list.map((p, i) => ({ p, i, t: when(p) })).sort((a, b) => (a.t - b.t) || (a.i - b.i)).map((x) => x.p);
+}
+export const remoteTime = (p: Pick<RemotePhoto, 'taken_at' | 'created_at'>): number => {
+  const t = Date.parse(p.taken_at ?? p.created_at ?? '');
+  return Number.isFinite(t) ? t : Infinity;
+};
+
+/** Every photo of a trail (the server hands them over 30 at a time), the earliest first and the latest last. */
 export async function trailPhotos(trailId: string): Promise<RemotePhoto[]> {
-  const r = (await api.call('GET', `/v1/trails/photos?trail=${encodeURIComponent(trailId)}`, undefined, { auth: false })) as { photos: RemotePhoto[] };
-  return r.photos ?? [];
+  const all: RemotePhoto[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 20; page++) {
+    const r = (await api.call('GET', `/v1/trails/photos?trail=${encodeURIComponent(trailId)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+      undefined, { auth: false })) as { photos: RemotePhoto[]; cursor?: string | null };
+    all.push(...(r.photos ?? []));
+    cursor = r.cursor ?? null;
+    if (!cursor) break;
+  }
+  const seen = new Set<string>();
+  return oldestFirst(all.filter((p) => !seen.has(p.id) && !!seen.add(p.id)), remoteTime);
 }
 
 /** Writes your review of a trail (or changes it: one each per trail). */
