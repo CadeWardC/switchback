@@ -1,11 +1,14 @@
-// Settings: account & sync (optional: sign in to your own Switchback server), units, the trail files on this phone (reset and download again), the maps on this phone (Clear),
+// Settings: account & sync (optional: sign in to your own Switchback server), units, a backup of your hikes and saved
+// trails (export, import), the trail files on this phone (reset and download again), the maps on this phone (Clear),
 // downloading maps over mobile data, the look, and credits.
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { resetTrailFiles, trailFilesOnDevice, type TrailFilesInfo } from '@web/data';
-import { mapsOverCellular, themePref, units, type ThemePref } from '../core/state';
+import { allWalks, importKept, mapsOverCellular, savedTrails, themePref, units, walks, type ThemePref } from '../core/state';
+import { backupName, backupText, importSummary, readBackup, readGpxHike } from '../core/backup';
+import { pickTextFiles } from '../platform/files';
 import { clearMaps, offlineSummary } from '../core/offline';
 import { platform } from '../platform';
 import { api, hasKey, normaliseUrl, serverUrl, signIn, signOut } from '../core/server';
@@ -22,6 +25,8 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
   const u = useValue(units);
   const theme = useValue(themePref);
   const cell = useValue(mapsOverCellular);
+  const hikes = useValue(walks);
+  const kept = useValue(savedTrails);
   const [files, setFiles] = useState<TrailFilesInfo | null>(null);
   const [maps, setMaps] = useState<{ packs: number; bytes: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -46,6 +51,34 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
     { text: 'Clear', style: 'destructive', onPress: async () => { setBusy('Clearing maps…'); await clearMaps(); setBusy(null); refresh(); } },
   ]);
 
+  const exportAll = async () => {
+    setBusy('Writing the backup…');
+    try {
+      const now = new Date();
+      await platform.files.exportText(backupName(now), backupText(await allWalks(), savedTrails.peek(), now.getTime()), 'application/json');
+    } catch {
+      Alert.alert('Backup', "The backup file couldn't be written or shared.");
+    }
+    setBusy(null);
+  };
+  const importFiles = async () => {
+    let files: { name: string; text: string | null }[];
+    try { files = await pickTextFiles(); } catch { Alert.alert('Import', "The file couldn't be opened."); return; }
+    if (!files.length) return;
+    setBusy('Importing…');
+    let added = 0, addedSaved = 0, unread = 0;
+    for (const f of files) {
+      const backup = f.text ? readBackup(f.text) : null;
+      const hike = f.text && !backup ? readGpxHike(f.text, f.name) : null;
+      if (!backup && !hike) { unread++; continue; }
+      const did = await importKept(backup ? backup.walks : [hike!], backup ? backup.saved : []);
+      added += did.hikes;
+      addedSaved += did.saved;
+    }
+    setBusy(null);
+    Alert.alert('Import', importSummary(added, addedSaved, unread));
+  };
+
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View style={{ gap: 8 }}>
       <T v="label" muted>{title}</T>
@@ -66,6 +99,15 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         <AccountSection />
         <Section title="Units">
           <Segmented value={u} onChange={(v) => { units.value = v; }} options={[{ value: 'imperial', label: 'Miles and feet' }, { value: 'metric', label: 'Kilometres and metres' }]} />
+        </Section>
+        <Section title="Your hikes and saved trails">
+          <T v="small">
+            {`${hikes.length} ${hikes.length === 1 ? 'hike' : 'hikes'} and ${kept.length} saved ${kept.length === 1 ? 'trail' : 'trails'} are kept on this phone only: removing or reinstalling the app erases them. Export writes them all to one file; save it to Files or iCloud Drive, and import it here afterwards. Import also reads GPX files shared from a hike. It only adds what is missing.`}
+          </T>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button icon="download" title="Export" onPress={() => void exportAll()} disabled={!!busy || (!hikes.length && !kept.length)} style={{ flex: 1 }} />
+            <Button title="Import" onPress={() => void importFiles()} disabled={!!busy} style={{ flex: 1 }} />
+          </View>
         </Section>
         <Section title="Look">
           <Segmented<ThemePref> value={theme} onChange={(v) => { themePref.value = v; }}

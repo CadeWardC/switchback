@@ -3,6 +3,7 @@
 import { profileOf, type Profile, type Trail } from '@web/lib/trail';
 import type { WalkPoint } from '@web/lib/storage';
 import type { Coord } from '@web/lib/polyline';
+import { distance } from '@web/lib/geo';
 import { progressOn, secondsLeft } from '@web/lib/follow';
 import { climbOver, planOf, type Journey, type Plan } from '@web/lib/journey';
 
@@ -68,6 +69,33 @@ export function pace(seconds: number, metres: number, imperial: boolean): string
   const m = Math.floor(per / 60), s = Math.round(per % 60);
   return s === 60 ? `${m + 1}:00` : `${m}:${String(s).padStart(2, '0')}`;
 }
+
+/** How fast you are going right now, in metres a second, from the newest recorded points (about the last
+ *  20 seconds of walking). Standing still adds no points, so nothing new for a while is 0. null before
+ *  there is anything to go by. */
+export function speedNow(segments: WalkPoint[][], now: number, span = 20_000, still = 12_000): number | null {
+  const s = segments[segments.length - 1];
+  if (!s || s.length < 2) return null;
+  const newest = s[s.length - 1];
+  if (now - newest.t > still) return 0;
+  let metres = 0, i = s.length - 1;
+  while (i > 0 && (i === s.length - 1 || newest.t - s[i - 1].t <= span)) {
+    metres += distance([s[i - 1].lat, s[i - 1].lon], [s[i].lat, s[i].lon]);
+    i--;
+  }
+  const seconds = (newest.t - s[i].t) / 1000;
+  return seconds > 0 ? metres / seconds : null;
+}
+
+/** A speed as miles or kilometres an hour ("2.8"), or a dash when there is none to give. */
+export function speed(metresPerSecond: number | null, imperial: boolean): string {
+  if (metresPerSecond == null || !Number.isFinite(metresPerSecond) || metresPerSecond < 0) return '–';
+  return (metresPerSecond * 3600 / (imperial ? 1609.344 : 1000)).toFixed(1);
+}
+
+/** The average speed over a distance, as miles or kilometres an hour, or a dash before there is enough to say. */
+export const averageSpeed = (seconds: number, metres: number, imperial: boolean) =>
+  (metres < 50 || seconds < 10 ? '–' : speed(metres / seconds, imperial));
 
 /** What has been climbed so far, from the heights the phone gave (smoothed: phone heights jump about). */
 export function climbedSoFar(segments: WalkPoint[][]): number | null {
