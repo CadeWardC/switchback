@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { account, api, logIn, logOut, register, rename } from '../core/server';
+import { account, logIn, logOut, register, rename } from '../core/server';
 import { lastSync, pendingCount, syncError, syncNow, syncOffline, syncing } from '../core/sync';
 import { useValue } from '../ui/hooks';
 import { Button, Card, Icon, Note, Segmented, T, Tap } from '../ui/kit';
@@ -71,7 +71,7 @@ function SignUpOrIn({ onDone }: { onDone: () => void }) {
     <>
       <T v="name">{mode === 'register' ? 'Create an account' : 'Log in'}</T>
       <T v="body" muted>
-        An account keeps your hikes, saved trails and photos on the Switchback server, so they're safe if you lose
+        An account keeps your hikes, saved trails and photos on your Switchback account, so they're safe if you lose
         or reinstall the app and they're on every phone you log in on. You don't need one: without it everything
         stays on this phone. What's already here is added to your account when you log in.
       </T>
@@ -89,7 +89,7 @@ function SignUpOrIn({ onDone }: { onDone: () => void }) {
       {error && <Note warn>{error}</Note>}
       <Button big kind="primary" title={busy ? 'One moment…' : mode === 'register' ? 'Create account' : 'Log in'} onPress={() => void go()}
         disabled={busy || !emailOk || !passwordOk} />
-      <T v="tiny" muted>Your email is only used to log you in: the server keeps a scrambled form of it, never the address itself, and never emails you.</T>
+      <T v="tiny" muted>Your email is only used to log you in: Switchback keeps a scrambled form of it, never the address itself, and never emails you.</T>
 
     </>
   );
@@ -104,7 +104,6 @@ function LoggedIn() {
   const last = useValue(lastSync);
   const waiting = useValue(pendingCount);
   const [name, setName] = useState<string | null>(null);
-  const [check, setCheck] = useState<string | null>(null);
 
   const out = () => Alert.alert('Log out?', 'Your hikes and saved trails stay on this phone and on your account. They stop syncing until you log in again.', [
     { text: 'Cancel', style: 'cancel' },
@@ -140,9 +139,7 @@ function LoggedIn() {
         {waiting > 0 && <T v="small" muted>{waiting} {waiting === 1 ? 'change' : 'changes'} waiting to upload</T>}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Button kind="primary" title={busy ? 'Syncing…' : 'Sync now'} onPress={() => void syncNow()} disabled={busy} />
-          <Button title="Check connection" onPress={async () => setCheck(await api.health())} />
         </View>
-        {check && <T v="small" muted>{check}</T>}
       </Card>
       <Button kind="danger" title="Log out" onPress={out} />
     </>

@@ -11,7 +11,7 @@ import { lineLength, pointAlong } from '@web/lib/geo';
 import type { Coord } from '@web/lib/polyline';
 import type { Stop } from '@web/lib/follow';
 import { fmtDistance, fmtElevation, type Units } from '@web/lib/format';
-import { chartPoint, scrubbing } from '../core/state';
+import { chartPoint } from '../core/state';
 import { platform } from '../platform';
 import { clock, daylight, dur } from '../core/hikeMath';
 import { T } from './kit';
@@ -36,7 +36,7 @@ export const Ridge = memo(function Ridge({ profile, path, stops = [], here = nul
   const [at, setAt] = useState<number | null>(null); // metres along the profile, while scrubbing
   const lastTick = useRef(-1);
   useEffect(() => { setAt(null); chartPoint.value = null; }, [path]);
-  useEffect(() => () => { chartPoint.value = null; scrubbing.value = false; }, []);
+  useEffect(() => () => { chartPoint.value = null; }, []);
 
   const drawn = useMemo(() => {
     const n = profile.distances.length;
@@ -78,24 +78,25 @@ export const Ridge = memo(function Ridge({ profile, path, stops = [], here = nul
     if (tenth !== lastTick.current) { lastTick.current = tenth; platform.haptics.tap(); }
     show(d);
   };
-  // the drag is a gesture-handler pan, the same system the sheet and its scrolling use, that takes the finger
-  // the moment it touches the chart: so a drag here never moves the sheet or scrolls it (and the sheet's own
-  // dragging is also switched off while scrubbing, see App.tsx)
+  // the drag is a gesture-handler pan, the same system the sheet and its scrolling use. It activates on the first
+  // movement (the sheet's own drag and the page's scrolling wait for about 10 points), so it wins the finger and
+  // gesture-handler cancels those two: a drag here never moves the sheet or scrolls it. Nothing about the sheet
+  // is changed while the finger is down; changing its gesture settings mid-touch made gesture-handler rebuild
+  // them and cancel this drag, which is why scrubbing used to stop at once.
   const latest = useRef(fromX);
   latest.current = fromX;
   const pan = useMemo(() => Gesture.Pan()
     .minDistance(0)
     .shouldCancelWhenOutside(false)
     .runOnJS(true)
-    .onBegin((e) => { scrubbing.value = true; lastTick.current = -1; latest.current(e.x); })
-    .onUpdate((e) => latest.current(e.x))
-    .onFinalize(() => { scrubbing.value = false; }), []);
+    .onBegin((e) => { lastTick.current = -1; latest.current(e.x); })
+    .onUpdate((e) => latest.current(e.x)), []);
   const clampX = (cx: number, text: string) => { const half = text.length * 3.1 + 4; return Math.max(half, Math.min(w - half, cx)); };
   const fill = t.dark ? 'rgba(79,197,136,0.16)' : 'rgba(35,148,90,0.14)';
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ height: H }} onLayout={(e) => setW(Math.max(200, Math.round(e.nativeEvent.layout.width)))}
+      <View collapsable={false} style={{ height: H }} onLayout={(e) => setW(Math.max(200, Math.round(e.nativeEvent.layout.width)))}
         accessibilityLabel={`Elevation along the trail over ${fmtDistance(total, u)}. Drag along it to see a point on the map.`}
         accessibilityRole="adjustable"
         accessibilityValue={at != null ? { text: `${fmtElevation(heightAt(profile, at), u)} at ${fmtDistance(at, u)}` } : undefined}

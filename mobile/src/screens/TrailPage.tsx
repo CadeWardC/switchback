@@ -13,7 +13,7 @@ import { exportGpx } from '@web/lib/gpx';
 import { sunTimes, type Stop } from '@web/lib/follow';
 import { platform } from '../platform';
 import {
-  chosenShort, chosenStart, chooseShort, closeTrail, flyTo, startFor, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units, scrubbing,
+  chosenShort, chosenStart, chooseShort, closeTrail, flyTo, startFor, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units,
 } from '../core/state';
 import { start } from '../core/recorder';
 import { stopsFor } from '../core/stops';
@@ -59,7 +59,6 @@ function OfflineTick({ trailKey }: { trailKey: string }) {
 }
 
 export function TrailSheet() {
-  const scrub = useValue(scrubbing);
   const t = useTheme();
   const whole = useValue(selected)!;
   const u = useValue(units);
@@ -125,7 +124,7 @@ export function TrailSheet() {
   const onShare = async () => { await platform.files.shareLink(whole.name, trailLink(whole)); };
 
   return (
-    <BottomSheetScrollView scrollEnabled={!scrub} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }}>
+    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Tap onPress={closeTrail} accessibilityRole="button" accessibilityLabel="Back to trails" style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 8, paddingRight: 8 }}>
           <Icon name="back" size={18} color={t.c.link} />

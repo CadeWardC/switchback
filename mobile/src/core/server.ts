@@ -72,9 +72,9 @@ const MAX_BODY = 2_000_000;
 function explain(status: number, code: string, message?: string): string {
   if (message) return message;
   if (status === 401) return 'Log in again (Settings › Account).';
-  if (status === 403) return 'The request was blocked before it reached the server (403). Check the tunnel\'s security settings for this host.';
-  if (status === 413) return 'That is too big for the server.';
-  return `The server answered ${status}${code ? ` (${code})` : ''}.`;
+  if (status === 403) return 'Switchback can\'t be reached right now. Try again later.';
+  if (status === 413) return 'That is too big to upload.';
+  return `Something went wrong (${status}${code ? `, ${code}` : ''}). Try again later.`;
 }
 
 interface RequestOptions { auth?: boolean; base?: string | null; retried?: boolean }
@@ -82,7 +82,7 @@ interface RequestOptions { auth?: boolean; base?: string | null; retried?: boole
 async function call(method: string, path: string, body?: unknown, opts: RequestOptions = {}): Promise<unknown> {
   const base = opts.base ?? serverUrl.peek();
   const auth = opts.auth ?? true;
-  if (!base) throw new ServerError('Add the server address under Settings › Account.', null);
+  if (!base) throw new ServerError('Accounts aren\'t available in this version of the app.', null);
   if (auth && !session) throw new ServerError('Log in under Settings › Account to use your account.', null);
   let text: string | undefined;
   if (body !== undefined) {
@@ -107,7 +107,7 @@ async function send(url: string, init: RequestInit): Promise<Response> {
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } catch {
-    throw new ServerError('No connection to the server. Everything is kept on the phone and syncs when it\'s back.', null, true);
+    throw new ServerError('No connection. Everything is kept on the phone and syncs when it\'s back.', null, true);
   } finally {
     clearTimeout(timer);
   }
@@ -185,11 +185,11 @@ export interface ServerList<T> { items: ServerDoc<T>[]; server_time: number }
 export const api = {
   /** GET /healthz (no account). Returns a sentence for the account screen. */
   async health(base = serverUrl.peek()): Promise<string> {
-    if (!base) return 'Enter the server address first (https only).';
+    if (!base) return 'Accounts aren\'t available in this version of the app.';
     try {
       const res = await send(`${base}/healthz`, { method: 'GET' });
       const text = (await res.text()).trim();
-      return res.ok && text === 'ok' ? 'Connected: the server is up.' : `The server answered ${res.status}${text ? `: ${text.slice(0, 80)}` : ''}.`;
+      return res.ok && text === 'ok' ? 'Connected.' : `Switchback can't be reached right now (${res.status}).`;
     } catch (e) {
       return (e as Error).message;
     }

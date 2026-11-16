@@ -75,8 +75,6 @@ export const compass = signal<number | null>(null);
 export const backLine = signal<[Coord, Coord] | null>(null);
 /** The point being touched on the ridge, shown on the map. */
 export const chartPoint = signal<Coord | null>(null);
-/** A finger is on an elevation chart: the sheet neither moves nor scrolls until it lifts. */
-export const scrubbing = signal(false);
 /** A recorded hike being looked at in the Log (its line is drawn on the map). */
 export const shownWalk = signal<Walk | null>(null);
 

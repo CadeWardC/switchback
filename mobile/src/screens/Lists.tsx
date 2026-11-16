@@ -14,7 +14,7 @@ import { profileOf, type Difficulty } from '@web/lib/trail';
 import type { SavedTrail, Walk, WalkSummary } from '@web/lib/storage';
 import { findTrail } from '@web/data';
 import {
-  deleteWalk, flyTo, loadWalk, openTrail, removeSaved, renameWalk, savedTrails, say, shownWalk, storageFailed, tab, units, walks, scrubbing,
+  deleteWalk, flyTo, loadWalk, openTrail, removeSaved, renameWalk, savedTrails, say, shownWalk, storageFailed, tab, units, walks,
 } from '../core/state';
 import { climbAs, hikesOf, totals, yearsOf } from '../core/stats';
 import { split } from '../core/shape';
@@ -193,7 +193,6 @@ export function LogScreen({ onSettings, onAccount }: { onSettings: () => void; o
 
 /** One recorded hike, in the sheet over its line on the map. */
 export function WalkSheet() {
-  const scrub = useValue(scrubbing);
   const t = useTheme();
   const w = useValue(shownWalk)!;
   const u = useValue(units);
@@ -228,7 +227,7 @@ export function WalkSheet() {
     setName(null);
   };
   return (
-    <BottomSheetScrollView scrollEnabled={!scrub} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }} keyboardShouldPersistTaps="handled">
+    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }} keyboardShouldPersistTaps="handled">
       <Tap onPress={close} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 8, alignSelf: 'flex-start' }}>
         <Icon name="back" size={18} color={t.c.link} />
         <T v="strong" color={t.c.link}>Log</T>

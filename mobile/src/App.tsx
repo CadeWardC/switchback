@@ -16,7 +16,7 @@ import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
 import { effect } from '@preact/signals-core';
 import {
-  closeTrail, locationState, online, recState, scrubbing, selected, sheetIndex, shownWalk, tab, toast, trailRest, type Tab,
+  closeTrail, locationState, online, recState, selected, sheetIndex, shownWalk, tab, toast, trailRest, type Tab,
 } from './core/state';
 import { locateMe, turnOnLocation } from './core/locate';
 import { TrailMap } from './map/TrailMap';
@@ -129,7 +129,6 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
   const rec = useValue(recState);
   const walk = useValue(shownWalk);
   const index = useValue(sheetIndex);
-  const scrub = useValue(scrubbing);
   const sheet = useRef<BottomSheet>(null);
   const hiking = rec !== 'idle';
   const rowH = hiking ? 0 : size.tabBar + insets.bottom;
@@ -187,8 +186,6 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
           topInset={insets.top}
           onChange={(i) => { if (i >= 0 && i !== sheetIndex.peek()) sheetIndex.value = i; }}
           handleComponent={Grabber}
-          // a finger scrubbing an elevation chart must not drag the sheet
-          enableContentPanningGesture={!scrub}
           backgroundStyle={{ backgroundColor: t.c.bg, borderRadius: radius.sheet }}
           keyboardBehavior="extend"
           keyboardBlurBehavior="restore"

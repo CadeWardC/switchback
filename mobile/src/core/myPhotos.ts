@@ -211,10 +211,10 @@ async function sendFile(id: string, size: 'display' | 'thumb', file: string): Pr
     });
   };
   let r;
-  try { r = await send(); } catch { throw new ServerError('No connection to the server.', null, true); }
+  try { r = await send(); } catch { throw new ServerError('No connection.', null, true); }
   if (r.status === 401) { api.forgetAccessToken(); r = await send(); }
   if (r.status < 200 || r.status >= 300) {
-    let msg = `the server answered ${r.status}`;
+    let msg = `something went wrong (${r.status})`;
     try { msg = (JSON.parse(r.body) as { error?: { message?: string } }).error?.message ?? msg; } catch { /* not json */ }
     throw new ServerError(msg, r.status);
   }
