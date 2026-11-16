@@ -120,7 +120,10 @@ async function parse(res: Response): Promise<unknown> {
   if (!res.ok) {
     const e = data && typeof data === 'object' ? (data as { error?: { code?: string; message?: string } | string }).error : undefined;
     const code = typeof e === 'object' && e ? e.code ?? '' : '';
-    const msg = typeof e === 'object' && e ? e.message : typeof e === 'string' ? e : undefined;
+    // the accounts server always answers {error: {code, message}}; anything else (a bare string, a page) means
+    // something else is answering at this address, such as the old document store before the Pi is switched over
+    const msg = typeof e === 'object' && e ? e.message
+      : 'Accounts aren\'t available yet. Everything stays on this phone for now; try again later.';
     throw new ServerError(explain(res.status, code, msg), res.status, false, code);
   }
   return data;
