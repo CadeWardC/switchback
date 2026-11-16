@@ -148,6 +148,7 @@ same request twice is harmless. Lists take `?cursor=` from the previous page.
 | `GET /p/{key}` | a photo file | forever |
 | `GET /v1/admin/submissions?status=pending\|approved\|rejected\|all` | every submission with who sent it (`user_display_name`), its line and box | |
 | `POST /v1/admin/submissions/{id}` `{status: "approved"\|"rejected", reply?}` | approving adds a new trail to `community_trails` or a correction to `trail_overrides`; rejecting takes it off again | |
+| `GET /review` · `POST /v1/admin/login` `{pin}` → `{token}` | the review page, and unlocking it with `ADMIN_PIN` (a session key for 12 hours; 5 tries per 15 minutes per address, 20 an hour in all) | |
 | `GET /v1/admin/photos?status=ready\|hidden\|uploading\|all` · `POST /v1/admin/photos/{id}` `{status: "ready"\|"hidden"}` | photos, and taking one down (or back up) | |
 | `GET /v1/admin/reviews?status=shown\|hidden\|all` · `POST /v1/admin/reviews/{id}` `{hidden: true\|false}` | trail reviews, and hiding one (or showing it again) | |
 

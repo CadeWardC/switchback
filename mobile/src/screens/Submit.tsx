@@ -1,11 +1,11 @@
 // Submitting a recorded hike for review. Offered as soon as a hike is finished, and from any kept hike in the
 // Log. A submission needs a real trail name; it may carry a 1-5 star review; the spots marked during the hike
 // go with it (so every spot comes from someone who walked there). Nothing is added to the trail data until it
-// has been checked and approved (web/review.html). The hiker agrees first that what they submit may be shown
+// has been checked and approved (the review page, /review on the server). The hiker agrees first that what they submit may be shown
 // publicly and that photos they submit are for public use.
 //
 // It goes to the server as a new trail (PUT /v1/submissions/{id}, from your account), waiting for approval on
-// web/review.html; the hike's page in the Log shows where it stands and any reply.
+// the review page (/review); the hike's page in the Log shows where it stands and any reply.
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
 import { signal } from '@preact/signals-core';

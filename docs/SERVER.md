@@ -44,36 +44,32 @@ trail name, may carry a 1-5 star review, and includes the spots marked on the wa
 shown publicly and that photos they submit are for public use. The hike's page in the Log shows whether it is
 waiting, approved or not added, and your reply.
 
-**Review page:** open `web/review.html` in a browser (it has no secrets in it), enter the server's address and the
-admin token (`ADMIN_TOKEN` on the server; kept only for that browser tab). Submissions: see the line on a map, the
+**Review page:** https://switchback2.opcw032522.uk/review, served by the server itself. Unlock it with your PIN
+(chosen when you install; 6-12 digits; a wrong guess is limited to 5 tries per 15 minutes, 20 an hour in all). It
+stays unlocked in that browser tab for 12 hours. New PIN: run the install command again with `-s -- --pin`. Submissions: see the line on a map, the
 note, who sent it; approve (adds it to the community trails) or reject, with a reply. Reviews and Photos: they are
 public as soon as they're posted; hide any one to take it down (or show it again).
 
 ## Putting it on the Orange Pi
 
 Your Pi currently runs the simple document store behind the Cloudflare tunnel at `switchback2.opcw032522.uk`. The
-accounts server replaces it (the document store's data was only tests).
+accounts server replaces it (the document store's data was only tests). On the Pi, run:
 
-1. **Read `server/deploy/setup-pi.sh` first.** Besides Postgres 17 and the API it sets up a firewall, automatic
-   security updates, a nightly maintenance job and low-power settings, and turns Wi-Fi and Bluetooth off when the Pi
-   is on Ethernet (`--keep-radios` keeps them).
-2. **Stop the document store** so the new server can have port 8080 (or whichever port it used: the API listens on
-   `127.0.0.1:8080`).
-3. **Run the setup script** on the Pi (it downloads the latest `server-latest` release, built by the Server
-   workflow from main):
-   ```sh
-   git clone https://github.com/CadeWardC/switchback && cd switchback/server/deploy
-   sudo ./setup-pi.sh --domain switchback2.opcw032522.uk
-   ```
-   Leave out `--tunnel-token` to keep your existing tunnel as it is.
-4. **Point the tunnel at it**: in Cloudflare Zero Trust › Networks › Tunnels › your tunnel › Public hostnames, set
-   `switchback2.opcw032522.uk` → `http://localhost:8080`. Check `https://switchback2.opcw032522.uk/healthz` says
-   `ok`. (If the app ever reports a 403 "blocked before it reached the server", turn off Cloudflare's Browser
-   Integrity Check for this host.)
-5. **The admin token** for the review page: `sudo grep ADMIN_TOKEN /etc/switchback/api.env`.
-6. **Nothing to set in the app**: `https://switchback2.opcw032522.uk` is built in (`mobile/app.config.js`), so
-   people just create an account or log in. (A build can point elsewhere, e.g. a test server, with the
-   environment variable or GitHub repository variable `SWITCHBACK_SERVER_URL`.)
+```sh
+curl -fsSL https://raw.githubusercontent.com/CadeWardC/switchback/main/server/deploy/install.sh | sudo bash
+```
+
+`server/deploy/install.sh` fetches this repository to `/opt/switchback`, stops whatever else uses port 8080 (the old
+store, as a service or a Docker container), runs `setup-pi.sh` (Postgres 17, the API on `127.0.0.1:8080`, a firewall,
+automatic security updates, a nightly maintenance job, low-power settings; Wi-Fi and Bluetooth are turned off only
+when the Pi is on Ethernet), asks you to choose the review page's PIN, and checks the server answers on the Pi and at
+`https://switchback2.opcw032522.uk/healthz`. If only the second fails, point the tunnel at it: Cloudflare Zero Trust ›
+Networks › Tunnels › your tunnel › Public hostnames › `switchback2.opcw032522.uk` → `http://localhost:8080`.
+
+Run the same command again any time to update the server (your data, settings and PIN are kept). New PIN:
+`curl -fsSL https://raw.githubusercontent.com/CadeWardC/switchback/main/server/deploy/install.sh | sudo bash -s -- --pin`.
+
+The app has the address built in (`mobile/app.config.js`); nothing to set there.
 
 ## Notes
 

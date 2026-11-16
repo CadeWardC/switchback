@@ -1,17 +1,114 @@
 package api
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	_ "embed"
+	"encoding/hex"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
-// The owner's review page (a static HTML file opened in a browser) uses these with ADMIN_TOKEN. Without the
-// setting they don't exist.
+// The owner's review page (served at /review) uses these. It unlocks with ADMIN_PIN, which buys a session key good
+// for 12 hours; ADMIN_TOKEN itself works too. Without ADMIN_TOKEN none of this exists.
+
+//go:embed review.html
+var reviewPage []byte
+
+// MinPIN and MaxPIN bound ADMIN_PIN: digits only. Guesses are limited to 5 per 15 minutes from one address and 20
+// an hour from everywhere, so even a 6-digit PIN would take years to guess.
+const MinPIN, MaxPIN = 6, 12
+
+var pinRE = regexp.MustCompile(`^[0-9]{6,12}$`)
+
+// ValidPIN says whether a PIN is usable as ADMIN_PIN.
+func ValidPIN(p string) bool { return pinRE.MatchString(p) }
+
+const adminSessionLife = 12 * time.Hour
+
+// adminSessionKey signs review-page sessions: changing the PIN or the admin token ends every session.
+func (s *Server) adminSessionKey() []byte {
+	k := sha256.Sum256([]byte("switchback-admin-session|" + s.AdminToken + "|" + s.AdminPIN))
+	return k[:]
+}
+
+func (s *Server) newAdminSession(now time.Time) string {
+	exp := strconv.FormatInt(now.Add(adminSessionLife).Unix(), 10)
+	m := hmac.New(sha256.New, s.adminSessionKey())
+	m.Write([]byte(exp))
+	return "pin." + exp + "." + hex.EncodeToString(m.Sum(nil))
+}
+
+func (s *Server) validAdminSession(tok string, now time.Time) bool {
+	parts := strings.Split(tok, ".")
+	if len(parts) != 3 || parts[0] != "pin" || s.AdminPIN == "" {
+		return false
+	}
+	exp, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil || now.Unix() >= exp {
+		return false
+	}
+	sig, err := hex.DecodeString(parts[2])
+	if err != nil {
+		return false
+	}
+	m := hmac.New(sha256.New, s.adminSessionKey())
+	m.Write([]byte(parts[1]))
+	return hmac.Equal(sig, m.Sum(nil))
+}
+
+// reviewPageHandler serves the review page. It holds no secrets; everything it shows needs the PIN.
+func (s *Server) reviewPageHandler(w http.ResponseWriter, r *http.Request) {
+	if len(s.AdminToken) < MinAdminToken {
+		writeErr(w, r, errNotFound)
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Cache-Control", "no-cache")
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Referrer-Policy", "no-referrer")
+	h.Set("Content-Security-Policy", "default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "+
+		"style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://tile.openstreetmap.org "+
+		"https://*.tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+	_, _ = w.Write(reviewPage)
+}
+
+// adminLogin trades the PIN for a session key.
+func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
+	if len(s.AdminToken) < MinAdminToken || s.AdminPIN == "" {
+		writeErr(w, r, errNotFound)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	if err := s.allow("admin-pin:"+s.clientIP(r), 5, 15*time.Minute); err != nil {
+		writeErr(w, r, fail(http.StatusTooManyRequests, "slow_down", "Too many tries. Wait 15 minutes and try again."))
+		return
+	}
+	if err := s.allow("admin-pin-all", 20, time.Hour); err != nil {
+		writeErr(w, r, fail(http.StatusTooManyRequests, "slow_down", "Too many tries. Wait an hour and try again."))
+		return
+	}
+	var in struct {
+		PIN string `json:"pin"`
+	}
+	if err := readJSON(w, r, &in); err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	got, want := sha256.Sum256([]byte(strings.TrimSpace(in.PIN))), sha256.Sum256([]byte(s.AdminPIN))
+	if subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+		writeErr(w, r, fail(http.StatusUnauthorized, "wrong_pin", "That PIN isn't right."))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"token": s.newAdminSession(time.Now()), "expires_in": int(adminSessionLife.Seconds())})
+}
 
 // MinAdminToken is the shortest ADMIN_TOKEN the server accepts.
 const MinAdminToken = 32
@@ -26,12 +123,12 @@ func (s *Server) admin(h http.HandlerFunc) http.HandlerFunc {
 		token, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 		// compare digests so neither the content nor the length of the token leaks through timing
 		got, want := sha256.Sum256([]byte(token)), sha256.Sum256([]byte(s.AdminToken))
-		if subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+		if subtle.ConstantTimeCompare(got[:], want[:]) != 1 && !s.validAdminSession(token, time.Now()) {
 			if err := s.allow("admin-fail:"+s.clientIP(r), 20, 10*time.Minute); err != nil {
 				writeErr(w, r, err)
 				return
 			}
-			writeErr(w, r, fail(http.StatusUnauthorized, "unauthorized", "That admin key isn't right."))
+			writeErr(w, r, fail(http.StatusUnauthorized, "unauthorized", "Enter the PIN again."))
 			return
 		}
 		h(w, r)

@@ -11,6 +11,7 @@
 #   --binary PATH          install this switchback-api program instead of downloading the latest release
 #   --repo OWNER/NAME      GitHub repository to download releases from (default CadeWardC/switchback)
 #   --keep-radios          leave Wi-Fi and Bluetooth on (they're turned off when the Pi is on Ethernet)
+#   --pin                  choose a new PIN for the review page (asked for anyway the first time)
 #
 # Backups: fill in github-backup.env.example (database, nightly, to a private GitHub repo) and/or backup.env.example
 # (database continuously and photos, to Cloudflare R2), save it in /etc/switchback/ without .example, run this again.
@@ -21,6 +22,7 @@ TUNNEL_TOKEN=""
 BINARY=""
 REPO="CadeWardC/switchback"
 KEEP_RADIOS=0
+NEW_PIN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,6 +31,7 @@ while [[ $# -gt 0 ]]; do
     --binary) BINARY="$2"; shift 2 ;;
     --repo) REPO="$2"; shift 2 ;;
     --keep-radios) KEEP_RADIOS=1; shift ;;
+    --pin) NEW_PIN=1; shift ;;
     -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1 (see --help)"; exit 1 ;;
   esac
@@ -190,7 +193,7 @@ TOKEN_SECRET=$(openssl rand -hex 32)
 # Email addresses are never stored, only a hash made with this key. NEVER change it: email sign-ins would stop
 # matching their accounts. It's in the GitHub/R2 backups' restore instructions too.
 EMAIL_HASH_KEY=$(openssl rand -hex 32)
-# The review page (web/review.html) signs in with this to approve submissions and take photos down. Keep it secret.
+# Admin key for /v1/admin/* (the review page at /review unlocks with ADMIN_PIN instead). Keep it secret.
 ADMIN_TOKEN=$(openssl rand -hex 32)
 PHOTO_DIR=$PHOTOS
 TRUST_CLOUDFLARE=1
@@ -211,6 +214,25 @@ else
     note "Added ADMIN_TOKEN to $ETC/api.env (for the review page)"
   fi
   note "Kept $ETC/api.env"
+fi
+# The review page (https://$DOMAIN/review) unlocks with a PIN of 6-12 digits.
+if [[ $NEW_PIN -eq 1 ]] || ! grep -q '^ADMIN_PIN=[0-9]' $ETC/api.env; then
+  PIN=""
+  if [[ -r /dev/tty ]] && { : < /dev/tty; } 2>/dev/null; then
+    while :; do
+      read -rsp "    Choose a PIN for the review page (6-12 digits): " PIN < /dev/tty; echo > /dev/tty
+      [[ "$PIN" =~ ^[0-9]{6,12}$ ]] || { warn "6 to 12 digits, please."; continue; }
+      read -rsp "    Type it again: " PIN2 < /dev/tty; echo > /dev/tty
+      [[ "$PIN" == "$PIN2" ]] && break
+      warn "They didn't match. Try again."
+    done
+  else
+    PIN=$(tr -dc 0-9 < /dev/urandom | head -c 8)
+    note "No keyboard here, so a PIN was made for you: $PIN (change it: run this again with --pin)"
+  fi
+  sed -i '/^ADMIN_PIN=/d' $ETC/api.env
+  echo "ADMIN_PIN=$PIN" >> $ETC/api.env
+  note "Review page PIN saved"
 fi
 chown root:switchback $ETC/api.env
 chmod 0640 $ETC/api.env
@@ -549,7 +571,7 @@ cat <<EOF
     API:        http://127.0.0.1:8080/healthz → $(curl -fs http://127.0.0.1:8080/healthz 2>/dev/null || echo "not answering")
     Public:     https://$DOMAIN (once the tunnel has its public hostname)
     Settings:   $ETC/api.env   (then: sudo systemctl restart switchback-api)
-    Admin key:  sudo grep ADMIN_TOKEN $ETC/api.env   (for the review page; keep it secret)
+    Review:     https://$DOMAIN/review   (unlock with your PIN; new PIN: run this again with --pin)
     Logs:       journalctl -u switchback-api -f
     Backups:    $(B=(); [[ $BACKUPS -eq 1 ]] && B+=("R2, continuous"); [[ $GH_BACKUPS -eq 1 ]] && B+=("GitHub, nightly"); [[ ${#B[@]} -gt 0 ]] && (IFS=';'; echo "${B[*]}" | sed 's/;/ + /') || echo "off: see github-backup.env.example")
     Storage:    $STORAGE ($(df -h --output=avail / | tail -1 | tr -d ' ') free)

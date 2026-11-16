@@ -9,6 +9,7 @@
 //	EMAIL_HASH_KEY     64 hex characters; stands in for email addresses, which are never stored. Never change it.
 //	ADMIN_TOKEN        at least 32 characters (openssl rand -hex 32): the review page's key for /v1/admin/*;
 //	                   empty turns the admin routes off
+//	ADMIN_PIN          6-12 digits: unlocks the review page at /review (for 12 hours at a time)
 //	PHOTO_DIR          /srv/switchback/photos
 //	GOOGLE_CLIENT_IDS  comma-separated OAuth client ids (iOS) that may sign in; empty turns Google off
 //	RESEND_API_KEY     to email sign-in codes; empty logs them instead (for development)
@@ -68,6 +69,10 @@ func run() error {
 	if adminToken != "" && len(adminToken) < api.MinAdminToken {
 		return errors.New("ADMIN_TOKEN must be at least 32 characters (openssl rand -hex 32), or empty to turn admin off")
 	}
+	adminPIN := env("ADMIN_PIN", "")
+	if adminPIN != "" && !api.ValidPIN(adminPIN) {
+		return errors.New("ADMIN_PIN must be 6 to 12 digits")
+	}
 	signer, err := auth.NewSigner(secret, 15*time.Minute)
 	if err != nil {
 		return err
@@ -106,6 +111,7 @@ func run() error {
 		Store:      storage.Disk{Dir: photoDir},
 		Limit:      ratelimit.New(),
 		AdminToken: adminToken,
+		AdminPIN:   adminPIN,
 		Cfg: api.Config{
 			PublicURL: env("PUBLIC_URL", "http://localhost:8080"),
 			TrustCF:   env("TRUST_CLOUDFLARE", "") == "1",

@@ -47,6 +47,8 @@ type Server struct {
 	// AdminToken lets the owner's review page approve submissions and hide photos. Empty turns the admin routes
 	// off (they answer 404).
 	AdminToken string
+	// AdminPIN unlocks the review page at /review (6-12 digits). Empty: only ADMIN_TOKEN works.
+	AdminPIN string
 }
 
 func (s *Server) Handler() http.Handler {
@@ -88,6 +90,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /v1/submissions/{id}", s.authed(s.putSubmission))
 	mux.HandleFunc("POST /v1/reports", s.authed(s.postReport))
 
+	mux.HandleFunc("GET /review", s.reviewPageHandler)
+	mux.HandleFunc("POST /v1/admin/login", s.adminLogin)
 	mux.HandleFunc("GET /v1/admin/submissions", s.admin(s.adminSubmissions))
 	mux.HandleFunc("POST /v1/admin/submissions/{id}", s.admin(s.reviewSubmission))
 	mux.HandleFunc("GET /v1/admin/photos", s.admin(s.adminPhotos))
