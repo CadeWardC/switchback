@@ -24,7 +24,7 @@ import { useValue } from '../ui/hooks';
 import { Ridge } from '../ui/Ridge';
 import { SubmissionRow } from './Submit';
 import { account } from '../core/server';
-import { accountPhotos, loadMyPhotos, myPhotos, pickPhotos, type RemotePhoto } from '../core/myPhotos';
+import { accountPhotos, loadMyPhotos, myPhotos, photoError, pickPhotos, uploadPhotos, type RemotePhoto } from '../core/myPhotos';
 import { PhotoGrid } from '../ui/MyPhotos';
 import { writeReview } from '../ui/Community';
 import { trailRefOfWalk } from '../core/community';
@@ -276,11 +276,14 @@ export function WalkSheet() {
 function HikePhotos({ walk }: { walk: Walk }) {
   const mine = useValue(myPhotos).filter((p) => p.walk === walk.id);
   const me = useValue(account);
+  const failed = useValue(photoError);
+  const t = useTheme();
   const [remote, setRemote] = useState<RemotePhoto[]>([]);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     let live = true;
-    void loadMyPhotos();
+    // opening the hike tries again for any photo still waiting to go up
+    void loadMyPhotos().then(() => uploadPhotos());
     if (me) void accountPhotos(walk.id).then((p) => { if (live) setRemote(p); }, () => {});
     return () => { live = false; };
   }, [walk.id, me?.id]);
@@ -300,6 +303,7 @@ function HikePhotos({ walk }: { walk: Walk }) {
       <PhotoGrid mine={mine} remote={remote} />
       <Button icon="camera" title={busy ? 'Adding…' : mine.length || remote.length ? 'Add more photos' : 'Add photos'} onPress={() => void add()} disabled={busy} />
       {!me && (mine.length > 0) && <T v="tiny" muted>Kept on this phone. Log in (Settings › Account) to upload them.</T>}
+      {me && failed && mine.some((p) => !p.uploaded) && <T v="tiny" color={t.c.hard}>{failed}</T>}
       <T v="tiny" muted>{walk.trail
         ? `Photos you add here are shown publicly on ${walk.trail.name}'s page: anyone may see, share and reuse them.`
         : 'Photos here are seen only by you, until this hike is added as a trail.'}</T>

@@ -253,10 +253,9 @@ func TestEverything(t *testing.T) {
 	e.expect(e.do("PUT", "/v1/photos/"+pid, ana.access, map[string]any{"trail": trail, "review_id": rid, "lat": 44.971234, "lon": -93.259876}), 200)
 	e.expect(e.do("PUT", "/v1/photos/"+pid, bo.access, map[string]any{"trail": trail}), 403)
 	e.expect(e.do("PUT", "/v1/photos/"+uuid(), bo.access, map[string]any{"review_id": rid}), 403) // not bo's review
-	e.expect(e.do("PUT", "/v1/photos/"+pid+"/file?size=display", ana.access, jpegBytes(t, 1000, 1333, true)), 422)
 	e.expect(e.do("PUT", "/v1/photos/"+pid+"/file?size=display", ana.access, jpegBytes(t, 1600, 2000, false)), 422)
 	e.expect(e.do("PUT", "/v1/photos/"+pid+"/file?size=display", ana.access, []byte("hello")), 415)
-	p := e.expect(e.do("PUT", "/v1/photos/"+pid+"/file?size=display", ana.access, jpegBytes(t, 1000, 1333, false)), 200).json(t)
+	p := e.expect(e.do("PUT", "/v1/photos/"+pid+"/file?size=display", ana.access, jpegBytes(t, 1000, 1333, true)), 200).json(t)
 	if p["status"] != "uploading" || p["width"].(float64) != 1000 {
 		t.Fatalf("after display %v", p)
 	}
@@ -268,6 +267,9 @@ func TestEverything(t *testing.T) {
 	file := e.expect(e.do("GET", key, "", nil), 200)
 	if !strings.Contains(file.header.Get("Cache-Control"), "immutable") || file.header.Get("Content-Type") != "image/jpeg" {
 		t.Fatalf("photo headers %v", file.header)
+	}
+	if bytes.Contains(file.body, []byte("Exif")) { // an iPhone's JPEG always has EXIF: taken out, not refused
+		t.Fatal("the stored photo still has its EXIF")
 	}
 	photos := e.expect(e.do("GET", "/v1/trails/photos?trail="+strings.ReplaceAll(trail["id"].(string), " ", "%20"), "", nil), 200).json(t)
 	if n := len(photos["photos"].([]any)); n != 1 {

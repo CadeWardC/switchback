@@ -172,3 +172,105 @@ func hasExifItem(iinf []byte) bool {
 	}
 	return false
 }
+
+// CleanJPEG returns the JPEG without its metadata: EXIF, XMP, IPTC, comments and every other application segment
+// except the ones the picture needs to look right (JFIF, the colour profile, Adobe's colour transform). The picture
+// data is copied as it is. An iPhone writes a small EXIF block into every JPEG it encodes (size, colour space,
+// which way up), so a photo can't be asked to arrive without one; if that block says the picture is stored turned,
+// a new block holding only that is put back.
+func CleanJPEG(b []byte) ([]byte, error) {
+	if len(b) < 4 || b[0] != 0xFF || b[1] != 0xD8 {
+		return nil, ErrUnknown
+	}
+	out := make([]byte, 2, len(b))
+	out[0], out[1] = 0xFF, 0xD8
+	orientation := 0
+	insertAt := 2 // after the leading JFIF segment, if there is one
+	i := 2
+	for i+4 <= len(b) {
+		if b[i] != 0xFF {
+			return nil, ErrUnknown
+		}
+		marker := b[i+1]
+		if marker == 0xFF {
+			i++
+			continue
+		}
+		if marker == 0xD8 || (marker >= 0xD0 && marker <= 0xD7) || marker == 0x01 {
+			out = append(out, b[i], b[i+1])
+			i += 2
+			continue
+		}
+		n := int(binary.BigEndian.Uint16(b[i+2:]))
+		if n < 2 || i+2+n > len(b) {
+			return nil, ErrUnknown
+		}
+		if marker == 0xDA { // the picture itself: everything from here on
+			out = append(out, b[i:]...)
+			return withOrientation(out, insertAt, orientation), nil
+		}
+		seg := b[i+4 : i+2+n]
+		keep := true
+		switch {
+		case marker == 0xE1 && len(seg) >= 6 && string(seg[:6]) == "Exif\x00\x00":
+			if o := exifOrientation(seg[6:]); o != 0 {
+				orientation = o
+			}
+			keep = false
+		case marker == 0xE0 || marker == 0xE2 || marker == 0xEE:
+		case (marker >= 0xE0 && marker <= 0xEF) || marker == 0xFE:
+			keep = false
+		}
+		if keep {
+			out = append(out, b[i:i+2+n]...)
+			if marker == 0xE0 && insertAt == len(out)-(2+n) {
+				insertAt = len(out)
+			}
+		}
+		i += 2 + n
+	}
+	return nil, ErrUnknown
+}
+
+// exifOrientation reads the orientation (1 to 8) from an EXIF block's first directory; 0 if it has none.
+func exifOrientation(tiff []byte) int {
+	if len(tiff) < 8 {
+		return 0
+	}
+	var bo binary.ByteOrder
+	switch string(tiff[:2]) {
+	case "II":
+		bo = binary.LittleEndian
+	case "MM":
+		bo = binary.BigEndian
+	default:
+		return 0
+	}
+	off := int(bo.Uint32(tiff[4:]))
+	if off < 8 || off+2 > len(tiff) {
+		return 0
+	}
+	n := int(bo.Uint16(tiff[off:]))
+	for e := off + 2; n > 0 && e+12 <= len(tiff); n, e = n-1, e+12 {
+		if bo.Uint16(tiff[e:]) == 0x0112 {
+			if o := int(bo.Uint16(tiff[e+8:])); o >= 1 && o <= 8 {
+				return o
+			}
+			return 0
+		}
+	}
+	return 0
+}
+
+// withOrientation puts an EXIF block holding only the orientation into the file, when the picture is stored turned.
+func withOrientation(b []byte, at, orientation int) []byte {
+	if orientation < 2 {
+		return b
+	}
+	seg := []byte{0xFF, 0xE1, 0x00, 34, 'E', 'x', 'i', 'f', 0, 0, 'M', 'M', 0, 42, 0, 0, 0, 8,
+		0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, byte(orientation), 0, 0, 0, 0, 0, 0}
+	out := make([]byte, 0, len(b)+len(seg))
+	out = append(out, b[:at]...)
+	out = append(out, seg...)
+	return append(out, b[at:]...)
+}

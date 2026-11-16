@@ -239,8 +239,8 @@ func (s *Server) putPhoto(w http.ResponseWriter, r *http.Request, c caller) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// putPhotoFile takes the photo's display or thumbnail file (?size=display|thumb). The server checks it but never
-// decodes or re-encodes it.
+// putPhotoFile takes the photo's display or thumbnail file (?size=display|thumb). The server checks it and takes
+// any metadata out of a JPEG, but never decodes or re-encodes the picture.
 func (s *Server) putPhotoFile(w http.ResponseWriter, r *http.Request, c caller) {
 	id, err := pathID(r)
 	if err != nil {
@@ -267,9 +267,16 @@ func (s *Server) putPhotoFile(w http.ResponseWriter, r *http.Request, c caller) 
 	switch {
 	case err != nil:
 		err = fail(http.StatusUnsupportedMediaType, "not_a_photo", "Photos must be HEIC or JPEG.")
+	case info.Ext == "jpg":
+		// metadata is taken out here rather than refused: an iPhone writes an EXIF block into every JPEG it makes
+		data, err = images.CleanJPEG(data)
+		if err != nil {
+			err = fail(http.StatusUnsupportedMediaType, "not_a_photo", "Photos must be HEIC or JPEG.")
+		}
 	case info.HasEXIF:
 		err = fail(http.StatusUnprocessableEntity, "has_metadata", "Remove the photo's metadata (EXIF) before uploading.")
-	default:
+	}
+	if err == nil {
 		lo, hi := min(info.Width, info.Height), max(info.Width, info.Height)
 		if lo > short+short/10 || lo < 16 || hi > lo*4 {
 			err = fail(http.StatusUnprocessableEntity, "bad_dimensions", "That photo is the wrong size for this slot.")

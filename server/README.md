@@ -9,7 +9,7 @@ cmd/switchback-api/    the program; settings come from environment variables (li
 internal/api/          HTTP handlers, caching, rate limits, the integration test
 internal/auth/         access tokens, refresh tokens, sign-in codes, Google ID token checks, email
 internal/db/           Postgres pool and migrations (migrations/*.sql, applied in order at start)
-internal/images/       checks uploaded photos (HEIC/JPEG, size, no EXIF) without decoding them
+internal/images/       checks uploaded photos (HEIC/JPEG, size) and takes the metadata out of JPEGs, without decoding them
 internal/storage/      photo files, named by content hash (disk now; R2 later behind the same interface)
 internal/ratelimit/    in-memory rate limits
 deploy/setup-pi.sh     sets up an Orange Pi from a fresh Armbian install
@@ -37,7 +37,7 @@ TEST_DATABASE_URL=postgres:///switchback_test go test ./...
 ```
 
 `TestEverything` drives the whole API over HTTP: sign-in, token refresh, reviews (and who may edit them), cached
-lists with ETags, per-cell stats, hike logs, photo uploads (rejecting EXIF, wrong sizes and non-photos), trail
+lists with ETags, per-cell stats, hike logs, photo uploads (EXIF removed; wrong sizes and non-photos rejected), trail
 submissions, reports hiding a review, that no email address is stored anywhere, and deleting an account with its
 posts and files. `TestPasswords` covers register and log in (taken emails, weak passwords, one answer for a wrong
 email or password, rate limits, changing the password); `TestDocs` and `TestDocsSince` the synced documents
@@ -141,7 +141,7 @@ same request twice is harmless. Lists take `?cursor=` from the previous page.
 | `PUT` / `DELETE /v1/reviews/{id}` | `{trail, rating, body, hiked_on, conditions}`; one per person per trail | |
 | `PUT` / `DELETE /v1/logs/{id}` | `{trail, hiked_on, hike_id, note, public}` | |
 | `PUT /v1/photos/{id}` | `{trail, review_id, log_id, walk_id, lat, lon, taken_at}`, all optional | |
-| `PUT /v1/photos/{id}/file?size=display\|thumb` | the raw HEIC or JPEG bytes as the body (any Content-Type), no EXIF; display ≤ 1 MB and ≤ 1,100 px on the short side, thumb ≤ 200 KB and ≤ 440 px; ready when both are in | |
+| `PUT /v1/photos/{id}/file?size=display\|thumb` | the raw HEIC or JPEG bytes as the body (any Content-Type); a JPEG's metadata (EXIF, XMP, IPTC) is removed before it is stored, a HEIC with EXIF is refused; display ≤ 1 MB and ≤ 1,100 px on the short side, thumb ≤ 200 KB and ≤ 440 px; ready when both are in | |
 | `DELETE /v1/photos/{id}` | | |
 | `PUT /v1/submissions/{id}` | `{kind: "new_trail", name, line, difficulty, note}` or `{kind: "correction", trail, field, value, note}` | |
 | `POST /v1/reports` `{target_kind, target_id, reason}` | three reports hide a review or photo | |
