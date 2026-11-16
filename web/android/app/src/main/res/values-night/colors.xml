@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Waymark's dark surface (web/src/tokens.ts: dark.bg) -->
+    <color name="splash_background">#0D1512</color>
+</resources>

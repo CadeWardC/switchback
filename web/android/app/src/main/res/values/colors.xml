@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Waymark's stone surface (web/src/tokens.ts: light.bg) -->
+    <color name="splash_background">#EDF0EC</color>
+</resources>

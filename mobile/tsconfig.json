@@ -1,0 +1,25 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "types": [
+      "jest",
+      "geojson"
+    ],
+    "paths": {
+      "@web/*": [
+        "../web/src/*"
+      ],
+      "@preact/signals": [
+        "./node_modules/@preact/signals-core"
+      ]
+    }
+  },
+  "include": [
+    "index.ts",
+    "src",
+    "test",
+    "app.config.js"
+  ]
+}
