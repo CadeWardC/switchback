@@ -1,0 +1,84 @@
+name: Server
+
+# Tests the API against a real Postgres, builds it for the Orange Pi (linux/arm64), and on the default branch
+# publishes it (from main) to the rolling "server-latest" release, which server/deploy/setup-pi.sh downloads.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "server/**"
+      - ".github/workflows/server.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: switchback
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: switchback_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U switchback" --health-interval 2s --health-timeout 2s --health-retries 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        env:
+          TEST_DATABASE_URL: postgres://switchback:test@localhost:5432/switchback_test
+        run: go test ./...
+
+      - name: Lint the Pi scripts
+        run: shellcheck -S warning deploy/*.sh
+
+      - name: Build for the Orange Pi (linux/arm64)
+        run: |
+          mkdir -p ../dist
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" \
+            -o ../dist/switchback-api-linux-arm64 ./cmd/switchback-api
+          cd ../dist && sha256sum switchback-api-linux-arm64 > switchback-api-linux-arm64.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: switchback-api-linux-arm64
+          path: dist/
+
+      - name: Publish to server-latest
+        if: github.ref == 'refs/heads/main' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'workflow_dispatch'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view server-latest -R "${{ github.repository }}" >/dev/null 2>&1 || \
+            gh release create server-latest -R "${{ github.repository }}" --title "Switchback server (latest)" \
+              --notes "The Switchback API for the Orange Pi (linux/arm64). Installed by server/deploy/setup-pi.sh." \
+              --latest=false
+          gh release upload server-latest dist/switchback-api-linux-arm64 dist/switchback-api-linux-arm64.sha256 \
+            -R "${{ github.repository }}" --clobber
+          gh release edit server-latest -R "${{ github.repository }}" \
+            --notes "The Switchback API for the Orange Pi (linux/arm64), built from ${{ github.ref_name }} @ ${GITHUB_SHA::7}. Installed by server/deploy/setup-pi.sh."

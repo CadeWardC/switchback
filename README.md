@@ -1,7 +1,32 @@
 # Switchback: find trails, follow them, record your hikes
 
-An iPhone app for hiking. Like the big trail apps, but built on open data with no account, no
+A hiking app for phones and the web. Like the big trail apps, but built on open data with no account needed, no
 subscription and no API keys.
+
+## The apps
+
+| Folder | What it is | Builds |
+| --- | --- | --- |
+| [`mobile/`](mobile) | **The phone app** (React Native / Expo): native map and screens, recording with the screen off, the lock-screen hike | iPhone IPA (`build-rn-ios.yml`, `switchback-rn-ios-N`) and Android APK (`build-rn-android.yml`, `switchback-rn-android-N`) |
+| [`server/`](server) | The Switchback server (Go, PostgreSQL): accounts, your hikes, photos, submissions | `server.yml` (`server-latest`, for the Orange Pi) |
+| [`web/`](web) | The website, also wrapped as an app with Capacitor | GitHub Pages (`pages.yml`), Android APK and iPhone IPA (`build-android-apk.yml`, `build-web-ios-ipa.yml`) |
+
+The original iPhone app (Swift) has been removed; it is in the git history. Its map style lives on in
+[`map-style/`](map-style) (written by `scripts/make-style.py`), which both apps build their maps from.
+
+- **Accounts (phone app, optional):** create an account or log in (email and password) to keep your hikes, saved
+  trails and hike photos on your account on the Switchback server (`server/`), synced to every phone you log in on;
+  without one everything stays on the phone. Take photos while recording or add them to a kept hike. A finished
+  hike is kept in Saved as your own trail and can be submitted as a new trail, approved on the server's review page (`/review`, unlocked with a PIN). See
+  [docs/SERVER.md](docs/SERVER.md).
+- **Hike tab:** the map and the recorder share one tab (Hike, Saved and Log, each with an icon); tap Record a hike
+  on the map's sheet to start. Drag along any elevation chart to see that spot on the map.
+
+## What it does
+
+Some of what follows (Apple Maps and the MapKit base maps, USGS and OpenTopoMap raster layers, offline map areas
+from tiles, the Forest Service live layer) was in the original Swift app and is not (yet) in the phone or web
+app; the trail data, packs and their rules are shared by all of them.
 
 - **Explore:** trails load by themselves as you move the map, drawn in their difficulty colour with a white outline and
   a hiker pin at each trailhead (pins group into numbered bubbles when they crowd). Base maps: Apple Maps, satellite,
@@ -32,7 +57,7 @@ subscription and no API keys.
   compressed block per 0.25° cell), all published monthly in the single release `trails-us` with `regions.json`. The app
   downloads a state's file once, the first time the map shows it, then has every trail there instantly and offline,
   unpacking only the cells around the map. As soon as the map knows where you are, your area's file downloads (Missouri is about
-  0.4 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 38 MB), so trails work
+  1 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 85 MB), so trails work
   offline wherever you go in it; travelling to another country does the same there. Only the list of areas is built
   into the app (`BUNDLED_STATES: "none"`; `"all"` builds every US state in instead). Each file also holds the trail
   highlights (viewpoints, peaks, waterfalls, water, shelters, campsites, toilets, parking within ~200 m of a trail),
@@ -41,7 +66,7 @@ subscription and no API keys.
   duplicate names). Each trail also carries detailed elevation (`scripts/elevation.py`): sampled every 10 m from AWS
   Terrain Tiles (zoom 13, ~15 m), with gain, descent, lowest and highest worked out from those samples, and the chart
   reduced to the points it can't redraw within 1.5 m (typically a tenth to a third), stored as small deltas — about
-  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, and a downloaded
+  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, Settings › Reset and download again replaces every trail file on the phone with the current one, and a downloaded
   offline map area can be updated with a swipe (only changed pieces are fetched for our own map).
   `scripts/build_trail_pack.py` uses the same rules (and trail ids) as the live search, and also: puts every trail in
   its area (the smallest named park, nature reserve or protected area it lies in); names unnamed paths from the map
@@ -53,8 +78,19 @@ subscription and no API keys.
   trailheads and car parks within 100 m of a trail and the walk from each to the trails within 3 km, so a trail page
   can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
   off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
-  trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
-- **Regions:** the pack job's matrix in `trail-packs.yml` lists the areas (any Geofabrik extract); each becomes one
+  trails); (6) offers a short loop where a short cut-across joins two points of a loop (the trail page then has Full loop and Short loop; the cut-across is not listed as a trail); and (7) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
+- **The way in:** each trailhead a hike can be started from says which named trails the walk to it follows
+  (`scripts/ways_in.py`, run on each finished pack: at most two, never unnamed paths or the hike itself, nothing for a
+  walk under 150 m). The start picker shows it ("Camp Five Pond Trailhead · 3.4 mi · via Ridge Trail"), a quiet line
+  under the hike's title says where it starts and how you get in, driving directions go to the trailhead picked by
+  its own name, and tapping a trail on the main map draws its way in from the nearest trailhead. Search, lists and
+  the title keep just the hike's name.
+- **Countries without official lists (Switzerland):** `scripts/local_rules.py` sorts a finished pack by what the
+  country's own map says, in its languages. A signposted route is a hike (one with no name is named for its ends,
+  "Furi – Furgg", or left as an unnamed line); a named path on no route is a hike only with a hiking grade, a trail's
+  name ("Höhenweg", "Sentier …", "Sentiero …") or a park around it; one named like a street ("…strasse", "Rue …")
+  is informal. Each build keeps a list with one line per trail saying what it was taken for and why.
+- **Regions:** `data/trail-regions.json` lists the areas the pack job builds (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map
   knows your location (or the map shows them), and Settings › Trail regions lists them all to download ahead of a
@@ -77,14 +113,18 @@ subscription and no API keys.
   shows time, distance, climb and what's left on the lock screen and in the Dynamic Island.
 - **One-tap offline:** "Download for offline" on a trail page saves it and downloads the map around it (about a km of
   margin), as detailed as the size limit allows.
-- **Record & navigate:** GPS recording that keeps going with the phone locked (distance, time, moving time, pace,
-  elevation gain). Follow a trail and it shows how far is left, and buzzes (plus a notification when the phone is
+- **Hike tab:** the trail map and the recorder share one tab; tap Record on the map to start a hike.
+- **Record & navigate:** GPS recording that keeps going with the phone locked (distance, time, moving time, speed in
+  mph or km/h, pace, elevation gain). The location dot has an arrow for the way the phone points, so you can turn to
+  see which path is which. Follow a trail and it shows how far is left, and buzzes (plus a notification when the phone is
   locked) if you go more than 60 m off it. A hike in progress survives the app being closed.
 - **Saved:** bookmarked trails, GPX import (from Files or "Open in Switchback"), and **offline maps**: download the topo
   or USGS satellite tiles and the trails for an area, then use it without signal. Zooming in past a map's last level (or
   past what you downloaded) enlarges the closest tiles instead of going blank.
 - **Activity:** every recorded hike with its map, stats and elevation chart; share as GPX, rename, or save it as a
   trail to follow again.
+- **Backup:** Settings › Backup exports every recorded hike and saved trail to one file and imports it again (after a
+  reinstall, or on another phone); importing only adds what's missing.
 
 ## Download the trails
 
@@ -107,11 +147,8 @@ Difficulty is worked out from length + climb (and the SAC scale when mapped); OS
 Offline downloads are capped at 12,000 tiles per area and use three connections at a time, to stay polite to the free
 tile servers.
 
-Every push builds `Switchback-unsigned.ipa` into a `switchback-build-N` release
-(`.github/workflows/build-switchback-ipa.yml`). Sign it while installing with AltStore / SideStore / Sideloadly, or use
-TrollStore.
-
-Build locally: `xcodegen generate && open Switchback.xcodeproj`. The icon is drawn by
-`scripts/make-icon.py`.
+Every push to `mobile/` builds the phone app: an unsigned IPA (sign it while installing with AltStore / SideStore /
+Sideloadly, or use TrollStore) and an Android APK, each published as its own release. See `mobile/` and `web/` for
+building locally.
 
 Trail data licence and credits: see [DATA_LICENSE.md](DATA_LICENSE.md) (the trail files are ODbL, © OpenStreetMap contributors, with official sources credited).

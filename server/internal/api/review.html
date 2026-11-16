@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switchback Review</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --ink:#1d2320; --muted:#5f6b65; --line:#dcdcd4; --green:#216b45; --red:#b3261e; --amber:#9a6200; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#121513; --card:#1c201e; --ink:#e7ece9; --muted:#9aa6a0; --line:#2e3431; --green:#5cc18a; --red:#ff8a80; --amber:#f2b552; } }
+  :root[data-theme="dark"] { --bg:#121513; --card:#1c201e; --ink:#e7ece9; --muted:#9aa6a0; --line:#2e3431; --green:#5cc18a; --red:#ff8a80; --amber:#f2b552; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 -apple-system, system-ui, "Segoe UI", sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { margin:0 0 18px; color:var(--muted); }
+  form#login, .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
+  input, textarea, select, button { font:inherit; color:inherit; }
+  input, textarea, select { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
+  input[type=password] { flex:0 1 200px; letter-spacing:.2em; } [hidden] { display:none !important; }
+  button { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:8px 14px; cursor:pointer; }
+  button.primary { background:var(--green); border-color:var(--green); color:#fff; }
+  button.danger { color:var(--red); }
+  button[aria-pressed=true] { border-color:var(--ink); font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  .msg { padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); margin-bottom:14px; }
+  .msg.err { border-color:var(--red); color:var(--red); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .head { display:flex; gap:10px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+  .head h2 { font-size:18px; margin:0; }
+  .meta { color:var(--muted); font-size:13px; }
+  .pill { font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; border:1px solid currentColor; }
+  .pending { color:var(--amber); } .approved, .ready { color:var(--green); } .rejected, .hidden { color:var(--red); }
+  .map { height:280px; border-radius:10px; margin:12px 0; border:1px solid var(--line); }
+  .note { white-space:pre-wrap; margin:8px 0; padding:8px 10px; border-left:3px solid var(--line); }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .actions input { flex:1 1 240px; }
+  .empty { color:var(--muted); text-align:center; padding:40px 0; }
+  .photos { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
+  .photo img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:var(--line); display:block; }
+  .photo .actions { margin-top:6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Switchback review</h1>
+  <p class="sub">Hikes people send in as new trails, trail reviews and photos. Approve a trail to add it for everyone, or reject it with a reply they'll see in the app. Reviews and photos are public as soon as they're posted: hide one to take it down.</p>
+
+  <form id="login">
+    <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" placeholder="PIN" autocomplete="current-password" required>
+    <button class="primary" type="submit">Unlock</button>
+  </form>
+  <div id="msg"></div>
+  <div class="bar" id="bar" hidden>
+    <button type="button" data-view="submissions" aria-pressed="true">Submissions</button>
+    <button type="button" data-view="reviews" aria-pressed="false">Reviews</button>
+    <button type="button" data-view="photos" aria-pressed="false">Photos</button>
+    <label>Show <select id="filter"></select></label>
+    <button type="button" id="reload">Refresh</button>
+    <span class="meta" id="count"></span>
+  </div>
+  <div id="list"></div>
+</main>
+<script>
+// Served by the Switchback server at /review. The PIN is traded for a session key good for 12 hours, kept only for
+// this browser tab (sessionStorage); the PIN itself isn't kept.
+const $ = s => document.querySelector(s);
+const store = { get(k) { try { return sessionStorage.getItem(k) } catch { return null } },
+                set(k, v) { try { sessionStorage.setItem(k, v) } catch {} } };
+const base = location.origin;
+let key = store.get("sb.session") || "", view = "submissions", rows = [];
+const FILTERS = {
+  submissions: [["pending", "Waiting for review"], ["approved", "Approved"], ["rejected", "Rejected"], ["all", "All"]],
+  reviews: [["shown", "Shown"], ["hidden", "Hidden"], ["all", "All"]],
+  photos: [["ready", "Shown"], ["hidden", "Hidden"], ["all", "All"]],
+};
+
+function showMsg(text, err) { $("#msg").innerHTML = text ? `<div class="msg ${err ? "err" : ""}"></div>` : ""; if (text) $("#msg .msg").textContent = text; }
+
+async function api(method, path, body) {
+  const r = await fetch(base + path, { method, headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+                                       body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await r.text();
+  let data = null; try { data = text ? JSON.parse(text) : null } catch {}
+  if (!r.ok) {
+    if (r.status === 401 && path.startsWith("/v1/admin/") && path !== "/v1/admin/login") { lock(); throw new Error("Enter the PIN again."); }
+    if (r.status === 404 && path.startsWith("/v1/admin")) throw new Error("The review page isn't turned on (ADMIN_PIN on the server).");
+    throw new Error((data && data.error && (data.error.message || data.error)) || `HTTP ${r.status}`);
+  }
+  return data;
+}
+
+// Trail lines are encoded polylines at 1e-5 degrees.
+function decodeLine(s, scale = 1e5) {
+  const out = []; let i = 0, lat = 0, lon = 0;
+  const next = () => { let result = 0, shift = 0, b; do { b = s.charCodeAt(i++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20 && i <= s.length); return (result & 1) ? ~(result >> 1) : (result >> 1); };
+  while (i < s.length) { lat += next(); lon += next(); out.push([lat / scale, lon / scale]); }
+  return out;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const when = t => t ? new Date(t).toLocaleString() : "";
+
+function setView(v) {
+  view = v;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  $("#filter").innerHTML = FILTERS[v].map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
+  load();
+}
+
+async function load() {
+  showMsg("Loading…");
+  try {
+    const status = $("#filter").value;
+    if (view === "submissions") rows = (await api("GET", `/v1/admin/submissions?status=${status}`)).submissions || [];
+    else if (view === "reviews") rows = (await api("GET", `/v1/admin/reviews?status=${status}`)).reviews || [];
+    else rows = (await api("GET", `/v1/admin/photos?status=${status}`)).photos || [];
+    showMsg("");
+    $("#bar").hidden = false;
+    render();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+function render() {
+  $("#count").textContent = `${rows.length} shown`;
+  const list = $("#list"); list.innerHTML = "";
+  if (!rows.length) { list.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+  if (view === "submissions") { for (const s of rows) list.appendChild(submissionCard(s)); return; }
+  if (view === "reviews") { for (const r of rows) list.appendChild(reviewCard(r)); return; }
+  const grid = document.createElement("div"); grid.className = "photos";
+  for (const p of rows) grid.appendChild(photoCard(p));
+  list.appendChild(grid);
+}
+
+function submissionCard(s) {
+  const el = document.createElement("section"); el.className = "card";
+  const what = s.kind === "new_trail" ? "New trail" : `Correction: ${esc(s.field)}${s.value ? " → " + esc(s.value) : ""}`;
+  el.innerHTML = `
+    <div class="head">
+      <div><h2>${esc(s.name || s.trail_id || "Untitled")}</h2>
+        <div class="meta">${what} · from ${esc(s.user_display_name || "someone")} · ${when(s.created_at)}${s.difficulty ? " · " + esc(s.difficulty) : ""}${s.trail_id ? " · trail " + esc(s.trail_id) : ""}</div></div>
+      <span class="pill ${esc(s.status)}">${esc(s.status)}</span>
+    </div>
+    ${s.line ? `<div class="map"></div>` : ""}
+    ${s.note ? `<div class="note"></div>` : ""}
+    ${s.reviewed_at ? `<p class="meta">Reviewed ${when(s.reviewed_at)}${s.reply ? " · your reply: " + esc(s.reply) : ""}</p>` : ""}
+    <div class="actions">
+      <input placeholder="Reply (optional, shown to them)" value="${esc(s.reply || "")}">
+      <button class="primary" data-act="approved">Approve</button>
+      <button class="danger" data-act="rejected">Reject</button>
+    </div>`;
+  if (s.note) el.querySelector(".note").textContent = s.note;
+  if (s.line) requestAnimationFrame(() => drawMap(el.querySelector(".map"), decodeLine(s.line)));
+  el.querySelectorAll("button[data-act]").forEach(b => b.onclick = () => decide(s, b.dataset.act, el.querySelector(".actions input").value, el));
+  return el;
+}
+
+function reviewCard(r) {
+  const el = document.createElement("section"); el.className = "card";
+  const stars = "★★★★★".slice(0, r.rating) + "☆☆☆☆☆".slice(0, 5 - r.rating);
+  el.innerHTML = `
+    <div class="head">
+      <div><h2>${esc(r.trail_name || r.trail_id)}</h2>
+        <div class="meta">${stars} · from ${esc(r.display_name || "someone")} · ${when(r.created_at)}${r.hiked_on ? " · hiked " + esc(r.hiked_on) : ""}</div></div>
+      <span class="pill ${r.hidden ? "hidden" : "ready"}">${r.hidden ? "hidden" : "shown"}</span>
+    </div>
+    ${r.body ? `<div class="note"></div>` : ""}
+    <div class="actions">${r.hidden ? `<button data-hide="false">Show</button>` : `<button class="danger" data-hide="true">Hide</button>`}</div>`;
+  if (r.body) el.querySelector(".note").textContent = r.body;
+  el.querySelector("button[data-hide]").onclick = async (e) => {
+    e.target.disabled = true;
+    try { await api("POST", `/v1/admin/reviews/${encodeURIComponent(r.id)}`, { hidden: e.target.dataset.hide === "true" }); await load(); showMsg("Review updated."); }
+    catch (err) { showMsg("Couldn't save: " + err.message, true); e.target.disabled = false; }
+  };
+  return el;
+}
+
+function photoCard(p) {
+  const el = document.createElement("div"); el.className = "photo card";
+  el.innerHTML = `
+    <a href="${esc(p.url || p.thumb_url || "#")}" target="_blank" rel="noopener"><img alt="" loading="lazy" src="${esc(p.thumb_url || p.url || "")}"></a>
+    <div class="meta">${esc(p.display_name || "")} · ${when(p.taken_at || p.created_at)}${p.trail_id ? "<br>trail " + esc(p.trail_id) : p.walk_id ? "<br>on a hike" : ""}</div>
+    <div class="actions"><span class="pill ${esc(p.status)}">${esc(p.status)}</span>
+      ${p.status === "hidden" ? `<button data-set="ready">Show</button>` : `<button class="danger" data-set="hidden">Hide</button>`}</div>`;
+  el.querySelector("button[data-set]").onclick = async (e) => {
+    e.target.disabled = true;
+    try { await api("POST", `/v1/admin/photos/${encodeURIComponent(p.id)}`, { status: e.target.dataset.set }); await load(); showMsg("Photo updated."); }
+    catch (err) { showMsg("Couldn't save: " + err.message, true); e.target.disabled = false; }
+  };
+  return el;
+}
+
+function drawMap(div, line) {
+  if (!window.L) { div.textContent = "Map unavailable (couldn't load Leaflet)."; div.style.cssText += "display:flex;align-items:center;justify-content:center;color:var(--muted);height:60px"; return; }
+  const map = L.map(div, { scrollWheelZoom: false });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+  const pl = L.polyline(line, { color: "#21a05a", weight: 4 }).addTo(map);
+  if (line.length) map.fitBounds(pl.getBounds(), { padding: [16, 16] }); else map.setView([39, -95], 4);
+}
+
+async function decide(s, status, reply, el) {
+  el.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const out = await api("POST", `/v1/admin/submissions/${encodeURIComponent(s.id)}`, { status, reply: reply || "" });
+    Object.assign(s, out || { status, reply });
+    await load();
+    showMsg(`“${s.name || s.id}” ${status}.`);
+  } catch (e) {
+    showMsg("Couldn't save: " + e.message, true);
+    el.querySelectorAll("button").forEach(b => b.disabled = false);
+  }
+}
+
+function lock() { key = ""; store.set("sb.session", ""); $("#login").hidden = false; $("#bar").hidden = true; $("#list").innerHTML = ""; }
+
+$("#login").onsubmit = async e => {
+  e.preventDefault();
+  const pin = $("#pin").value.trim();
+  showMsg("Checking…");
+  try {
+    key = (await api("POST", "/v1/admin/login", { pin })).token;
+    store.set("sb.session", key);
+    $("#pin").value = "";
+    $("#login").hidden = true;
+    setView(view);
+  } catch (err) { showMsg(err.message, true); }
+};
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+$("#filter").onchange = load;
+$("#reload").onclick = load;
+$("#filter").innerHTML = FILTERS.submissions.map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
+if (key) { $("#login").hidden = true; setView(view); }
+</script>
+</body>
+</html>
