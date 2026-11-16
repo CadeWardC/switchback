@@ -10,8 +10,9 @@ to bigger hardware without rewriting the app.
   cache where possible; writes queue on the phone and send in the background.
 - **Scalable in steps:** every piece (API, database, photos) can move off the Pi on its own, by changing settings,
   not code.
-- **Optional accounts:** everything Switchback does today keeps working with no account. An account is only needed to
-  post reviews and photos, or share and back up hikes.
+- **Optional accounts** (Google or email): everything Switchback does today keeps working with no account. An
+  account is only needed to post reviews and photos, keep hike logs, submit trails and corrections, or share and back
+  up hikes.
 - **Private by default:** recorded hikes and photos stay on the phone unless someone chooses to share them.
 
 ## Overview
@@ -90,7 +91,51 @@ by creation time.
 | `trail_stats` | trail_id, review count, average rating, photo count, last review date (kept up to date by a trigger) |
 | `hikes` | id (= the app's Activity id), user, name, start, end, distance, gain, moving time, track (PostGIS line + encoded polyline), trail_id, visibility (`private` backup / `link` / `public`) |
 | `photos` | id, user, trail_id?, hike_id?, review_id?, location, taken_at, width, height, file keys, status (`uploading`, `ready`, `hidden`) |
-| `reports` | who reported what (review, photo, user), reason, status |
+| `hike_logs` | id, user, trail_id, hiked_on, hike_id? (if it was recorded), short note, visibility. "I hiked this", with or without a recording |
+| `account_events` | user, kind, target id, created. A light activity history (below) |
+| `trail_submissions` | id, user, kind (`new_trail` / `correction`), status, trail_id (corrections), field, proposed value, note, line (new trails), photos, reviewed_by, reviewed_at, reply |
+| `trail_overrides` | trail_id, field, value: approved corrections, applied on top of the map data |
+| `community_trails` | id, name, line, difficulty, submitted_by, approved_at: approved new trails |
+| `reports` | who reported what (review, photo, user, submission), reason, status |
+
+### Hike logs
+
+Each account has a list of hikes done: **trail, date, a short note**, and the recorded hike if there was one.
+"I hiked this" on a trail page adds one without recording. Hike logs power a "Hikes" tab on a profile and the
+"hiked by N people" count on a trail (kept in `trail_stats`). Private by default; a log can be public.
+
+### Activity history (kept light)
+
+One small row per action, about 40 bytes, with **no IP addresses, no text and no copies of content**:
+
+| Kind | Target |
+|---|---|
+| signed in on a new device | session |
+| review posted / edited / deleted | review |
+| photo added / deleted | photo |
+| hike logged / shared | hike log or hike |
+| trail submitted | submission |
+| report made / post hidden | report |
+
+Used for a "Your activity" list in Settings, and for moderation (what has this account been doing?). Rows older than
+**one year are deleted** by a nightly job. A million actions take about 40 MB.
+
+### Trail submissions
+
+**New trails:** draw a line on the map, or turn a recorded hike into one, then add a name, difficulty and photos.
+**Corrections** to an existing trail: wrong name, closed or seasonally closed, wrong difficulty, missing or wrong
+trailhead, doesn't exist, or something else (free text).
+
+1. A submission goes into a **review queue** on the admin page; only the person who sent it sees it until then.
+2. You approve (optionally editing it first) or reject it with a short reply the submitter sees.
+3. Approved **corrections** become `trail_overrides`; approved **new trails** become `community_trails`. Both are
+   included in the per-cell endpoint, so the app applies them on top of the trail packs with no app update. They're
+   drawn like the Forest Service trails are today, with a "Community" label.
+4. The monthly trail-pack build checks overrides against new OpenStreetMap data and flags ones that OSM has since
+   fixed, so they can be removed.
+
+Submitters agree (once, when first submitting) that their trail lines and corrections can be published under the
+same open licence as the trail data (ODbL), so they could later be added to OpenStreetMap too.
 
 ### Trail IDs
 
@@ -106,7 +151,10 @@ box. When a monthly trail-pack build finds that an ID has gone, a job matches th
 |---|---|---|
 | Sign in | `POST /v1/auth/email/start` → emails a 6-digit code · `POST /v1/auth/email/verify` · `POST /v1/auth/google` · `POST /v1/auth/refresh` · `POST /v1/auth/logout` | no |
 | Me | `GET/PATCH/DELETE /v1/me` (delete removes everything they posted) | no |
-| Ratings for the map | `GET /v1/cells/{cell}/stats`: every trail's rating and photo count in one 0.25° cell (the same cells as the trail packs) | **5 min** |
+| Ratings for the map | `GET /v1/cells/{cell}/stats`: every trail's rating, photo count and "hiked by" count in one 0.25° cell (the same cells as the trail packs), plus approved corrections and community trails there | **5 min** |
+| Hike logs | `PUT /v1/logs/{id}` · `DELETE /v1/logs/{id}` · `GET /v1/me/logs?cursor=` · `GET /v1/users/{id}/logs` (public ones) | no / public 1 min |
+| Activity | `GET /v1/me/activity?cursor=` | no |
+| Submissions | `PUT /v1/submissions/{id}` · `GET /v1/me/submissions` (with status and reply) | no |
 | Trail page | `GET /v1/trails/{id}/reviews?cursor=` · `GET /v1/trails/{id}/photos?cursor=` | **1 min** |
 | Post | `PUT /v1/reviews/{id}` · `DELETE /v1/reviews/{id}` | no |
 | Photos | `PUT /v1/photos/{id}` (record), then `PUT /v1/photos/{id}/file?size=display|thumb` (bytes) · `DELETE /v1/photos/{id}` | no |
@@ -140,7 +188,10 @@ Storage: about 165 KB a photo, so a 256 GB SSD holds ~1.5 million photos.
 
 ## Accounts
 
-- **Email code** (6 digits, valid 10 minutes) and **Sign in with Google**. Both work in a sideloaded app.
+- **Sign in with Google** and **email code** (6 digits, valid 10 minutes), both from the start. Both work in a
+  sideloaded app. Google: a free OAuth client in Google Cloud Console; the app uses Google's sign-in SDK and sends
+  the ID token to `POST /v1/auth/google`, and the server checks it against Google's public keys (no Google
+  secret on the phone). An email account and a Google account with the same verified email become one account.
   Sign in with Apple and passkeys need a paid Apple Developer account, so they come later if the app goes on the App Store.
 - Email is sent through **Resend** (free: 3,000 emails a month) or Amazon SES (~$0.10 per 1,000).
 - **Access token:** a signed JWT that lasts 15 minutes, checked without touching the database.
@@ -181,11 +232,12 @@ That's comfortably enough for tens of thousands of users posting at a normal rat
 
 - Nothing open to the internet at home: the tunnel only connects outward.
 - Cloudflare: free WAF rules, rate limits on sign-in and posting, bot protection.
-- The API limits each user too (for example 20 reviews and 100 photos a day) and limits each IP on the sign-in endpoints.
+- The API limits each user too (for example 20 reviews, 100 photos and 10 trail submissions a day) and limits each
+  IP on the sign-in endpoints.
 - Every query runs with the user it's for; tests check that nobody can edit or delete someone else's posts.
 - **Report** button on every review, photo and profile. Three reports hide a post until it's checked.
-  An admin page (on the home network or behind Cloudflare Access, free for up to 50 users) shows reports and can
-  hide, delete or ban.
+  An admin page (on the home network or behind Cloudflare Access, free for up to 50 users) shows reports and the
+  trail submission queue, an account's activity history, and can approve, hide, delete or ban.
 - Health check: **Healthchecks.io** (free) pings us if the Pi stops answering or a backup doesn't run.
 
 ## Growing past the Pi
@@ -210,8 +262,11 @@ Each step changes settings and where things run, not the app.
 | Photos | `PhotoUpload.swift`: resize to 1,000 px short side + 400 px thumbnail in HEIC, keep location as data, strip metadata | `Services/` |
 | Trail page | Stars and review count under the title; a Reviews section; "Write a review" (stars, conditions, text, photos); hikers' photos first in the header, then Commons | `TrailDetailView.swift`, `TrailMedia.swift` |
 | List and map | Stars on list rows from the cell endpoint; sort by rating | `ExploreView.swift` |
-| Activity | "Share" (link or public) and "Back up" on a recorded hike | `ActivityViews.swift` |
-| Settings | Account, sign out, delete account; "Back up my hikes" toggle | `SettingsView.swift` |
+| Activity | "Share" (link or public) and "Back up" on a recorded hike; finishing a recorded hike on a trail adds a hike log | `ActivityViews.swift` |
+| Hike logs | "I hiked this" on a trail page; a Hikes list for your account | `TrailDetailView.swift`, new `LogsView.swift` |
+| Submissions | "Suggest a correction" on a trail page; "Add a missing trail" from the map (draw) or from a recorded hike; "My submissions" with status | `TrailDetailView.swift`, `ExploreView.swift`, new `SubmitTrailView.swift` |
+| Community data | Apply approved corrections and draw community trails from the cell endpoint | `TrailPacks.swift`, `TileTrails.swift` |
+| Settings | Account (Google or email), sign out, delete account, "Your activity", "Back up my hikes" toggle | `SettingsView.swift` |
 
 ## Repo layout
 
@@ -232,14 +287,14 @@ server/
 ## Build order
 
 1. **Contract and database:** `openapi.yaml`, migrations, and a local Docker Compose (Postgres + API) for working on a laptop.
-2. **API core:** auth (email code), reviews, cell stats, ETags, rate limits, tests.
+2. **API core:** auth (Google and email code), activity history, reviews, hike logs, cell stats, ETags, rate limits, tests.
 3. **Photos:** upload, storage drivers (disk, R2), serving.
 4. **Pi:** `setup-pi.sh`, Cloudflare Tunnel on our domain, backups, health checks, load test.
-5. **App:** API client, account, outbox, reviews on trail pages, stars on the list.
+5. **App:** API client, account (Google and email), outbox, reviews and "I hiked this" on trail pages, stars on the list.
 6. **App:** photo upload and photos in the header.
-7. **Hikes:** backup and sharing.
-8. **Moderation:** reports, admin page. **Before** opening it up to the public.
-9. Google sign-in.
+7. **Submissions:** corrections and new trails, the review queue, community data in the cell endpoint and on the map.
+8. **Hikes:** backup and sharing.
+9. **Moderation:** reports, admin page. **Before** opening it up to the public.
 
 ## Running costs
 
