@@ -8,6 +8,8 @@ on:
     paths-ignore:
       - "**.md"
       - "scripts/**"
+      - "server/**"
+      - ".github/workflows/server.yml"
       - ".github/workflows/check-official-trails.yml"
       - ".github/workflows/find-trail-sources.yml"
       - ".github/workflows/whats-at.yml"

@@ -24,7 +24,7 @@ to bigger hardware without rewriting the app.
  Orange Pi 3B, 4 GB, NVMe SSD
  ├─ cloudflared        the tunnel
  ├─ switchback-api     Go, one static binary: JSON API, auth, photo uploads and downloads
- ├─ PostgreSQL 17      + PostGIS: users, hikes, reviews, photo records
+ ├─ PostgreSQL 17      users, hikes, reviews, photo records
  ├─ /srv/photos        photo files (content-addressed, served by the API with immutable cache headers)
  └─ pgBackRest + rclone continuous database backup and nightly photo copy ──> Cloudflare R2 (free 10 GB)
 ```
@@ -39,7 +39,7 @@ one server, and its API shape would be built into the app. To scale smoothly we 
 | Run several API servers later | The API keeps no state, so any number can run behind the tunnel |
 | Move the database off the Pi | Postgres moves to a bigger box or a managed host (Neon, Supabase, RDS) with `pg_dump` / replication |
 | Move photos off the Pi | Storage is an interface with a "local disk" and an "S3/R2" driver: a setting changes it |
-| Trail and map queries | PostGIS: "reviews and photos near here", "hikes on this trail" |
+| Trail and map queries | Plain columns (start point, bounding box, cell) cover what the app needs; PostGIS can be added later for "near here" searches without changing the API |
 | Small on the Pi | The Go binary uses ~30 MB RAM; Postgres is tuned to ~1 GB (below) |
 
 The API is defined in an **OpenAPI spec** (`server/api/openapi.yaml`), so the app and server stay in step and the
@@ -112,7 +112,7 @@ by creation time.
 | `trail_refs` | trail_id, name, start point, bounding box, source (see "Trail IDs" below) |
 | `reviews` | id, user, trail_id, rating 1–5, text, hiked_on, conditions (muddy, snow, overgrown, blowdown, …), created, updated. One per user per trail |
 | `trail_stats` | trail_id, review count, average rating, photo count, last review date (kept up to date by a trigger) |
-| `hikes` | id (= the app's Activity id), user, name, start, end, distance, gain, moving time, track (PostGIS line + encoded polyline), trail_id, visibility (`private` backup / `link` / `public`) |
+| `hikes` | id (= the app's Activity id), user, name, start, end, distance, gain, moving time, track (encoded polyline + bounding box), trail_id, visibility (`private` backup / `link` / `public`) |
 | `photos` | id, user, trail_id?, hike_id?, review_id?, location, taken_at, width, height, file keys, status (`uploading`, `ready`, `hidden`) |
 | `hike_logs` | id, user, trail_id, hiked_on, hike_id? (if it was recorded), short note, visibility. "I hiked this", with or without a recording |
 | `account_events` | user, kind, target id, created. A light activity history (below) |
@@ -201,7 +201,7 @@ box. When a monthly trail-pack build finds that an ID has gone, a job matches th
 | Hike logs | `PUT /v1/logs/{id}` · `DELETE /v1/logs/{id}` · `GET /v1/me/logs?cursor=` · `GET /v1/users/{id}/logs` (public ones) | no / public 1 min |
 | Activity | `GET /v1/me/activity?cursor=` | no |
 | Submissions | `PUT /v1/submissions/{id}` · `GET /v1/me/submissions` (with status and reply) | no |
-| Trail page | `GET /v1/trails/{id}/reviews?cursor=` · `GET /v1/trails/{id}/photos?cursor=` | **1 min** |
+| Trail page | `GET /v1/trails/reviews?trail=<id>&cursor=` · `GET /v1/trails/photos?trail=<id>&cursor=` (trail ids can contain `/`, so they go in the query) | **1 min** |
 | Post | `PUT /v1/reviews/{id}` · `DELETE /v1/reviews/{id}` | no |
 | Photos | `PUT /v1/photos/{id}` (record), then `PUT /v1/photos/{id}/file?size=display|thumb` (bytes) · `DELETE /v1/photos/{id}` | no |
 | Photo files | `GET /p/{key}.heic` | **forever** (content-addressed: a key never changes) |
@@ -313,6 +313,11 @@ Each step changes settings and where things run, not the app.
 | Submissions | "Suggest a correction" on a trail page; "Add a missing trail" from the map (draw) or from a recorded hike; "My submissions" with status | `TrailDetailView.swift`, `ExploreView.swift`, new `SubmitTrailView.swift` |
 | Community data | Apply approved corrections and draw community trails from the cell endpoint | `TrailPacks.swift`, `TileTrails.swift` |
 | Settings | Account (Google or email), sign out, delete account, "Your activity", "Back up my hikes" toggle | `SettingsView.swift` |
+
+## Status
+
+Built so far: the API (`server/`, see [server/README.md](../server/README.md)) with tests, and the Pi setup
+script (`server/deploy/setup-pi.sh`). Next: the admin page, then the app side.
 
 ## Repo layout
 
