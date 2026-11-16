@@ -34,10 +34,12 @@ struct SavedView: View {
             }
             .navigationTitle("Saved")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) { SyncStatusButton() }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { importing = true } label: { Label("Import GPX", systemImage: "square.and.arrow.down") }
                 }
             }
+            .refreshable { await SyncEngine.shared.sync() }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.gpx, .xml], allowsMultipleSelection: true) { result in
                 if case .success(let urls) = result {
                     for url in urls { app.importGPX(from: url) }

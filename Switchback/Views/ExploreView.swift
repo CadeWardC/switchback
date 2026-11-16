@@ -5,6 +5,7 @@ struct ExploreView: View {
     @EnvironmentObject private var model: ExploreModel
     @EnvironmentObject private var recorder: Recorder
     @EnvironmentObject private var profiles: Profiles
+    @EnvironmentObject private var app: AppState
     @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
     @AppStorage(BaseMap.showRoutesKey) private var showRoutes = false
     @State private var mode: Mode = .map
@@ -116,6 +117,18 @@ struct ExploreView: View {
                         MapAttribution(baseMap: baseMap)
                     }
                     Spacer()
+                    Button {
+                        app.showRecorder = true
+                    } label: {
+                        Label("Record", systemImage: "record.circle")
+                            .font(.subheadline.bold())
+                            .padding(.horizontal, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.trailGreen)
+                    .buttonBorderShape(.capsule)
+                    .shadow(radius: 2)
+                    .accessibilityHint("Start recording a new hike")
                     mapStyleMenu
                 }
             }

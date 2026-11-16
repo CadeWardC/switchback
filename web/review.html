@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switchback Review</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --ink:#1d2320; --muted:#5f6b65; --line:#dcdcd4; --green:#216b45; --red:#b3261e; --amber:#9a6200; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#121513; --card:#1c201e; --ink:#e7ece9; --muted:#9aa6a0; --line:#2e3431; --green:#5cc18a; --red:#ff8a80; --amber:#f2b552; } }
+  :root[data-theme="dark"] { --bg:#121513; --card:#1c201e; --ink:#e7ece9; --muted:#9aa6a0; --line:#2e3431; --green:#5cc18a; --red:#ff8a80; --amber:#f2b552; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 -apple-system, system-ui, "Segoe UI", sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { margin:0 0 18px; color:var(--muted); }
+  form#login, .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
+  input, textarea, select, button { font:inherit; color:inherit; }
+  input, textarea, select { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
+  input[type=url] { flex:2 1 220px; } input[type=password] { flex:3 1 260px; }
+  button { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:8px 14px; cursor:pointer; }
+  button.primary { background:var(--green); border-color:var(--green); color:#fff; }
+  button.danger { color:var(--red); }
+  button:disabled { opacity:.5; cursor:default; }
+  .msg { padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); margin-bottom:14px; }
+  .msg.err { border-color:var(--red); color:var(--red); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .head { display:flex; gap:10px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+  .head h2 { font-size:18px; margin:0; }
+  .meta { color:var(--muted); font-size:13px; }
+  .pill { font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; border:1px solid currentColor; }
+  .pending { color:var(--amber); } .approved { color:var(--green); } .rejected { color:var(--red); }
+  .map { height:280px; border-radius:10px; margin:12px 0; border:1px solid var(--line); }
+  ul.points { margin:6px 0 10px; padding-left:20px; }
+  .review { margin:8px 0; padding:8px 10px; border-left:3px solid var(--line); }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .actions input { flex:1 1 240px; }
+  .empty { color:var(--muted); text-align:center; padding:40px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Switchback review</h1>
+  <p class="sub">Hikes people submitted from the app. Approve one to add it (with its points and review) to the public trail data, or reject it.</p>
+
+  <form id="login">
+    <input id="url" type="url" placeholder="https://your-server.example" required>
+    <input id="key" type="password" placeholder="Owner API key" autocomplete="current-password" required>
+    <button class="primary" type="submit">Load</button>
+  </form>
+  <div id="msg"></div>
+  <div class="bar" id="bar" hidden>
+    <label>Show <select id="filter">
+      <option value="pending">Waiting for review</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="all">All</option>
+    </select></label>
+    <button type="button" id="reload">Refresh</button>
+    <span class="meta" id="count"></span>
+  </div>
+  <div id="list"></div>
+</main>
+<script>
+// The key is kept only for this browser tab (sessionStorage), never in the page or the repository.
+const $ = s => document.querySelector(s);
+const store = { get(k) { try { return sessionStorage.getItem(k) } catch { return null } },
+                set(k, v) { try { sessionStorage.setItem(k, v) } catch {} } };
+let base = "", key = "", docs = [];
+
+function showMsg(text, err) { $("#msg").innerHTML = text ? `<div class="msg ${err ? "err" : ""}"></div>` : ""; if (text) $("#msg .msg").textContent = text; }
+
+async function api(method, path, body) {
+  const r = await fetch(base + path, { method, headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+                                       body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await r.text();
+  let data = null; try { data = text ? JSON.parse(text) : null } catch {}
+  if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
+  return data;
+}
+
+// Recorded tracks are encoded polylines at 1e-6 degrees.
+function decodeTrack(s, scale = 1e6) {
+  const out = []; let i = 0, lat = 0, lon = 0;
+  const next = () => { let result = 0, shift = 0, b; do { b = s.charCodeAt(i++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20 && i <= s.length); return (result & 1) ? ~(result >> 1) : (result >> 1); };
+  while (i < s.length) { lat += next(); lon += next(); out.push([lat / scale, lon / scale]); }
+  return out;
+}
+
+const km = m => (m / 1000).toFixed(1) + " km (" + (m / 1609.344).toFixed(1) + " mi)";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+async function load() {
+  showMsg("Loading…");
+  try {
+    const health = await fetch(base + "/health").then(r => r.text()).catch(() => "");
+    if (health.trim() !== "ok") throw new Error("The server didn't answer /health. Check the address.");
+    const list = await api("GET", "/v1/submissions");
+    docs = list.items.filter(d => !d.deleted && d.data).sort((a, b) => (b.data.submitted_at || 0) - (a.data.submitted_at || 0));
+    showMsg("");
+    $("#bar").hidden = false;
+    render();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+function render() {
+  const f = $("#filter").value;
+  const shown = docs.filter(d => f === "all" || (d.data.status || "pending") === f);
+  $("#count").textContent = `${shown.length} of ${docs.length}`;
+  const list = $("#list"); list.innerHTML = "";
+  if (!shown.length) { list.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+  for (const d of shown) list.appendChild(card(d));
+}
+
+function card(d) {
+  const s = d.data, h = s.hike || {}, status = s.status || "pending";
+  const el = document.createElement("section"); el.className = "card";
+  const pts = h.points || [];
+  el.innerHTML = `
+    <div class="head">
+      <div><h2>${esc(s.name)}</h2>
+        <div class="meta">Submitted ${new Date(s.submitted_at).toLocaleString()} · hiked ${new Date(h.start).toLocaleDateString()} ·
+          ${km(h.distance || 0)} · ↑ ${Math.round(h.gain || 0)} m · ${Math.round((h.moving_time || 0) / 60)} min moving
+          ${h.trail_name ? " · followed " + esc(h.trail_name) : ""}</div></div>
+      <span class="pill ${status}">${status}</span>
+    </div>
+    <div class="map"></div>
+    ${s.review ? `<div class="review">${s.review.rating ? "★".repeat(s.review.rating) + "☆".repeat(5 - s.review.rating) + "<br>" : ""}${esc(s.review.text)}</div>` : ""}
+    ${pts.length ? `<strong>Points marked (${pts.length})</strong><ul class="points">${pts.map(p => `<li>${esc(p.kind)}${p.note ? ": " + esc(p.note) : ""}</li>`).join("")}</ul>` : `<p class="meta">No points marked.</p>`}
+    <p class="meta">Public use agreed: ${s.public_use_consent ? "yes" : "no"}${s.reviewer_note ? " · your note: " + esc(s.reviewer_note) : ""}</p>
+    <div class="actions">
+      <input placeholder="Note (optional)" value="${esc(s.reviewer_note || "")}">
+      <button class="primary" data-act="approved">Approve</button>
+      <button class="danger" data-act="rejected">Reject</button>
+    </div>`;
+  requestAnimationFrame(() => drawMap(el.querySelector(".map"), h));
+  el.querySelectorAll("button[data-act]").forEach(b => b.onclick = () => decide(d, b.dataset.act, el.querySelector(".actions input").value, el));
+  return el;
+}
+
+function drawMap(div, h) {
+  if (!window.L) { div.textContent = "Map unavailable (couldn't load Leaflet)."; div.style.cssText += "display:flex;align-items:center;justify-content:center;color:var(--muted);height:60px"; return; }
+  const map = L.map(div, { scrollWheelZoom: false });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+  const lines = (h.segments || []).map(s => decodeTrack(s.line)).filter(l => l.length);
+  const group = L.featureGroup(lines.map(l => L.polyline(l, { color: "#21a05a", weight: 4 })));
+  for (const p of h.points || []) group.addLayer(L.circleMarker([p.lat, p.lon], { radius: 7, color: "#b3261e", fillOpacity: .9 }).bindPopup(esc(p.kind) + (p.note ? ": " + esc(p.note) : "")));
+  group.addTo(map);
+  if (group.getLayers().length) map.fitBounds(group.getBounds(), { padding: [16, 16] }); else map.setView([39, -95], 4);
+}
+
+async function decide(d, status, note, el) {
+  el.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    // PUT replaces the whole document, so start from the latest copy
+    const fresh = await api("GET", `/v1/submissions/${encodeURIComponent(d.id)}`);
+    const doc = { ...fresh.data, status, reviewed_at: Date.now(), reviewer_note: note || null };
+    await api("PUT", `/v1/submissions/${encodeURIComponent(d.id)}`, doc);
+    if (status === "approved") {
+      await api("PUT", `/v1/approved_hikes/${encodeURIComponent(d.id)}`,
+        { v: 1, name: doc.name, approved_at: doc.reviewed_at, submitted_at: doc.submitted_at, review: doc.review || null, hike: doc.hike });
+    } else {
+      await api("DELETE", `/v1/approved_hikes/${encodeURIComponent(d.id)}`).catch(() => {});
+    }
+    d.data = doc;
+    showMsg(`“${doc.name}” ${status}.`);
+    render();
+  } catch (e) {
+    showMsg("Couldn't save: " + e.message, true);
+    el.querySelectorAll("button").forEach(b => b.disabled = false);
+  }
+}
+
+$("#login").onsubmit = e => {
+  e.preventDefault();
+  base = $("#url").value.trim().replace(/\/+$/, ""); key = $("#key").value.trim();
+  store.set("sb.url", base); store.set("sb.key", key);
+  load();
+};
+$("#filter").onchange = render;
+$("#reload").onclick = load;
+$("#url").value = store.get("sb.url") || "";
+$("#key").value = store.get("sb.key") || "";
+if ($("#url").value && $("#key").value) $("#login").requestSubmit();
+</script>
+</body>
+</html>

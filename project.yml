@@ -20,6 +20,9 @@ targets:
   Switchback:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Config/Switchback.xcconfig
+      Release: Config/Switchback.xcconfig
     sources:
       - path: Switchback
       - path: Shared
@@ -36,6 +39,9 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: Switchback keeps recording your hike while the phone is locked.
         NSPhotoLibraryUsageDescription: Switchback shows the photos you took during a hike on its map. They stay on your phone.
         NSSupportsLiveActivities: true
+        # optional built-in defaults for server sync, from Config/Secrets.xcconfig (empty unless you add one)
+        SwitchbackServerURL: $(SWITCHBACK_SERVER_URL)
+        SwitchbackAPIKey: $(SWITCHBACK_API_KEY)
         UIBackgroundModes:
           - location
           - audio

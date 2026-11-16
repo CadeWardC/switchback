@@ -1,0 +1,8 @@
+// Build settings for the Switchback app target.
+// The server address and API key default to empty: the app then works fully offline, and you can sign in under
+// Settings › Account & sync (the key is stored in the Keychain). For local builds you can bake defaults in by
+// copying Secrets.example.xcconfig to Secrets.xcconfig (gitignored, never committed) and filling it in.
+// Never set these in CI: the IPA is published in public releases, and anything in it can be read.
+SWITCHBACK_SERVER_URL =
+SWITCHBACK_API_KEY =
+#include? "Secrets.xcconfig"

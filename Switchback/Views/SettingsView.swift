@@ -19,6 +19,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                ServerSyncSection()
                 Section("Units") {
                     Picker("Units", selection: $units) {
                         ForEach(Units.allCases) { Text($0.title).tag($0) }

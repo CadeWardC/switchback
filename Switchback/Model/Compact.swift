@@ -3,12 +3,19 @@ import Foundation
 /// Lines stored as encoded polylines (Google's format, 1e-5° ≈ 1 m): about 6 characters a point instead of ~40
 /// for a pair of JSON numbers.
 enum Polyline {
-    static func encode(_ coords: [Coord]) -> String {
+    static func encode(_ coords: [Coord]) -> String { encode(coords, scale: 1e5) }
+    static func decode(_ s: String) -> [Coord] { decode(s, scale: 1e5) }
+
+    /// Recorded tracks sent to the server are kept to 1e-6° (~0.1 m).
+    static func encodeTrack(_ coords: [Coord]) -> String { encode(coords, scale: 1e6) }
+    static func decodeTrack(_ s: String) -> [Coord] { decode(s, scale: 1e6) }
+
+    private static func encode(_ coords: [Coord], scale: Double) -> String {
         var out = [UInt8]()
         out.reserveCapacity(coords.count * 8)
         var pLat = 0, pLon = 0
         for c in coords {
-            let lat = Int((c.lat * 1e5).rounded()), lon = Int((c.lon * 1e5).rounded())
+            let lat = Int((c.lat * scale).rounded()), lon = Int((c.lon * scale).rounded())
             append(lat - pLat, to: &out)
             append(lon - pLon, to: &out)
             pLat = lat
@@ -45,7 +52,7 @@ enum Polyline {
         return out
     }
 
-    static func decode(_ s: String) -> [Coord] {
+    private static func decode(_ s: String, scale: Double) -> [Coord] {
         let bytes = Array(s.utf8)
         var i = 0
         var lat = 0, lon = 0
@@ -66,7 +73,7 @@ enum Polyline {
             guard let dLat = next(), let dLon = next() else { break }
             lat += dLat
             lon += dLon
-            out.append(Coord(lat: Double(lat) / 1e5, lon: Double(lon) / 1e5))
+            out.append(Coord(lat: Double(lat) / scale, lon: Double(lon) / scale))
         }
         return out
     }

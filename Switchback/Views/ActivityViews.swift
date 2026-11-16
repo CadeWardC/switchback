@@ -25,11 +25,13 @@ struct ActivityListView: View {
             .overlay {
                 if library.activities.isEmpty {
                     ContentUnavailableView("No hikes yet", systemImage: "figure.hiking",
-                                           description: Text("Hikes you record in the Record tab show up here."))
+                                           description: Text("Hikes you record from the Hike tab show up here."))
                 }
             }
             .navigationTitle("Activity")
             .navigationDestination(for: Activity.self) { ActivityDetailView(activity: $0) }
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { SyncStatusButton() } }
+            .refreshable { await SyncEngine.shared.sync() }
         }
     }
 }
@@ -143,6 +145,22 @@ struct ActivityDetailView: View {
                     StatTile(title: "Total time", value: Fmt.clock(a.elapsedTime))
                     StatTile(title: "Finished", value: a.end.formatted(date: .omitted, time: .shortened))
                 }
+
+                if let pts = a.points, !pts.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Points you marked").font(.headline)
+                        ForEach(pts) { p in
+                            Label {
+                                VStack(alignment: .leading) {
+                                    Text(p.kind.title)
+                                    if !p.note.isEmpty { Text(p.note).font(.caption).foregroundStyle(.secondary) }
+                                }
+                            } icon: { Image(systemName: p.kind.symbol).foregroundStyle(Color.trailGreen) }
+                        }
+                    }
+                }
+
+                SubmissionStatusRow(activity: a)
 
                 photosSection
 

@@ -12,6 +12,8 @@ final class Recorder: NSObject, ObservableObject {
 
     @Published private(set) var state: State = .idle
     @Published private(set) var segments: [[TrackPoint]] = []
+    /// Points marked along the way (water, viewpoints, hazards...).
+    @Published private(set) var points: [HikePoint] = []
     @Published private(set) var distance: Double = 0
     @Published private(set) var movingTime: TimeInterval = 0
     @Published private(set) var gain: Double = 0
@@ -146,21 +148,40 @@ final class Recorder: NSObject, ObservableObject {
         let trail = following
         let started = startDate
         let stats = (distance: distance, moving: movingTime, gain: gain)
+        let marked = points
         reset()
         guard let started, segs.reduce(0, { $0 + $1.count }) >= 2 else { return nil }
         let activity = Activity(name: name, start: started, end: end, segments: segs, distance: stats.distance,
                                 movingTime: stats.moving, elapsedTime: elapsed, gain: stats.gain,
-                                trailId: trail?.id, trailName: trail?.name)
+                                trailId: trail?.id, trailName: trail?.name, points: marked.isEmpty ? nil : marked)
         Library.shared.add(activity)
         return activity
     }
 
     func discard() { reset() }
 
+    /// Marks a point where you are now. Returns false if there's no GPS fix yet.
+    @discardableResult
+    func mark(_ kind: HikePoint.Kind, note: String) -> Bool {
+        guard state != .idle, let loc = lastLocation ?? segments.last?.last.map({
+            CLLocation(latitude: $0.lat, longitude: $0.lon)
+        }) else { return false }
+        points.append(HikePoint(kind: kind, note: note.trimmingCharacters(in: .whitespacesAndNewlines),
+                                lat: loc.coordinate.latitude, lon: loc.coordinate.longitude, time: Date()))
+        saveDraft()
+        return true
+    }
+
+    func removePoint(_ id: UUID) {
+        points.removeAll { $0.id == id }
+        saveDraft()
+    }
+
     private func reset() {
         endUpdates()
         state = .idle
         segments = []
+        points = []
         distance = 0
         movingTime = 0
         gain = 0
@@ -331,13 +352,15 @@ final class Recorder: NSObject, ObservableObject {
         var pausedTotal: TimeInterval
         var pausedAt: Date?
         var following: Trail?
+        var points: [HikePoint]?
     }
 
     private func saveDraft() {
         unsavedPoints = 0
         guard state != .idle, let startDate else { return }
         Files.save(Draft(segments: segments, distance: distance, movingTime: movingTime, gain: gain,
-                         startDate: startDate, pausedTotal: pausedTotal, pausedAt: pausedAt, following: following),
+                         startDate: startDate, pausedTotal: pausedTotal, pausedAt: pausedAt, following: following,
+                         points: points),
                    to: draftURL)
     }
 
@@ -352,6 +375,7 @@ final class Recorder: NSObject, ObservableObject {
         // the app was closed: carry on as paused from the last point
         pausedAt = d.pausedAt ?? d.segments.last?.last?.time ?? Date()
         following = d.following
+        points = d.points ?? []
         followCumulative = d.following.map { Geo.cumulative($0.path) } ?? []
         state = .paused
     }

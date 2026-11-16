@@ -10,6 +10,7 @@ struct SwitchbackApp: App {
     @StateObject private var explore = ExploreModel()
     @StateObject private var highlights = Highlights.shared
     @StateObject private var trailPhotos = TrailPhotos.shared
+    @StateObject private var sync = SyncEngine.shared
     @AppStorage(Units.storageKey) private var units: Units = .systemDefault
     @Environment(\.scenePhase) private var scenePhase
 
@@ -25,15 +26,19 @@ struct SwitchbackApp: App {
                 .environmentObject(explore)
                 .environmentObject(highlights)
                 .environmentObject(trailPhotos)
+                .environmentObject(sync)
                 .onOpenURL { url in app.importGPX(from: url) }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { recorder.flush() }
+            // bring in other devices' changes on every return to the app (and send anything queued offline)
+            if phase == .active { sync.syncSoon(after: 0) }
         }
     }
 }
 
-enum AppTab: Hashable { case explore, record, saved, activity }
+/// Hike is the map and the recorder in one: explore trails, then start recording from the same tab.
+enum AppTab: Hashable { case hike, saved, activity }
 
 struct AppMessage: Identifiable {
     let id = UUID()
@@ -45,7 +50,9 @@ struct AppMessage: Identifiable {
 final class AppState: ObservableObject {
     static let shared = AppState()
 
-    @Published var tab: AppTab = .explore
+    @Published var tab: AppTab = .hike
+    /// The Hike tab shows the recorder instead of the trail map (always while a hike is being recorded).
+    @Published var showRecorder = false
     @Published var message: AppMessage?
 
     func importGPX(from url: URL) {
@@ -71,23 +78,51 @@ struct RootView: View {
     @EnvironmentObject private var recorder: Recorder
 
     var body: some View {
-        TabView(selection: $app.tab) {
-            ExploreView()
-                .tabItem { Label("Explore", systemImage: "map") }
-                .tag(AppTab.explore)
-            RecordView()
-                .tabItem { Label("Record", systemImage: recorder.state == .idle ? "record.circle" : "record.circle.fill") }
-                .tag(AppTab.record)
-            SavedView()
-                .tabItem { Label("Saved", systemImage: "bookmark") }
-                .tag(AppTab.saved)
-            ActivityListView()
-                .tabItem { Label("Activity", systemImage: "figure.hiking") }
-                .tag(AppTab.activity)
+        Group {
+            if #available(iOS 18.0, *) {
+                TabView(selection: $app.tab) {
+                    Tab("Hike", systemImage: "figure.hiking", value: AppTab.hike) { HikeView() }
+                    Tab("Saved", systemImage: "bookmark.fill", value: AppTab.saved) { SavedView() }
+                    Tab("Activity", systemImage: "chart.bar.xaxis", value: AppTab.activity) { ActivityListView() }
+                }
+            } else {
+                TabView(selection: $app.tab) {
+                    HikeView()
+                        .tabItem { tabLabel("Hike", "figure.hiking") }
+                        .tag(AppTab.hike)
+                    SavedView()
+                        .tabItem { tabLabel("Saved", "bookmark.fill") }
+                        .tag(AppTab.saved)
+                    ActivityListView()
+                        .tabItem { tabLabel("Activity", "chart.bar.xaxis") }
+                        .tag(AppTab.activity)
+                }
+            }
         }
         .tint(.trailGreen)
         .alert(item: $app.message) { m in
             Alert(title: Text(m.title), message: Text(m.text))
+        }
+    }
+
+    /// The image and the text as two separate views, the form tab items always draw both of.
+    @ViewBuilder
+    private func tabLabel(_ title: String, _ symbol: String) -> some View {
+        Image(systemName: symbol)
+        Text(title)
+    }
+}
+
+/// The Hike tab: the trail map with a button to start recording, or the recorder while a hike is going.
+struct HikeView: View {
+    @EnvironmentObject private var app: AppState
+    @EnvironmentObject private var recorder: Recorder
+
+    var body: some View {
+        if app.showRecorder || recorder.state != .idle {
+            RecordView()
+        } else {
+            ExploreView()
         }
     }
 }

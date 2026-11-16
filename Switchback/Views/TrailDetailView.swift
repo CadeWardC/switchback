@@ -235,7 +235,8 @@ struct TrailDetailView: View {
         HStack(spacing: 10) {
             Button {
                 recorder.follow(t)
-                app.tab = .record
+                app.showRecorder = true
+                app.tab = .hike
             } label: {
                 Label(recorder.following?.id == t.id ? "Following" : "Navigate", systemImage: "location.north.line.fill")
                     .frame(maxWidth: .infinity)

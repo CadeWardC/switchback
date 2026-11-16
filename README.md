@@ -1,7 +1,12 @@
 # Switchback: find trails, follow them, record your hikes
 
-An iPhone app for hiking. Like the big trail apps, but built on open data with no account, no
+An iPhone app for hiking. Like the big trail apps, but built on open data with no account needed, no
 subscription and no API keys.
+
+- **Optional sync and submissions:** sign in to your own Switchback server (Settings › Account & sync) to back up
+  saved trails and hikes and sync them between devices; without it everything stays on the phone. Recorded hikes,
+  with points marked along the way (water, viewpoints, hazards...), can be submitted for review and approved on
+  `web/review.html`. See [docs/SERVER.md](docs/SERVER.md).
 
 - **Explore:** trails load by themselves as you move the map, drawn in their difficulty colour with a white outline and
   a hiker pin at each trailhead (pins group into numbered bubbles when they crowd). Base maps: Apple Maps, satellite,
@@ -77,6 +82,7 @@ subscription and no API keys.
   shows time, distance, climb and what's left on the lock screen and in the Dynamic Island.
 - **One-tap offline:** "Download for offline" on a trail page saves it and downloads the map around it (about a km of
   margin), as detailed as the size limit allows.
+- **Hike tab:** the trail map and the recorder share one tab; tap Record on the map to start a hike.
 - **Record & navigate:** GPS recording that keeps going with the phone locked (distance, time, moving time, pace,
   elevation gain). Follow a trail and it shows how far is left, and buzzes (plus a notification when the phone is
   locked) if you go more than 60 m off it. A hike in progress survives the app being closed.

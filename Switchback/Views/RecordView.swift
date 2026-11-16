@@ -7,6 +7,7 @@ struct RecordView: View {
     @EnvironmentObject private var library: Library
     @EnvironmentObject private var profiles: Profiles
     @EnvironmentObject private var highlights: Highlights
+    @EnvironmentObject private var app: AppState
     @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
     @AppStorage(BaseMap.showRoutesKey) private var showRoutes = false
     @State private var askName = false
@@ -16,6 +17,9 @@ struct RecordView: View {
     @State private var showPicker = false
     @State private var confirmDiscard = false
     @State private var tooShort = false
+    @State private var marking = false
+    @State private var offerSubmit: Activity?
+    @State private var finishedId: UUID?
 
     var body: some View {
         NavigationStack {
@@ -57,6 +61,17 @@ struct RecordView: View {
                 _ = await profile
             }
             .toolbar {
+                if recorder.state == .idle {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            app.showRecorder = false
+                        } label: {
+                            Label("Trails", systemImage: "chevron.left")
+                                .labelStyle(.titleAndIcon)
+                        }
+                        .accessibilityLabel("Back to the trail map")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { recorder.voiceOn.toggle() } label: {
                         Image(systemName: recorder.voiceOn ? "speaker.wave.2.fill" : "speaker.slash")
@@ -68,14 +83,17 @@ struct RecordView: View {
                 TextField("Name", text: $activityName)
                 Button("Save") {
                     if let a = recorder.finish(name: activityName.isEmpty ? defaultName : activityName) {
-                        finished = a
+                        // your own hike also goes to Saved, as a trail you can follow again
+                        library.save(a.asTrail())
+                        finishedId = a.id
+                        offerSubmit = a
                     } else {
                         tooShort = true
                     }
                 }
                 Button("Keep going", role: .cancel) {}
             } message: {
-                Text("It goes to Activity, where you can share it as GPX.")
+                Text("It goes to Activity and to Saved as your own trail. Next you can choose to submit it for review.")
             }
             .alert("Nothing to save", isPresented: $tooShort) {
                 Button("OK", role: .cancel) {}
@@ -87,6 +105,11 @@ struct RecordView: View {
             }
             .navigationDestination(item: $finished) { ActivityDetailView(activity: $0) }
             .sheet(isPresented: $showPicker) { FollowPicker() }
+            .sheet(isPresented: $marking) { MarkPointView() }
+            .sheet(item: $offerSubmit, onDismiss: {
+                // then show the hike itself
+                finished = library.activities.first { $0.id == finishedId } ?? finished
+            }) { SubmitHikeView(activity: $0) }
         }
     }
 
@@ -215,33 +238,41 @@ struct RecordView: View {
                 }
             }
         case .recording, .paused:
-            HStack(spacing: 10) {
-                if recorder.state == .recording {
-                    Button { recorder.pause() } label: {
-                        Label("Pause", systemImage: "pause.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                } else {
-                    Button { recorder.resume() } label: {
-                        Label("Resume", systemImage: "play.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                Button {
-                    recorder.pause()
-                    activityName = defaultName
-                    askName = true
-                } label: {
-                    Label("Finish", systemImage: "flag.checkered").frame(maxWidth: .infinity)
+            VStack(spacing: 10) {
+                Button { marking = true } label: {
+                    Label(recorder.points.isEmpty ? "Mark point" : "Mark point (\(recorder.points.count) marked)",
+                          systemImage: "mappin.and.ellipse")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .tint(.trailGreen)
-
-                if recorder.state == .paused {
-                    Button(role: .destructive) { confirmDiscard = true } label: {
-                        Image(systemName: "trash")
+                HStack(spacing: 10) {
+                    if recorder.state == .recording {
+                        Button { recorder.pause() } label: {
+                            Label("Pause", systemImage: "pause.fill").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button { recorder.resume() } label: {
+                            Label("Resume", systemImage: "play.fill").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button {
+                        recorder.pause()
+                        activityName = defaultName
+                        askName = true
+                    } label: {
+                        Label("Finish", systemImage: "flag.checkered").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(.trailGreen)
+
+                    if recorder.state == .paused {
+                        Button(role: .destructive) { confirmDiscard = true } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
             .controlSize(.large)

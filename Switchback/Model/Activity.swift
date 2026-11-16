@@ -9,6 +9,48 @@ struct TrackPoint: Codable, Hashable {
     var coord: Coord { Coord(lat: lat, lon: lon) }
 }
 
+/// A spot a hiker marked while recording (water, a viewpoint, a hazard...). Only submitted with the hike it was
+/// marked on, so a point always comes from someone who walked there.
+struct HikePoint: Codable, Identifiable, Hashable {
+    enum Kind: String, Codable, CaseIterable, Identifiable {
+        case water, viewpoint, hazard, campsite, junction, toilet, parking, other
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .water: return "Water"
+            case .viewpoint: return "Viewpoint"
+            case .hazard: return "Hazard"
+            case .campsite: return "Campsite"
+            case .junction: return "Junction"
+            case .toilet: return "Toilet"
+            case .parking: return "Parking"
+            case .other: return "Other"
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .water: return "drop.fill"
+            case .viewpoint: return "binoculars.fill"
+            case .hazard: return "exclamationmark.triangle.fill"
+            case .campsite: return "tent.fill"
+            case .junction: return "arrow.triangle.branch"
+            case .toilet: return "toilet.fill"
+            case .parking: return "parkingsign"
+            case .other: return "mappin"
+            }
+        }
+    }
+
+    var id = UUID()
+    var kind: Kind
+    var note: String
+    var lat: Double
+    var lon: Double
+    var time: Date
+
+    var coord: Coord { Coord(lat: lat, lon: lon) }
+}
+
 /// A recorded hike.
 struct Activity: Codable, Identifiable, Hashable {
     var id = UUID()
@@ -22,9 +64,14 @@ struct Activity: Codable, Identifiable, Hashable {
     var gain: Double
     var trailId: String?
     var trailName: String?
+    /// Points marked along the way.
+    var points: [HikePoint]? = nil
+    /// Set once the hike has been sent to the server for review.
+    var submissionId: String? = nil
 
     static func == (a: Activity, b: Activity) -> Bool {
-        a.id == b.id && a.name == b.name && a.distance == b.distance
+        a.id == b.id && a.name == b.name && a.distance == b.distance && a.points == b.points
+            && a.submissionId == b.submissionId
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
