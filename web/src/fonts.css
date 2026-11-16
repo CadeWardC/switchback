@@ -1,0 +1,25 @@
+/* Waymark's two typefaces, carried with the app (no CDN, so they work offline): Figtree for text and
+   Bricolage Grotesque for names and numbers. Both are open fonts (SIL Open Font License, see src/fonts/).
+
+   The files are cut down to what the app uses, 47 KB together: Latin and Western European letters
+   (U+0020-007E, U+00A0-00FF and a little punctuation), Figtree at weights 400 to 800 and Bricolage Grotesque
+   at 600 to 800. A letter outside that (rare in trail names here) is drawn in the system font.
+   Made from the fontsource variable files with fonttools:
+     fonttools varLib.instancer figtree-latin-wght-normal.woff2 wght=400:800 -o fig.ttf
+     pyftsubset fig.ttf --unicodes="U+0020-007E,U+00A0-00FF,U+2013,U+2014,U+2018,U+2019,U+201C,U+201D,U+2022,U+2026,U+2190,U+2192,U+00B7,U+2212,U+2032,U+2033" \
+       --flavor=woff2 --layout-features=kern,liga,tnum,calt --output-file=figtree-latin.woff2
+   and the same for bricolage-grotesque-latin-wght-normal.woff2 with wght=600:800. */
+@font-face {
+  font-family: 'Figtree Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 800;
+  src: url('./fonts/figtree-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Bricolage Grotesque Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600 800;
+  src: url('./fonts/bricolage-grotesque-latin.woff2') format('woff2');
+}

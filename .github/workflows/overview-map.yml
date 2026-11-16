@@ -1,0 +1,55 @@
+name: Overview map (measure)
+
+# How big is a light overview map of the whole United States, to ship inside the app so a map always shows
+# offline? Builds it with Planetiler (OpenMapTiles layers, the schema the app's style draws) at a few low zooms
+# and reports the sizes. Nothing is published.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/overview-map.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Fetch Planetiler
+        run: curl -fsSLo planetiler.jar https://github.com/onthegomap/planetiler/releases/latest/download/planetiler.jar
+      - name: United States to zoom 8, without buildings, house numbers and shop pins
+        run: |
+          java -Xmx12g -jar planetiler.jar --download --area=us --output=us-z8.pmtiles --maxzoom=8 \
+            --exclude-layers=building,housenumber,poi,aerodrome_label --force
+      - name: United States to zoom 7
+        run: |
+          java -Xmx12g -jar planetiler.jar --area=us --output=us-z7.pmtiles --maxzoom=7 \
+            --exclude-layers=building,housenumber,poi,aerodrome_label --force
+      - name: United States to zoom 9
+        run: |
+          java -Xmx12g -jar planetiler.jar --area=us --output=us-z9.pmtiles --maxzoom=9 \
+            --exclude-layers=building,housenumber,poi,aerodrome_label --force
+      - name: Sizes
+        if: always()
+        run: |
+          echo "### United States overview map, one file" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -l --block-size=K *.pmtiles | awk '{print $5, $9}' | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: us-overview
+          path: "*.pmtiles"
+          retention-days: 7

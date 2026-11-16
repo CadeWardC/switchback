@@ -151,6 +151,19 @@ extension ElevationProfile {
                     high: max(maxElevation, other.maxElevation))
     }
 
+    /// This profile without the stretch between two distances (an out-and-back that isn't walked).
+    func removing(from a: Double, to b: Double) -> ElevationProfile {
+        let a = max(0, a), b = min(total, b)
+        guard b > a else { return self }
+        let cut = points(from: a, to: b)
+        let gone = ElevationProfile(distances: cut.map { $0.0 }, elevations: cut.map { $0.1 })
+        var p = Self.joined([points(from: 0, to: a), points(from: b, to: total)], gain: max(0, gain - gone.gain),
+                            loss: max(0, loss - gone.loss), low: minElevation, high: maxElevation)
+        p.minElevation = p.elevations.min() ?? minElevation
+        p.maxElevation = p.elevations.max() ?? maxElevation
+        return p
+    }
+
     /// This profile, then another.
     func then(_ other: ElevationProfile) -> ElevationProfile {
         Self.joined([all, other.all], gain: gain + other.gain, loss: loss + other.loss,
@@ -235,7 +248,8 @@ struct Trail: Codable, Identifiable, Hashable {
                   let p = r["p"] as? [NSNumber], p.count == 2 else { return nil }
             let point = Coord(lat: p[0].doubleValue, lon: p[1].doubleValue)
             return TrailAccess(name: name, distance: d, point: point, line: (r["l"] as? String).map(Polyline.decode) ?? [],
-                               profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
+                               profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) },
+                               via: (r["v"] as? [String]) ?? [])
         }
     }
 
@@ -248,6 +262,32 @@ struct Trail: Codable, Identifiable, Hashable {
             return TrailExtension(id: id, name: name, length: m, line: Polyline.decode(line),
                                   profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
         }
+    }
+
+    /// Shorter loops of this trail, by a cut-across that isn't a trail of its own ("Short loop").
+    var shortLoops: [TrailExtension] {
+        guard let rows = Self.json(tags["switchback:short"]) else { return [] }
+        return rows.compactMap { r in
+            guard let name = r["n"] as? String, let m = (r["m"] as? NSNumber)?.doubleValue,
+                  let line = r["l"] as? String else { return nil }
+            return TrailExtension(id: "short-\(Int(m))", name: name, length: m, line: Polyline.decode(line),
+                                  profile: (r["e"] as? [String: Any]).flatMap { ElevationProfile(packed: $0) })
+        }
+    }
+
+    /// This trail walked as one of its short loops: the same trail and trailheads, a shorter line.
+    func shortened(to short: TrailExtension) -> Trail {
+        guard short.line.count > 1 else { return self }
+        var t = self
+        t.path = short.line
+        t.length = short.length
+        t.profile = short.profile
+        t.segments.append(short.line)      // so the cut-across is drawn
+        // these were worked out for the whole loop
+        for tag in ["switchback:short", "switchback:ext", "switchback:difficulty", "switchback:minutes"] {
+            t.tags[tag] = nil
+        }
+        return t
     }
 
     private static func json(_ text: String?) -> [[String: Any]]? {
@@ -282,39 +322,106 @@ struct Trail: Codable, Identifiable, Hashable {
             t.segments.append(e.line)
             t.length += e.length
         }
-        if let a = access, a.line.count > 1, let join = a.line.last, route.count > 1 {
+        if let a = access, route.count > 1 {
+            // a trailhead on the trail has no walk in: the hike just starts there
+            let walk = a.line.count > 1 ? a.line : []
+            let join = walk.last ?? a.point
             if isLoop {
                 let i = nearest(join)
-                if let c = chart, let p = a.profile { chart = p.then(c.rotated(to: along(i))).then(p.backwards) } else { chart = nil }
-                if i > 0 { route = Array(route[i...]) + Array(route[1...i]) }
-                route = a.line + route + a.line.reversed()
-                t.length += 2 * a.distance
-            } else {
-                let flip = Geo.distance(route[route.count - 1], join) < Geo.distance(route[0], join)
-                if let c = chart, let p = a.profile { chart = p.then(flip ? c.backwards : c) } else { chart = nil }
-                if flip { route.reverse() }
-                route = a.line + route
-                t.length += a.distance
+                if i > 0 {
+                    chart = chart?.rotated(to: along(i))
+                    route = Array(route[i...]) + Array(route[1...i])
+                }
+            } else if Geo.distance(route[route.count - 1], join) < Geo.distance(route[0], join) {
+                chart = chart?.backwards
+                route.reverse()
             }
-            t.segments.append(a.line)
+            // The trail's own walk out to another trailhead and back isn't part of a hike that starts here.
+            var trimmed = false
+            for other in accessPoints where other.id != a.id && other.distance <= Self.ownAccess {
+                let k = nearest(other.point)
+                guard Geo.distance(route[k], other.point) <= Self.ownAccess else { continue }
+                let found = (max(1, k - 2)...max(1, min(route.count - 2, k + 2))).compactMap { Self.stem(of: route, turningAt: $0) }
+                guard let (from, to) = found.max(by: { $0.1 - $0.0 < $1.1 - $1.0 }) else { continue }
+                let gone = Geo.length(Array(route[from...to]))
+                guard gone >= 80, gone < Geo.length(route) / 2 else { continue }
+                chart = chart?.removing(from: along(from), to: along(to))
+                route.removeSubrange((from + 1)...to)
+                t.length -= gone
+                trimmed = true
+            }
+            if trimmed { t.segments = [route] }
+            if !walk.isEmpty {
+                if let c = chart, let p = a.profile {
+                    chart = isLoop ? p.then(c).then(p.backwards) : p.then(c)
+                } else {
+                    chart = nil
+                }
+                route = walk + route
+                if isLoop { route += walk.reversed() }
+                t.length += (isLoop ? 2 : 1) * a.distance
+                t.segments.append(walk)
+            }
         }
         t.path = route
         t.profile = chart ?? profile
         t.tags["switchback:chart"] = chart == nil && t.length != length ? "trail" : nil
+        if t.length != length {
+            // the file's difficulty and time are for the trail on its own, not with the walk in or a side loop
+            t.tags["switchback:difficulty"] = nil
+            t.tags["switchback:minutes"] = nil
+        }
         return t
     }
 
-    /// The trailhead a hike starts from unless another is picked: the one nearest you, else nearest the trail.
+    /// A trailhead this close to the trail (metres of walking) is one of the trail's own.
+    static let ownAccess = 150.0
+
+    /// The out-and-back stretch of a route that turns round at point `k`: where it leaves the rest of the route and
+    /// where it is back there, if the two ways really run along each other.
+    static func stem(of route: [Coord], turningAt k: Int) -> (Int, Int)? {
+        let near = 15.0
+        var i = k, j = k, out = 0.0, back = 0.0
+        var best: (Int, Int)?
+        while i > 0, j < route.count - 1 {
+            let nextOut = out + Geo.distance(route[i], route[i - 1])
+            let nextBack = back + Geo.distance(route[j], route[j + 1])
+            if nextOut <= nextBack {
+                guard Geo.project(route[i - 1], route[j], route[j + 1]).distance <= near else { break }
+                i -= 1
+                out = nextOut
+            } else {
+                guard Geo.project(route[j + 1], route[i], route[i - 1]).distance <= near else { break }
+                j += 1
+                back = nextBack
+            }
+            if Geo.distance(route[i], route[j]) <= near { best = (i, j) }
+        }
+        return best
+    }
+
+    /// The trailhead a hike starts from unless another is picked: one of the trail's own (the one named after it,
+    /// else the one nearest you), and only when it has none, the shortest walk in.
     func defaultAccess(near here: Coord?) -> TrailAccess? {
         let points = accessPoints
-        guard let here else { return points.first }
-        return points.min { Geo.distance(here, $0.point) < Geo.distance(here, $1.point) }
+        let own = points.filter { $0.distance <= Self.ownAccess }
+        guard !own.isEmpty else { return points.first }
+        func bare(_ s: String) -> String {
+            var s = s.lowercased()
+            for word in ["trailhead", "trail head", "trail"] { s = s.replacingOccurrences(of: word, with: "") }
+            return s.trimmingCharacters(in: .whitespaces)
+        }
+        if let named = own.first(where: { bare($0.name) == bare(name) }) { return named }
+        guard let here else { return own.first }
+        return own.min { Geo.distance(here, $0.point) < Geo.distance(here, $1.point) }
     }
 
     static let informalKey = "informalTrails"
     static var showsInformal: Bool { UserDefaults.standard.bool(forKey: informalKey) }
 
     var difficulty: Difficulty {
+        // trail files say (scripts/enrich_trail_pack.py, rate); anything else is worked out here by the same rule
+        if let said = tags["switchback:difficulty"].flatMap(Difficulty.init(rawValue:)) { return said }
         let km = length / 1000
         let effort = km + (profile?.gain ?? 0) / 100
         var level: Difficulty = effort < 8 ? .easy : effort < 16 ? .moderate : effort < 26 ? .hard : .veryHard
@@ -331,7 +438,8 @@ struct Trail: Codable, Identifiable, Hashable {
 
     /// Naismith's rule at an easy pace: 4.5 km/h plus an hour for every 600 m of climb.
     var estimatedDuration: TimeInterval {
-        (length / 1000 / 4.5 + (profile?.gain ?? 0) / 600) * 3600
+        if let minutes = tags["switchback:minutes"].flatMap(Double.init) { return minutes * 60 }
+        return (length / 1000 / 4.5 + (profile?.gain ?? 0) / 600) * 3600
     }
 
     var osmURL: URL? {
@@ -416,8 +524,22 @@ struct TrailAccess: Hashable, Identifiable {
     let line: [Coord]
     /// Elevation along the way in.
     var profile: ElevationProfile? = nil
+    /// The named trails the way in follows, in the order walked (at most two; trail files say which).
+    var via: [String] = []
 
     var id: String { "\(name)|\(point.lat)|\(point.lon)" }
+
+    /// "via Ridge Trail and Creek Trail", when the way in follows named trails.
+    var viaText: String? { via.isEmpty ? nil : "via " + via.joined(separator: " and ") }
+
+    /// A trailhead with a name of its own, not a car park named after the trail beside it ("Parking on …").
+    var isNamed: Bool { name != "Parking" && !name.hasPrefix("Parking on ") }
+
+    /// The line under a hike's title: "From Camp Five Pond Trailhead via Ridge Trail" (either half alone, or nothing).
+    var startLine: String? {
+        let line = [isNamed ? "from \(name)" : nil, viaText].compactMap { $0 }.joined(separator: " ")
+        return line.isEmpty ? nil : line.prefix(1).uppercased() + String(line.dropFirst())
+    }
 }
 
 /// A loop that hangs off another loop and can be added to it.

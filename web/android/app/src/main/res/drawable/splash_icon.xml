@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app icon as a vector (the same shapes as scripts/make-icon.py draws), for the launch screen: sharp at
+     every screen density and a fraction of the size of the full-screen pictures it replaces. The icon sits in
+     the middle two thirds, which is the part Android's launch screen shows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="288dp" android:height="288dp" android:viewportWidth="1536" android:viewportHeight="1536">
+    <group android:translateX="406" android:translateY="406" android:scaleX="0.707" android:scaleY="0.707">
+        <clip-path android:pathData="M230,0 H794 A230,230 0 0 1 1024,230 V794 A230,230 0 0 1 794,1024 H230 A230,230 0 0 1 0,794 V230 A230,230 0 0 1 230,0 Z" />
+        <path android:pathData="M0,0 H1024 V1024 H0 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="0" android:endY="1024"
+                    android:startColor="#FFFFC478" android:endColor="#FFE96E50" />
+            </aapt:attr>
+        </path>
+        <path android:fillColor="#FFFFF0C8" android:pathData="M710,150 A90,90 0 1 1 709.9,150 Z" />
+        <path android:fillColor="#FF78465A" android:pathData="M-40,820 L250,430 L430,640 L560,470 L1064,900 L1064,1064 L-40,1064 Z" />
+        <path android:fillColor="#FF1E4E38" android:pathData="M-60,1064 L470,250 L1084,1064 Z" />
+        <path android:fillColor="#FFF0F5F0" android:pathData="M470,250 L395,360 L440,340 L470,380 L510,345 L548,362 Z" />
+        <path android:pathData="M250,1008 L690,888 L330,768 L620,658 L420,568 L540,478 L480,408" android:strokeColor="#40000000" android:strokeWidth="46" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M250,1000 L690,880 L330,760 L620,650 L420,560 L540,470 L480,400" android:strokeColor="#FFFFD678" android:strokeWidth="34" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>

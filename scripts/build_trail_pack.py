@@ -129,7 +129,7 @@ def add_elevation(trails, cache_dir):
     # the walks in from trailheads and the side loops get their elevation too, so a whole hike can be charted
     extras = []      # (trail, tag, parsed entries)
     for t, _ in trails:
-        for tag in ("switchback:access", "switchback:ext"):
+        for tag in ("switchback:access", "switchback:ext", "switchback:short"):
             if tag in t.get("tags", {}):
                 extras.append((t, tag, json.loads(t["tags"][tag])))
     extra_paths = [decode(e["l"]) for _, _, entries in extras for e in entries if "l" in e]
@@ -659,6 +659,147 @@ def shortest(adj, src, dst, limit, banned=()):
                 heapq.heappush(heap, (nd, m))
     return None
 
+SHORT_LINK_M = 600       # a cut-across is at most this long...
+SHORT_LINK_SHARE = 0.25  # ...and at most this much of the part of the loop it skips
+SHORT_SKIP_M = 800       # it must skip at least this much, and a fifth of the loop
+SHORT_MIN_M = 800        # and leave a loop of at least this
+
+def short_loops(main, nodes, adj, where, starts=()):
+    """Shorter loops of a closed trail: where a walk of at most SHORT_LINK_M along other paths joins two points of
+    the loop, the side that holds the trail's start is a shorter loop of the same hike. The other side is offered
+    too, but only when it can be started from as well: one of `starts` (the places the trail's trailheads and car
+    parks meet it) lies on it, as on a figure of eight with the car park at its waist. A far lobe nobody can reach
+    without walking the rest of the trail is not a hike of its own.
+    Returns up to three, the shortest first, each named by where it lies on the whole trail ("East loop") when
+    there is more than one: [(metres, metres of cut-across, line, name)]."""
+    def reachable(line):
+        return any(seg_dist(p, a, b) <= 60 for p in starts for a, b in zip(line, line[1:]))
+
+    total = length(main)
+    if total < SHORT_MIN_M + SHORT_SKIP_M or len(main) < 4:
+        return []
+    cum = [0.0]
+    for a, b in zip(main, main[1:]):
+        cum.append(cum[-1] + dist(a, b))
+    at = {}
+    for k, n in enumerate(nodes):
+        if n is not None:
+            at.setdefault(n, k)
+    own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
+    limit = min(SHORT_LINK_M, 0.2 * total)
+
+    def middle_of(line):
+        return (sum(p[0] for p in line) / len(line), sum(p[1] for p in line) / len(line))
+
+    options = []
+    for u, a in at.items():
+        if not any((u, m) not in own for m, _ in adj.get(u, ())):
+            continue
+        # walks from u along other paths, stopping wherever they come back to the loop
+        best, prev, heap = {u: 0.0}, {}, [(0.0, u)]
+        while heap:
+            d, n = heapq.heappop(heap)
+            if d > best.get(n, math.inf):
+                continue
+            if n != u and n in at:
+                b = at[n]
+                inner = cum[b] - cum[a]          # the part of the loop between the two ends of the cut-across
+                outer = total - inner            # ...and the part that holds the trail's start
+                if b > a and d <= SHORT_LINK_SHARE * min(max(inner, 1), max(outer, 1)) * 4 and d <= SHORT_LINK_SHARE * max(inner, outer):
+                    path = [n]
+                    while path[-1] != u:
+                        path.append(prev[path[-1]])
+                    link = [where[x] for x in reversed(path)]            # u ... n
+                    # the side with the start: the loop without the inner part
+                    if inner >= max(SHORT_SKIP_M, 0.2 * total) and outer + d >= SHORT_MIN_M:
+                        options.append((outer + d, d, main[:a + 1] + link[1:-1] + main[b:]))
+                    # the other side: the inner part, closed by the cut-across
+                    if outer >= max(SHORT_SKIP_M, 0.2 * total) and inner + d >= SHORT_MIN_M:
+                        other = main[a:b + 1] + link[::-1][1:]
+                        if reachable(other):
+                            options.append((inner + d, d, other))
+                continue
+            for m, w in adj.get(n, ()):
+                if (n, m) in own:
+                    continue
+                nd = d + w
+                if nd <= limit and nd < best.get(m, math.inf):
+                    best[m], prev[m] = nd, n
+                    heapq.heappush(heap, (nd, m))
+    options.sort(key=lambda o: o[0])
+    picked = []
+    for o in options:
+        # one of each: cut-acrosses a few metres apart make the same loop (about the same size, in the same place)
+        mid = middle_of(o[2])
+        if all(abs(o[0] - q[0]) > 0.15 * q[0] or dist(mid, middle_of(q[2])) > max(100, 0.1 * q[0]) for q in picked):
+            picked.append(o)
+        if len(picked) == 3:
+            break
+    if len(picked) < 2:
+        return [(m, d, line, "Short loop") for m, d, line in picked]
+    # more than one: say which side of the whole trail each lies on
+    centre = middle_of(main)
+    def side(line):
+        mid = middle_of(line)
+        north = (mid[0] - centre[0]) * 111320
+        east = (mid[1] - centre[1]) * 111320 * math.cos(math.radians(centre[0]))
+        if abs(north) >= abs(east):
+            return "North" if north > 0 else "South"
+        return "East" if east > 0 else "West"
+    names = [side(line) + " loop" for _, _, line in picked]
+    if len(set(names)) < len(names):
+        names = [f"Short loop {i + 1}" for i in range(len(picked))]
+    return [(m, d, line, name) for (m, d, line), name in zip(picked, names)]
+
+TAIL_SHARE = 0.15       # a loop may have this much of its line beyond the point where it closes (a spur at an end)
+
+def close_past_tails(main, nodes, adj, where):
+    """A loop whose mapped line runs on past the place where it closes: a spur at one end, or the line starting
+    partway along another trail. Looks for a short walk along other trails (at most NEAR_LOOP_SHARE of the trail)
+    from near its end back to near its start, where "near" allows a tail of up to TAIL_SHARE at each end.
+    Returns (the closed line, the walk that closes it), or None."""
+    total = length(main)
+    if total < 1500 or len(main) < 6:
+        return None
+    cum = [0.0]
+    for a, b in zip(main, main[1:]):
+        cum.append(cum[-1] + dist(a, b))
+    head = {}                                   # node -> index, for the first TAIL_SHARE of the line
+    for i, n in enumerate(nodes):
+        if n is not None and cum[i] <= TAIL_SHARE * total:
+            head.setdefault(n, i)
+    tail = [(j, n) for j, n in enumerate(nodes) if n is not None and cum[j] >= (1 - TAIL_SHARE) * total and n not in head]
+    own = {(x, y) for x, y in zip(nodes, nodes[1:])} | {(y, x) for x, y in zip(nodes, nodes[1:])}
+    limit = NEAR_LOOP_SHARE * total
+    best = None
+    for j, n in tail:
+        seen, prev, heap = {n: 0.0}, {}, [(0.0, n)]
+        while heap:
+            d, m = heapq.heappop(heap)
+            if d > seen.get(m, math.inf):
+                continue
+            if m != n and m in head:
+                i = head[m]
+                cut = cum[i] + (total - cum[j])          # what is left outside the loop
+                score = d + cut
+                if best is None or score < best[0]:
+                    path = [m]
+                    while path[-1] != n:
+                        path.append(prev[path[-1]])
+                    best = (score, i, j, [where[x] for x in reversed(path)])
+                break                                    # the nearest way back from this point is enough
+            for x, w in adj.get(m, ()):
+                if (m, x) in own:
+                    continue
+                nd = d + w
+                if nd <= limit and nd < seen.get(x, math.inf):
+                    seen[x], prev[x] = nd, m
+                    heapq.heappush(heap, (nd, x))
+    if not best:
+        return None
+    _, i, j, back = best
+    return main[i:j + 1] + back[1:], back
+
 def hikes(trails, adj, where, node_names, heads):
     """Turns trails into hikes: closes named loops along the trails that complete them, finds the trailheads each
     trail can be started from (with the walk in), offers loops that hang off a loop as extensions, marks access trails
@@ -724,6 +865,23 @@ def hikes(trails, adj, where, node_names, heads):
         trails[k] = (t, start)
         opened += 1
     print(f"  loops: closed {opened} more that ended within {NEAR_LOOP_M} m of their start")
+
+    # 1c. loops whose line runs on past where they close (a spur at an end, a start partway along another trail):
+    # closed along the other trail between the two points, the leftover ends kept as lines of the trail
+    tailed = 0
+    for k, (t, _) in enumerate(trails):
+        main = t["_main"]
+        if is_unnamed(t) or closed(main) or SIDE_WORDS.search(t["name"]):
+            continue
+        found = close_past_tails(main, ids(main), adj, where)
+        if not found:
+            continue
+        loop, back = found
+        start = set_main(t, loop, [back])
+        t.setdefault("tags", {})["switchback:closed"] = "yes"
+        trails[k] = (t, start)
+        tailed += 1
+    print(f"  loops: closed {tailed} more past a spur at an end")
 
     # 2. side trails: access trails, spurs, connectors and cutoffs aren't hikes of their own
     sides = 0
@@ -843,6 +1001,24 @@ def hikes(trails, adj, where, node_names, heads):
             trails[i][0].setdefault("tags", {})["switchback:ext"] = json.dumps(ext[:3], ensure_ascii=False, separators=(",", ":"))
             extended += 1
     print(f"  extensions: {extended} loops have a side loop that can be added")
+
+    # 4b. short loops: a short link between two points of a loop (an unnamed cut-across, a connector) makes a
+    # shorter loop of the same trail. It is offered on the trail ("Short loop"), not listed as a trail of its own.
+    shortened = 0
+    for i in loops:
+        t = trails[i][0]
+        main = t["_main"]
+        # where this trail can be started from: each trailhead's or car park's walk in meets the trail here
+        starts = []
+        for e in json.loads(t.get("tags", {}).get("switchback:access", "[]")):
+            starts.append(decode(e["l"])[-1] if e.get("l") else tuple(e["p"]))
+        found = short_loops(main, ids(main), adj, where, starts)
+        if found:
+            t.setdefault("tags", {})["switchback:short"] = json.dumps(
+                [{"n": name, "m": round(m), "by": round(d), "l": encode(simplify(line))} for m, d, line, name in found],
+                ensure_ascii=False, separators=(",", ":"))
+            shortened += 1
+    print(f"  short loops: {shortened} loops have a cut-across that makes a shorter loop")
 
     # 5. trail systems: "Cedar Creek Trail - Moon Loop", "- Pine Ridge", … and the trail they're named after
     groups = defaultdict(set)
