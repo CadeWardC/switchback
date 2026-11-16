@@ -22,6 +22,7 @@
   button { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:8px 14px; cursor:pointer; }
   button.primary { background:var(--green); border-color:var(--green); color:#fff; }
   button.danger { color:var(--red); }
+  button[aria-pressed=true] { border-color:var(--ink); font-weight:600; }
   button:disabled { opacity:.5; cursor:default; }
   .msg { padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); margin-bottom:14px; }
   .msg.err { border-color:var(--red); color:var(--red); }
@@ -30,44 +31,47 @@
   .head h2 { font-size:18px; margin:0; }
   .meta { color:var(--muted); font-size:13px; }
   .pill { font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; border:1px solid currentColor; }
-  .pending { color:var(--amber); } .approved { color:var(--green); } .rejected { color:var(--red); }
+  .pending { color:var(--amber); } .approved, .ready { color:var(--green); } .rejected, .hidden { color:var(--red); }
   .map { height:280px; border-radius:10px; margin:12px 0; border:1px solid var(--line); }
-  ul.points { margin:6px 0 10px; padding-left:20px; }
-  .review { margin:8px 0; padding:8px 10px; border-left:3px solid var(--line); }
+  .note { white-space:pre-wrap; margin:8px 0; padding:8px 10px; border-left:3px solid var(--line); }
   .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .actions input { flex:1 1 240px; }
   .empty { color:var(--muted); text-align:center; padding:40px 0; }
+  .photos { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
+  .photo img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:var(--line); display:block; }
+  .photo .actions { margin-top:6px; }
 </style>
 </head>
 <body>
 <main>
   <h1>Switchback review</h1>
-  <p class="sub">Hikes people submitted from the app. Approve one to add it (with its points and review) to the public trail data, or reject it.</p>
+  <p class="sub">Hikes people send in as new trails, and their photos. Approve a trail to add it for everyone, or reject it with a reply they'll see in the app. Hide a photo to take it down.</p>
 
   <form id="login">
     <input id="url" type="url" placeholder="https://your-server.example" required>
-    <input id="key" type="password" placeholder="Owner API key" autocomplete="current-password" required>
+    <input id="key" type="password" placeholder="Admin token (ADMIN_TOKEN on the server)" autocomplete="current-password" required>
     <button class="primary" type="submit">Load</button>
   </form>
   <div id="msg"></div>
   <div class="bar" id="bar" hidden>
-    <label>Show <select id="filter">
-      <option value="pending">Waiting for review</option>
-      <option value="approved">Approved</option>
-      <option value="rejected">Rejected</option>
-      <option value="all">All</option>
-    </select></label>
+    <button type="button" data-view="submissions" aria-pressed="true">Submissions</button>
+    <button type="button" data-view="photos" aria-pressed="false">Photos</button>
+    <label>Show <select id="filter"></select></label>
     <button type="button" id="reload">Refresh</button>
     <span class="meta" id="count"></span>
   </div>
   <div id="list"></div>
 </main>
 <script>
-// The key is kept only for this browser tab (sessionStorage), never in the page or the repository.
+// The admin token is kept only for this browser tab (sessionStorage), never in the page or the repository.
 const $ = s => document.querySelector(s);
 const store = { get(k) { try { return sessionStorage.getItem(k) } catch { return null } },
                 set(k, v) { try { sessionStorage.setItem(k, v) } catch {} } };
-let base = "", key = "", docs = [];
+let base = "", key = "", view = "submissions", rows = [];
+const FILTERS = {
+  submissions: [["pending", "Waiting for review"], ["approved", "Approved"], ["rejected", "Rejected"], ["all", "All"]],
+  photos: [["ready", "Shown"], ["hidden", "Hidden"], ["all", "All"]],
+};
 
 function showMsg(text, err) { $("#msg").innerHTML = text ? `<div class="msg ${err ? "err" : ""}"></div>` : ""; if (text) $("#msg .msg").textContent = text; }
 
@@ -76,30 +80,38 @@ async function api(method, path, body) {
                                        body: body === undefined ? undefined : JSON.stringify(body) });
   const text = await r.text();
   let data = null; try { data = text ? JSON.parse(text) : null } catch {}
-  if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
+  if (!r.ok) {
+    if (r.status === 404 && path.startsWith("/v1/admin")) throw new Error("Admin isn't on for this server (set ADMIN_TOKEN), or the token is wrong.");
+    throw new Error((data && data.error && (data.error.message || data.error)) || `HTTP ${r.status}`);
+  }
   return data;
 }
 
-// Recorded tracks are encoded polylines at 1e-6 degrees.
-function decodeTrack(s, scale = 1e6) {
+// Trail lines are encoded polylines at 1e-5 degrees.
+function decodeLine(s, scale = 1e5) {
   const out = []; let i = 0, lat = 0, lon = 0;
   const next = () => { let result = 0, shift = 0, b; do { b = s.charCodeAt(i++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20 && i <= s.length); return (result & 1) ? ~(result >> 1) : (result >> 1); };
   while (i < s.length) { lat += next(); lon += next(); out.push([lat / scale, lon / scale]); }
   return out;
 }
-
-// a spot marked on a hike is just its name; other kinds (water, hazard…) lead with the kind
-const pointLabel = p => p.kind && p.kind !== "spot" ? esc(p.kind) + (p.note ? ": " + esc(p.note) : "") : esc(p.note || "Spot");
-const km = m => (m / 1000).toFixed(1) + " km (" + (m / 1609.344).toFixed(1) + " mi)";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const when = t => t ? new Date(t).toLocaleString() : "";
+
+function setView(v) {
+  view = v;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  $("#filter").innerHTML = FILTERS[v].map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
+  load();
+}
 
 async function load() {
   showMsg("Loading…");
   try {
-    const health = await fetch(base + "/health").then(r => r.text()).catch(() => "");
-    if (health.trim() !== "ok") throw new Error("The server didn't answer /health. Check the address.");
-    const list = await api("GET", "/v1/submissions");
-    docs = list.items.filter(d => !d.deleted && d.data).sort((a, b) => (b.data.submitted_at || 0) - (a.data.submitted_at || 0));
+    const health = await fetch(base + "/healthz").then(r => r.text()).catch(() => "");
+    if (health.trim() !== "ok") throw new Error("The server didn't answer /healthz. Check the address.");
+    const status = $("#filter").value;
+    if (view === "submissions") rows = (await api("GET", `/v1/admin/submissions?status=${status}`)).submissions || [];
+    else rows = (await api("GET", `/v1/admin/photos?status=${status}`)).photos || [];
     showMsg("");
     $("#bar").hidden = false;
     render();
@@ -107,67 +119,68 @@ async function load() {
 }
 
 function render() {
-  const f = $("#filter").value;
-  const shown = docs.filter(d => f === "all" || (d.data.status || "pending") === f);
-  $("#count").textContent = `${shown.length} of ${docs.length}`;
+  $("#count").textContent = `${rows.length} shown`;
   const list = $("#list"); list.innerHTML = "";
-  if (!shown.length) { list.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
-  for (const d of shown) list.appendChild(card(d));
+  if (!rows.length) { list.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+  if (view === "submissions") { for (const s of rows) list.appendChild(submissionCard(s)); return; }
+  const grid = document.createElement("div"); grid.className = "photos";
+  for (const p of rows) grid.appendChild(photoCard(p));
+  list.appendChild(grid);
 }
 
-function card(d) {
-  const s = d.data, h = s.hike || {}, status = s.status || "pending";
+function submissionCard(s) {
   const el = document.createElement("section"); el.className = "card";
-  const pts = h.points || [];
+  const what = s.kind === "new_trail" ? "New trail" : `Correction: ${esc(s.field)}${s.value ? " → " + esc(s.value) : ""}`;
   el.innerHTML = `
     <div class="head">
-      <div><h2>${esc(s.name)}</h2>
-        <div class="meta">Submitted ${new Date(s.submitted_at).toLocaleString()} · hiked ${new Date(h.start).toLocaleDateString()} ·
-          ${km(h.distance || 0)} · ↑ ${Math.round(h.gain || 0)} m · ${Math.round((h.moving_time || 0) / 60)} min moving
-          ${h.trail_name ? " · followed " + esc(h.trail_name) : ""}</div></div>
-      <span class="pill ${status}">${status}</span>
+      <div><h2>${esc(s.name || s.trail_id || "Untitled")}</h2>
+        <div class="meta">${what} · from ${esc(s.user_display_name || "someone")} · ${when(s.created_at)}${s.difficulty ? " · " + esc(s.difficulty) : ""}${s.trail_id ? " · trail " + esc(s.trail_id) : ""}</div></div>
+      <span class="pill ${esc(s.status)}">${esc(s.status)}</span>
     </div>
-    <div class="map"></div>
-    ${s.review ? `<div class="review">${s.review.rating ? "★".repeat(s.review.rating) + "☆".repeat(5 - s.review.rating) + "<br>" : ""}${esc(s.review.text)}</div>` : ""}
-    ${pts.length ? `<strong>Points marked (${pts.length})</strong><ul class="points">${pts.map(p => `<li>${pointLabel(p)}</li>`).join("")}</ul>` : `<p class="meta">No points marked.</p>`}
-    <p class="meta">Public use agreed: ${s.public_use_consent ? "yes" : "no"}${s.reviewer_note ? " · your note: " + esc(s.reviewer_note) : ""}</p>
+    ${s.line ? `<div class="map"></div>` : ""}
+    ${s.note ? `<div class="note"></div>` : ""}
+    ${s.reviewed_at ? `<p class="meta">Reviewed ${when(s.reviewed_at)}${s.reply ? " · your reply: " + esc(s.reply) : ""}</p>` : ""}
     <div class="actions">
-      <input placeholder="Note (optional)" value="${esc(s.reviewer_note || "")}">
+      <input placeholder="Reply (optional, shown to them)" value="${esc(s.reply || "")}">
       <button class="primary" data-act="approved">Approve</button>
       <button class="danger" data-act="rejected">Reject</button>
     </div>`;
-  requestAnimationFrame(() => drawMap(el.querySelector(".map"), h));
-  el.querySelectorAll("button[data-act]").forEach(b => b.onclick = () => decide(d, b.dataset.act, el.querySelector(".actions input").value, el));
+  if (s.note) el.querySelector(".note").textContent = s.note;
+  if (s.line) requestAnimationFrame(() => drawMap(el.querySelector(".map"), decodeLine(s.line)));
+  el.querySelectorAll("button[data-act]").forEach(b => b.onclick = () => decide(s, b.dataset.act, el.querySelector(".actions input").value, el));
   return el;
 }
 
-function drawMap(div, h) {
+function photoCard(p) {
+  const el = document.createElement("div"); el.className = "photo card";
+  el.innerHTML = `
+    <a href="${esc(p.url || p.thumb_url || "#")}" target="_blank" rel="noopener"><img alt="" loading="lazy" src="${esc(p.thumb_url || p.url || "")}"></a>
+    <div class="meta">${esc(p.display_name || "")} · ${when(p.taken_at || p.created_at)}${p.trail_id ? "<br>trail " + esc(p.trail_id) : p.walk_id ? "<br>on a hike" : ""}</div>
+    <div class="actions"><span class="pill ${esc(p.status)}">${esc(p.status)}</span>
+      ${p.status === "hidden" ? `<button data-set="ready">Show</button>` : `<button class="danger" data-set="hidden">Hide</button>`}</div>`;
+  el.querySelector("button[data-set]").onclick = async (e) => {
+    e.target.disabled = true;
+    try { await api("POST", `/v1/admin/photos/${encodeURIComponent(p.id)}`, { status: e.target.dataset.set }); showMsg("Photo updated."); load(); }
+    catch (err) { showMsg("Couldn't save: " + err.message, true); e.target.disabled = false; }
+  };
+  return el;
+}
+
+function drawMap(div, line) {
   if (!window.L) { div.textContent = "Map unavailable (couldn't load Leaflet)."; div.style.cssText += "display:flex;align-items:center;justify-content:center;color:var(--muted);height:60px"; return; }
   const map = L.map(div, { scrollWheelZoom: false });
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
-  const lines = (h.segments || []).map(s => decodeTrack(s.line)).filter(l => l.length);
-  const group = L.featureGroup(lines.map(l => L.polyline(l, { color: "#21a05a", weight: 4 })));
-  for (const p of h.points || []) group.addLayer(L.circleMarker([p.lat, p.lon], { radius: 7, color: "#b3261e", fillOpacity: .9 }).bindPopup(pointLabel(p)));
-  group.addTo(map);
-  if (group.getLayers().length) map.fitBounds(group.getBounds(), { padding: [16, 16] }); else map.setView([39, -95], 4);
+  const pl = L.polyline(line, { color: "#21a05a", weight: 4 }).addTo(map);
+  if (line.length) map.fitBounds(pl.getBounds(), { padding: [16, 16] }); else map.setView([39, -95], 4);
 }
 
-async function decide(d, status, note, el) {
+async function decide(s, status, reply, el) {
   el.querySelectorAll("button").forEach(b => b.disabled = true);
   try {
-    // PUT replaces the whole document, so start from the latest copy
-    const fresh = await api("GET", `/v1/submissions/${encodeURIComponent(d.id)}`);
-    const doc = { ...fresh.data, status, reviewed_at: Date.now(), reviewer_note: note || null };
-    await api("PUT", `/v1/submissions/${encodeURIComponent(d.id)}`, doc);
-    if (status === "approved") {
-      await api("PUT", `/v1/approved_hikes/${encodeURIComponent(d.id)}`,
-        { v: 1, name: doc.name, approved_at: doc.reviewed_at, submitted_at: doc.submitted_at, review: doc.review || null, hike: doc.hike });
-    } else {
-      await api("DELETE", `/v1/approved_hikes/${encodeURIComponent(d.id)}`).catch(() => {});
-    }
-    d.data = doc;
-    showMsg(`“${doc.name}” ${status}.`);
-    render();
+    const out = await api("POST", `/v1/admin/submissions/${encodeURIComponent(s.id)}`, { status, reply: reply || "" });
+    Object.assign(s, out || { status, reply });
+    showMsg(`“${s.name || s.id}” ${status}.`);
+    load();
   } catch (e) {
     showMsg("Couldn't save: " + e.message, true);
     el.querySelectorAll("button").forEach(b => b.disabled = false);
@@ -178,10 +191,12 @@ $("#login").onsubmit = e => {
   e.preventDefault();
   base = $("#url").value.trim().replace(/\/+$/, ""); key = $("#key").value.trim();
   store.set("sb.url", base); store.set("sb.key", key);
-  load();
+  setView(view);
 };
-$("#filter").onchange = render;
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+$("#filter").onchange = load;
 $("#reload").onclick = load;
+$("#filter").innerHTML = FILTERS.submissions.map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
 $("#url").value = store.get("sb.url") || "";
 $("#key").value = store.get("sb.key") || "";
 if ($("#url").value && $("#key").value) $("#login").requestSubmit();
