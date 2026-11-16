@@ -44,6 +44,9 @@ type Server struct {
 	Store    storage.Store
 	Limit    *ratelimit.Limiter
 	Cfg      Config
+	// AdminToken lets the owner's review page approve submissions and hide photos. Empty turns the admin routes
+	// off (they answer 404).
+	AdminToken string
 }
 
 func (s *Server) Handler() http.Handler {
@@ -54,6 +57,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/auth/email/start", s.emailStart)
 	mux.HandleFunc("POST /v1/auth/email/verify", s.emailVerify)
 	mux.HandleFunc("POST /v1/auth/google", s.googleSignIn)
+	mux.HandleFunc("POST /v1/auth/register", s.register)
+	mux.HandleFunc("POST /v1/auth/login", s.login)
 	mux.HandleFunc("POST /v1/auth/refresh", s.refresh)
 	mux.HandleFunc("POST /v1/auth/logout", s.logout)
 
@@ -62,6 +67,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /v1/me", s.authed(s.deleteMe))
 	mux.HandleFunc("GET /v1/me/logs", s.authed(s.myLogs))
 	mux.HandleFunc("GET /v1/me/submissions", s.authed(s.mySubmissions))
+	mux.HandleFunc("GET /v1/me/photos", s.authed(s.myPhotos))
+	mux.HandleFunc("POST /v1/me/password", s.authed(s.changePassword))
+	mux.HandleFunc("GET /v1/me/docs/{collection}", s.authed(s.listDocs))
+	mux.HandleFunc("PUT /v1/me/docs/{collection}/{id}", s.authed(s.putDoc))
+	mux.HandleFunc("DELETE /v1/me/docs/{collection}/{id}", s.authed(s.deleteDoc))
 
 	mux.HandleFunc("GET /v1/cells/{cell}/stats", cached(300, s.cellStats))
 	mux.HandleFunc("GET /v1/trails/reviews", cached(60, s.trailReviews))
@@ -78,8 +88,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /v1/submissions/{id}", s.authed(s.putSubmission))
 	mux.HandleFunc("POST /v1/reports", s.authed(s.postReport))
 
+	mux.HandleFunc("GET /v1/admin/submissions", s.admin(s.adminSubmissions))
+	mux.HandleFunc("POST /v1/admin/submissions/{id}", s.admin(s.reviewSubmission))
+	mux.HandleFunc("GET /v1/admin/photos", s.admin(s.adminPhotos))
+	mux.HandleFunc("POST /v1/admin/photos/{id}", s.admin(s.setPhotoStatus))
+
 	mux.HandleFunc("GET /p/{key}", func(w http.ResponseWriter, r *http.Request) { s.Store.Serve(w, r, r.PathValue("key")) })
-	return recoverer(mux)
+	return recoverer(cors(mux))
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +147,7 @@ func writeErr(w http.ResponseWriter, r *http.Request, err error) {
 		case "23503": // foreign key: e.g. the account was deleted while a token was still valid
 			writeErr(w, r, fail(http.StatusConflict, "missing_reference", "Something this refers to no longer exists."))
 			return
-		case "23514", "22001": // check constraint, value too long
+		case "23514", "22001", "22P05": // check constraint, value too long, text Postgres can't store (\u0000)
 			writeErr(w, r, fail(http.StatusUnprocessableEntity, "invalid", "Something in the request isn't valid."))
 			return
 		}

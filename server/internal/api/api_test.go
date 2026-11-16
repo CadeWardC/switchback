@@ -50,7 +50,8 @@ type env struct {
 	store storage.Disk
 }
 
-func setup(t *testing.T) *env {
+// setup starts a server on a fresh database; opts can change its settings first.
+func setup(t *testing.T, opts ...func(*Server)) *env {
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set")
@@ -72,6 +73,9 @@ func setup(t *testing.T) *env {
 	store := storage.Disk{Dir: t.TempDir()}
 	srv := &Server{EmailKey: bytes.Repeat([]byte{9}, 32), DB: pool, Tokens: signer, Google: auth.NewGoogle(nil), Mail: mail, Store: store,
 		Limit: ratelimit.New(), Cfg: Config{PublicURL: "https://api.test"}}
+	for _, o := range opts {
+		o(srv)
+	}
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
 	return &env{pool: pool, t: t, url: ts.URL, mail: mail, store: store}
