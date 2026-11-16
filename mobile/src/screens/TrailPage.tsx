@@ -1,4 +1,4 @@
-// A trail, in the sheet: its photos, name, park line, the three big numbers, the ridge card with its pins and
+// A trail, in the sheet: its name, park line, the three big numbers, the ridge card with its pins and
 // the daylight line, the full loop or one of its short loops, where to start (radio rows, in step with the
 // radio markers on the map), Start hike, Directions, Share GPX, Save, and "Ready offline".
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,7 +13,7 @@ import { exportGpx } from '@web/lib/gpx';
 import { sunTimes, type Stop } from '@web/lib/follow';
 import { platform } from '../platform';
 import {
-  chosenShort, chosenStart, chooseShort, closeTrail, flyTo, startFor, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units,
+  chosenShort, chosenStart, chooseShort, closeTrail, flyTo, startFor, isSaved, recState, savedTrails, say, selected, shownTrail, tab, toggleSaved, trailRest, units, scrubbing,
 } from '../core/state';
 import { start } from '../core/recorder';
 import { stopsFor } from '../core/stops';
@@ -24,7 +24,6 @@ import { choose, loopChoices, usableStarts } from '../core/choice';
 import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
-import { PhotoStrip } from '../ui/Photos';
 import { LightLine, Ridge } from '../ui/Ridge';
 import { fonts, useTheme } from '../ui/theme';
 
@@ -60,6 +59,7 @@ function OfflineTick({ trailKey }: { trailKey: string }) {
 }
 
 export function TrailSheet() {
+  const scrub = useValue(scrubbing);
   const t = useTheme();
   const whole = useValue(selected)!;
   const u = useValue(units);
@@ -125,7 +125,7 @@ export function TrailSheet() {
   const onShare = async () => { await platform.files.shareLink(whole.name, trailLink(whole)); };
 
   return (
-    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }}>
+    <BottomSheetScrollView scrollEnabled={!scrub} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Tap onPress={closeTrail} accessibilityRole="button" accessibilityLabel="Back to trails" style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 8, paddingRight: 8 }}>
           <Icon name="back" size={18} color={t.c.link} />
@@ -137,7 +137,6 @@ export function TrailSheet() {
         </View>
       </View>
 
-      <PhotoStrip trail={whole} />
 
       <View style={{ gap: 4 }}>
         <T v="name">{tr.name}</T>

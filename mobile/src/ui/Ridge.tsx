@@ -4,13 +4,14 @@
 // Plus the daylight line: now, when you would be back, and sunset.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { heightAt, type Profile } from '@web/lib/trail';
 import { lineLength, pointAlong } from '@web/lib/geo';
 import type { Coord } from '@web/lib/polyline';
 import type { Stop } from '@web/lib/follow';
 import { fmtDistance, fmtElevation, type Units } from '@web/lib/format';
-import { chartPoint } from '../core/state';
+import { chartPoint, scrubbing } from '../core/state';
 import { platform } from '../platform';
 import { clock, daylight, dur } from '../core/hikeMath';
 import { T } from './kit';
@@ -35,7 +36,7 @@ export const Ridge = memo(function Ridge({ profile, path, stops = [], here = nul
   const [at, setAt] = useState<number | null>(null); // metres along the profile, while scrubbing
   const lastTick = useRef(-1);
   useEffect(() => { setAt(null); chartPoint.value = null; }, [path]);
-  useEffect(() => () => { chartPoint.value = null; }, []);
+  useEffect(() => () => { chartPoint.value = null; scrubbing.value = false; }, []);
 
   const drawn = useMemo(() => {
     const n = profile.distances.length;
@@ -77,64 +78,73 @@ export const Ridge = memo(function Ridge({ profile, path, stops = [], here = nul
     if (tenth !== lastTick.current) { lastTick.current = tenth; platform.haptics.tap(); }
     show(d);
   };
+  // the drag is a gesture-handler pan, the same system the sheet and its scrolling use, that takes the finger
+  // the moment it touches the chart: so a drag here never moves the sheet or scrolls it (and the sheet's own
+  // dragging is also switched off while scrubbing, see App.tsx)
+  const latest = useRef(fromX);
+  latest.current = fromX;
+  const pan = useMemo(() => Gesture.Pan()
+    .minDistance(0)
+    .shouldCancelWhenOutside(false)
+    .runOnJS(true)
+    .onBegin((e) => { scrubbing.value = true; lastTick.current = -1; latest.current(e.x); })
+    .onUpdate((e) => latest.current(e.x))
+    .onFinalize(() => { scrubbing.value = false; }), []);
   const clampX = (cx: number, text: string) => { const half = text.length * 3.1 + 4; return Math.max(half, Math.min(w - half, cx)); };
   const fill = t.dark ? 'rgba(79,197,136,0.16)' : 'rgba(35,148,90,0.14)';
 
   return (
-    <View style={{ height: H }} onLayout={(e) => setW(Math.max(200, Math.round(e.nativeEvent.layout.width)))}
-      accessibilityLabel={`Elevation along the trail over ${fmtDistance(total, u)}. Drag along it to see a point on the map.`}
-      accessibilityRole="adjustable"
-      accessibilityValue={at != null ? { text: `${fmtElevation(heightAt(profile, at), u)} at ${fmtDistance(at, u)}` } : undefined}
-      onAccessibilityAction={(e) => {
-        const step = total / 20;
-        if (e.nativeEvent.actionName === 'increment') show(Math.min(total, (at ?? 0) + step));
-        else if (e.nativeEvent.actionName === 'decrement') show(Math.max(0, (at ?? total) - step));
-      }}
-      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-      // the chart keeps the finger once it has it, so a sideways drag isn't taken by the sheet's scrolling
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
-      onResponderTerminationRequest={() => false}
-      onResponderGrant={(e) => { lastTick.current = -1; fromX(e.nativeEvent.locationX); }}
-      onResponderMove={(e) => fromX(e.nativeEvent.locationX)}>
-      <Svg width={w} height={H}>
-        <Path d={area} fill={fill} />
-        <Path d={line} fill="none" stroke={walking ? t.c.line2 : t.c.green} strokeWidth={2} strokeLinejoin="round" />
-        {done ? <Path d={done} fill="none" stroke={t.c.green} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" /> : null}
-        {stops.map((s, i) => {
-          const d = onProfile(s.along), cx = x(d), cy = y(heightAt(profile, d));
-          const isNext = !!next && next.name === s.name && next.along === s.along;
-          const passed = youAt != null && d < youAt - 1;
-          const row = walking ? 12 : i % 2 ? 26 : 12;
-          const text = walking ? s.name : `${s.name} ${bare(s.along, u)}`;
-          const showName = !walking || isNext;
-          return (
-            <G key={`${s.name}-${i}`} opacity={passed ? 0.45 : 1}>
-              {showName && <Line x1={cx} x2={cx} y1={row + 4} y2={cy - 5} stroke={t.c.line2} strokeWidth={1} strokeDasharray="2,2" />}
-              <Circle cx={cx} cy={cy} r={isNext ? 5 : 4} fill={isNext ? mapColors.me : t.c.card} stroke={isNext ? mapColors.meRing : t.c.green} strokeWidth={2} />
-              {showName && (
-                <SvgText x={clampX(cx, text)} y={row} fontSize={10.5} fontFamily={fonts.semibold} fill={t.c.ink} textAnchor="middle">{text}</SvgText>
-              )}
+    <GestureDetector gesture={pan}>
+      <View style={{ height: H }} onLayout={(e) => setW(Math.max(200, Math.round(e.nativeEvent.layout.width)))}
+        accessibilityLabel={`Elevation along the trail over ${fmtDistance(total, u)}. Drag along it to see a point on the map.`}
+        accessibilityRole="adjustable"
+        accessibilityValue={at != null ? { text: `${fmtElevation(heightAt(profile, at), u)} at ${fmtDistance(at, u)}` } : undefined}
+        onAccessibilityAction={(e) => {
+          const step = total / 20;
+          if (e.nativeEvent.actionName === 'increment') show(Math.min(total, (at ?? 0) + step));
+          else if (e.nativeEvent.actionName === 'decrement') show(Math.max(0, (at ?? total) - step));
+        }}
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+  >
+        <Svg width={w} height={H}>
+          <Path d={area} fill={fill} />
+          <Path d={line} fill="none" stroke={walking ? t.c.line2 : t.c.green} strokeWidth={2} strokeLinejoin="round" />
+          {done ? <Path d={done} fill="none" stroke={t.c.green} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" /> : null}
+          {stops.map((s, i) => {
+            const d = onProfile(s.along), cx = x(d), cy = y(heightAt(profile, d));
+            const isNext = !!next && next.name === s.name && next.along === s.along;
+            const passed = youAt != null && d < youAt - 1;
+            const row = walking ? 12 : i % 2 ? 26 : 12;
+            const text = walking ? s.name : `${s.name} ${bare(s.along, u)}`;
+            const showName = !walking || isNext;
+            return (
+              <G key={`${s.name}-${i}`} opacity={passed ? 0.45 : 1}>
+                {showName && <Line x1={cx} x2={cx} y1={row + 4} y2={cy - 5} stroke={t.c.line2} strokeWidth={1} strokeDasharray="2,2" />}
+                <Circle cx={cx} cy={cy} r={isNext ? 5 : 4} fill={isNext ? mapColors.me : t.c.card} stroke={isNext ? mapColors.meRing : t.c.green} strokeWidth={2} />
+                {showName && (
+                  <SvgText x={clampX(cx, text)} y={row} fontSize={10.5} fontFamily={fonts.semibold} fill={t.c.ink} textAnchor="middle">{text}</SvgText>
+                )}
+              </G>
+            );
+          })}
+          <SvgText x={PAD_X} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted}>0</SvgText>
+          {ticks.map((v) => <SvgText key={v} x={x(v * unit)} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted} textAnchor="middle">{String(v)}</SvgText>)}
+          <SvgText x={w - PAD_X} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted} textAnchor="end">{fmtDistance(total, u)}</SvgText>
+          {youAt != null && <Circle cx={x(youAt)} cy={y(heightAt(profile, youAt))} r={7} fill={mapColors.me} stroke={mapColors.meRing} strokeWidth={2} />}
+          {at != null && (
+            <G>
+              <Line x1={x(at)} x2={x(at)} y1={top - 4} y2={H - PAD_B} stroke={t.c.muted} strokeWidth={1} />
+              <Circle cx={x(at)} cy={y(heightAt(profile, at))} r={5} fill={t.c.card} stroke={t.c.ink} strokeWidth={2} />
             </G>
-          );
-        })}
-        <SvgText x={PAD_X} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted}>0</SvgText>
-        {ticks.map((v) => <SvgText key={v} x={x(v * unit)} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted} textAnchor="middle">{String(v)}</SvgText>)}
-        <SvgText x={w - PAD_X} y={H - 3} fontSize={10} fontFamily={fonts.regular} fill={t.c.muted} textAnchor="end">{fmtDistance(total, u)}</SvgText>
-        {youAt != null && <Circle cx={x(youAt)} cy={y(heightAt(profile, youAt))} r={7} fill={mapColors.me} stroke={mapColors.meRing} strokeWidth={2} />}
+          )}
+        </Svg>
         {at != null && (
-          <G>
-            <Line x1={x(at)} x2={x(at)} y1={top - 4} y2={H - PAD_B} stroke={t.c.muted} strokeWidth={1} />
-            <Circle cx={x(at)} cy={y(heightAt(profile, at))} r={5} fill={t.c.card} stroke={t.c.ink} strokeWidth={2} />
-          </G>
+          <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: -4, backgroundColor: t.c.card, paddingLeft: 6 }}>
+            <T v="tiny" muted><T v="tiny" style={{ fontFamily: fonts.semibold }}>{fmtElevation(heightAt(profile, at), u)}</T> at {fmtDistance(at, u)}</T>
+          </View>
         )}
-      </Svg>
-      {at != null && (
-        <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: -4, backgroundColor: t.c.card, paddingLeft: 6 }}>
-          <T v="tiny" muted><T v="tiny" style={{ fontFamily: fonts.semibold }}>{fmtElevation(heightAt(profile, at), u)}</T> at {fmtDistance(at, u)}</T>
-        </View>
-      )}
-    </View>
+      </View>
+    </GestureDetector>
   );
 });
 

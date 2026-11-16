@@ -11,7 +11,7 @@ import { MAX_ACCURACY } from '@web/lib/track';
 import { platform } from '../platform';
 import {
   endReached, following, flyTo, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments,
-  recStarted, recState, saveOwnTrail, say, units, walks, tab,
+  recStarted, recState, saveOwnTrail, say, units, walks, tab, scrubbing,
 } from '../core/state';
 import { submitting } from './Submit';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
@@ -86,6 +86,7 @@ export function HikeSheet() {
 }
 
 function Walking() {
+  const scrub = useValue(scrubbing);
   const t = useTheme();
   const state = useValue(recState);
   const u = useValue(units);
@@ -157,7 +158,7 @@ function Walking() {
   const going = state === 'recording' ? speedNow(segs, now.getTime()) : null;
 
   return (
-    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <BottomSheetScrollView scrollEnabled={!scrub} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled">
       {ended && <EndCard onFinish={() => void done()} />}
 
       {off && (

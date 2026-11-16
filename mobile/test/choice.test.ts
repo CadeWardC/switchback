@@ -2,7 +2,6 @@ import { encodePolyline, type Coord } from '@web/lib/polyline';
 import { accessPoints, makeTrail, shortLoops, type Trail } from '@web/lib/trail';
 import { distance as distanceOf } from '@web/lib/geo';
 import { baseRoute, choose, chosenTrail, defaultStart, highlightLines, joinedProfile, loopChoices, pickStart, shortName, startFeatures, usableStarts } from '../src/core/choice';
-import { commonsTitle, credit, linkedTitles, photoFromPage, sampleSpots, sized } from '../src/core/photos';
 
 // a square loop about 440 m a side, with a cut-across and two trailheads
 const loop: Coord[] = [[38.9, -92.3], [38.904, -92.3], [38.904, -92.295], [38.9, -92.295], [38.9, -92.3]];
@@ -129,40 +128,5 @@ describe('a start must meet the route that is chosen', () => {
     const j = joinedProfile(c.base, accessPoints(bare)[0])!;
     expect(j.level).toBe(true);
     expect(j.profile.elevations[0]).toBe(j.profile.elevations[1]);
-  });
-});
-
-describe('photos from Wikimedia Commons', () => {
-  const page = (over: Record<string, unknown> = {}, title = 'File:Rock Bridge.jpg') => ({
-    title,
-    imageinfo: [{
-      thumburl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Rock_Bridge.jpg/960px-Rock_Bridge.jpg',
-      descriptionurl: 'https://commons.wikimedia.org/wiki/File:Rock_Bridge.jpg', mime: 'image/jpeg', width: 4000, height: 3000,
-      extmetadata: { Artist: { value: '<a href="//commons.wikimedia.org/wiki/User:X">Jane &amp; Co</a>' }, LicenseShortName: { value: 'CC BY-SA 4.0' } },
-      ...over,
-    }],
-  });
-  it('reads a photo with its author and licence', () => {
-    const p = photoFromPage(page())!;
-    expect(p).toMatchObject({ id: 'File:Rock Bridge.jpg', author: 'Jane & Co', license: 'CC BY-SA 4.0', source: 'Wikimedia Commons' });
-    expect(p.small).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Rock_Bridge.jpg/250px-Rock_Bridge.jpg');
-    expect(credit(p)).toBe('Jane & Co · CC BY-SA 4.0 · Wikimedia Commons');
-  });
-  it('leaves out maps, logos, small pictures and anything that is not a photo', () => {
-    expect(photoFromPage(page({}, 'File:Park trail map.jpg'))).toBeNull();
-    expect(photoFromPage(page({ mime: 'image/svg+xml' }))).toBeNull();
-    expect(photoFromPage(page({ width: 320 }))).toBeNull();
-    expect(photoFromPage({ title: 'File:X.jpg' })).toBeNull();
-  });
-  it('finds the files the tags point to', () => {
-    expect(commonsTitle('https://commons.wikimedia.org/wiki/File:Devil%27s_Icebox.jpg')).toBe("File:Devil's Icebox.jpg");
-    expect(commonsTitle('Category:Rock Bridge')).toBeNull();
-    expect(linkedTitles({ wikimedia_commons: 'File:A.jpg', image: 'https://commons.wikimedia.org/wiki/File:A.jpg' })).toEqual(['File:A.jpg']);
-    expect(sized('https://x/thumb/a/ab/A.jpg/960px-A.jpg', 250)).toBe('https://x/thumb/a/ab/A.jpg/250px-A.jpg');
-  });
-  it('samples places along the line', () => {
-    const spots = sampleSpots(loop, 3);
-    expect(spots).toHaveLength(3);
-    for (const [lat, lon] of spots) { expect(lat).toBeGreaterThanOrEqual(38.9); expect(lon).toBeLessThanOrEqual(-92.295); }
   });
 });
