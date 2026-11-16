@@ -1,0 +1,274 @@
+{
+ "region": "missouri",
+ "checked": "2026-11-15",
+ "note": "Park maps without coordinates, laid roughly over our trails (scripts/overlay_park_maps.py, with Haiku reading each map's panel, trail colours, names and scale bar, and judging each leftover piece). Names, rough positions and lengths only; nothing traced from the maps. Not yet checked against all of OpenStreetMap (paths, tracks and roads the trail pack leaves out): anything already mapped there is not missing.",
+ "aligned": [
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-12/4901map.pdf",
+   "metres_per_px": 5.84,
+   "scale_bar_m_per_px": 5.5
+  },
+  {
+   "park": "Castlewood State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/12/4CST_ColorMap.pdf",
+   "metres_per_px": 6.45,
+   "scale_bar_m_per_px": 6.32
+  },
+  {
+   "park": "Current River State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/04/TrailMap-UpperCurrentOT-Echo_0.pdf",
+   "metres_per_px": 4.06,
+   "scale_bar_m_per_px": 5.0
+  },
+  {
+   "park": "Forest 44 Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9023map.pdf",
+   "metres_per_px": 2.25,
+   "scale_bar_m_per_px": 2.36
+  },
+  {
+   "park": "Hawn State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2024/10/TrailMap-SpanishLandGrant.pdf",
+   "metres_per_px": 1.49,
+   "scale_bar_m_per_px": 1.49
+  },
+  {
+   "park": "Johnson's Shut-Ins State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/10/TrailMap-goggins.pdf",
+   "metres_per_px": 3.97,
+   "scale_bar_m_per_px": 5.02
+  },
+  {
+   "park": "Prairie State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/02/4PRA_ColorMap.pdf",
+   "metres_per_px": 5.18,
+   "scale_bar_m_per_px": 4.93
+  },
+  {
+   "park": "Prairie State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/07/TrailMap-drovers.pdf",
+   "metres_per_px": 1.0,
+   "scale_bar_m_per_px": 1.27
+  }
+ ],
+ "not_aligned": [
+  {
+   "park": "Angeline Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2023-10/9512map_0.pdf",
+   "metres_per_px": 23.38,
+   "scale_bar_m_per_px": 15.47
+  },
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/busch_archery_trail.pdf",
+   "metres_per_px": 31.47,
+   "scale_bar_m_per_px": null
+  },
+  {
+   "park": "Bicentennial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9731map.pdf",
+   "metres_per_px": 2.03,
+   "scale_bar_m_per_px": 1.99
+  },
+  {
+   "park": "Big Creek Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/8041map.pdf",
+   "metres_per_px": 2.83,
+   "scale_bar_m_per_px": 2.63
+  },
+  {
+   "park": "Cosmo Park",
+   "map": "https://www.como.gov/archive/2024/02/FOR-WEB-_Trail-Guide-Brochure_Revised_Map_14-01-2024.pdf",
+   "metres_per_px": 39.37,
+   "scale_bar_m_per_px": 30.95
+  },
+  {
+   "park": "Fellows Lake Recreation Area",
+   "map": "https://ozarkgreenways.org/workspace/media/uploads/greenways-regional-map-2022_3.pdf",
+   "metres_per_px": 23.81,
+   "scale_bar_m_per_px": null
+  },
+  {
+   "park": "Johnson's Shut-Ins State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/04/TrailMap-Ozark-JSI.pdf",
+   "metres_per_px": 13.53,
+   "scale_bar_m_per_px": 10.03
+  },
+  {
+   "park": "Knob Noster State Park",
+   "map": "https://mostateparks.com/sites/g/files/zuston361/files/media/pdf/2025/03/4KNO_TrailMap-Spirit.pdf",
+   "metres_per_px": 4.05,
+   "scale_bar_m_per_px": 4.04
+  }
+ ],
+ "no_trails_drawn": [
+  {
+   "park": "Three Creeks Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-03/8315.pdf",
+   "why": "No trail map: this page is a text brochure (hunting and trapping rules, contact information) with illustrations; the only map is a small Missouri county locator, used as the panel, and no trails are drawn, so trail_chips is empty."
+  },
+  {
+   "park": "Big Creek Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-03/8041.pdf",
+   "why": "No trail map: this page is a text brochure (regulations and contact information) whose only map is a small Missouri county locator, which is used as the panel; no trails are drawn, so trail_chips is empty."
+  },
+  {
+   "park": "Rocky Fork Lakes Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2023-05/7912map_0.pdf",
+   "why": "Conservation area facilities map with no hiking trails drawn and none in the legend, since the black dashed lines are MDC Service Roads; the two inset maps, legend, scale bar and north arrow are excluded."
+  },
+  {
+   "park": "Bicentennial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9731.pdf",
+   "why": "No trail map is drawn on this brochure: the only map is a small Missouri county locator map at right, the page has no coloured trail lines, and its trail text is general rules only (single chip, black text)."
+  },
+  {
+   "park": "Rocky Fork Lakes Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-03/7912_0.pdf",
+   "why": "No trail map on this page: it is the back cover with regulations text, a county locator map, an illustration and the Missouri Department of Conservation logo, with no trail lines drawn; the chips file holds only chip 1 (black), so trail_chips is empty and the panel is zero-size to signal no map; the page title is Rocky Fork Lakes Conservation Area and the map page for this area is likely a different file."
+  },
+  {
+   "park": "Daniel Boone Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-01/4603_0.pdf",
+   "why": "No trail map is drawn on this brochure: the only map is a small Missouri county locator map at right, the page has no coloured trail lines, and trails are mentioned only generically (e.g. 6.4-mile multi use trail, interior roads and trails) without names."
+  },
+  {
+   "park": "Smithville Lake Recreation Area",
+   "map": "https://www.nwk.usace.army.mil/Portals/29/docs/lakesites/Smithville/2021%20Brush%20Pile%20Map.pdf?ver=p5kSyM3BwAWYhNd-ZapqKg%3d%3d&timestamp=1623082190331",
+   "why": "Google Earth aerial photo with brush-pile circle markers and a marina icon, not a trail map; no trails are drawn (the green line at the right is a boundary), so trail_chips is empty."
+  },
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2023-04/4901.pdf",
+   "why": "Not a trail map: this is a brochure page (hunting regulations, contact block, logo) whose only drawing is a Missouri county locator map, used as the panel here; no trails are drawn and chips.png has only one colour (near-black text)."
+  },
+  {
+   "park": "Piney Creek Wilderness",
+   "map": "https://www.fs.usda.gov/sites/nfs/files/r09/marktwain/publication/Piney%20Creek.pdf",
+   "why": "Text page with a photo and only a small LOCATION MAP inset, which is used as the panel; no trail lines are drawn, and the text says five maintained trails total 12.4 miles without naming them."
+  },
+  {
+   "park": "Rudolf Bennitt Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2024-02/6214_0.pdf",
+   "why": "No trail map is drawn on this brochure: the only map is a small Missouri county locator map at right, the page has no coloured trail lines, and trail text is general rules only (e.g. trail and game cameras prohibited)."
+  }
+ ],
+ "pieces": [
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/2022-12/4901map.pdf",
+   "name": "Wildlife Management Trail",
+   "confidence": "high",
+   "metres": 192,
+   "near": [
+    38.7122,
+    -90.7754
+   ],
+   "why": "hiking-trail dashes, labelled on the map, none of our lines near"
+  },
+  {
+   "park": "Forest 44 Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9023map.pdf",
+   "name": null,
+   "confidence": "medium",
+   "metres": 402,
+   "near": [
+    38.5127,
+    -90.5487
+   ],
+   "why": "dashed path between the rifle range, classroom and trap range (same path as the next piece); likely the range access path"
+  },
+  {
+   "park": "Forest 44 Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9023map.pdf",
+   "name": null,
+   "confidence": "medium",
+   "metres": 184,
+   "near": [
+    38.5117,
+    -90.5469
+   ],
+   "why": "same path as the piece above, by the classroom"
+  },
+  {
+   "park": "Forest 44 Conservation Area",
+   "map": "https://mdc.mo.gov/sites/default/files/mo_nature/downloads/conservation-areas/9023map.pdf",
+   "name": null,
+   "confidence": "low",
+   "metres": 254,
+   "near": [
+    38.5249,
+    -90.5324
+   ],
+   "why": "blue-square trail piece; one of our lines runs just south, may be the rough fit"
+  }
+ ],
+ "names_not_in_ours": [
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "name": "Wildlife Management Trail",
+   "miles": null
+  },
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "name": "Prairie Trail",
+   "miles": null
+  },
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "name": "Field Archery Range A",
+   "miles": 1
+  },
+  {
+   "park": "August A Busch Memorial Conservation Area",
+   "name": "Field Archery Range B",
+   "miles": 0.25
+  },
+  {
+   "park": "Big Creek Conservation Area",
+   "name": "Rainbow Basin Trail",
+   "miles": null
+  },
+  {
+   "park": "Big Creek Conservation Area",
+   "name": "Matador Trail",
+   "miles": null
+  },
+  {
+   "park": "Cosmo Park",
+   "name": "Cosmo Nature Trail",
+   "miles": 1.3
+  },
+  {
+   "park": "Cosmo Park",
+   "name": "Cosmo-Bethel Lake Trail",
+   "miles": 0.46
+  },
+  {
+   "park": "Current River State Park",
+   "name": "Upper Current Section-Ozark Trail",
+   "miles": null
+  },
+  {
+   "park": "Fellows Lake Recreation Area",
+   "name": "Connector 'A'",
+   "miles": null
+  },
+  {
+   "park": "Fellows Lake Recreation Area",
+   "name": "Dam Skills Loop",
+   "miles": 0.14
+  },
+  {
+   "park": "Fellows Lake Recreation Area",
+   "name": "Hofmeister",
+   "miles": 0.14
+  },
+  {
+   "park": "Fellows Lake Recreation Area",
+   "name": "Milk Route",
+   "miles": 0.14
+  }
+ ]
+}
