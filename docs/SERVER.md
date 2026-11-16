@@ -77,7 +77,13 @@ when the Pi is on Ethernet), asks you to choose the review page's PIN, and check
 `https://switchback2.opcw032522.uk/healthz`. If only the second fails, point the tunnel at it: Cloudflare Zero Trust ›
 Networks › Tunnels › your tunnel › Public hostnames › `switchback2.opcw032522.uk` → `http://localhost:8080`.
 
-Run the same command again any time to update the server (your data, settings and PIN are kept). New PIN:
+**Updating the server:** on the review page, open **Server**, press *Check for updates*, and if it says a newer
+version is published, *Update now*. The server downloads the published version, checks it, restarts (the app can't
+reach it for a few seconds) and tells you how it went; if the new version doesn't start, the previous one is put
+back. Run the install command above once more first: that is what puts the updater on the Pi. After that, updates
+are done from the page. A change becomes an update once it is on `main` and GitHub has finished building it.
+
+Running the same command again also updates the server (your data, settings and PIN are kept). New PIN:
 `curl -fsSL https://raw.githubusercontent.com/CadeWardC/switchback/main/server/deploy/install.sh | sudo bash -s -- --pin`.
 
 The app has the address built in (`mobile/app.config.js`); nothing to set there.

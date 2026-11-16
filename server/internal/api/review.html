@@ -37,6 +37,7 @@
   .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .actions input { flex:1 1 240px; }
   .empty { color:var(--muted); text-align:center; padding:40px 0; }
+  .bad { color:var(--red); }
   .photos { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
   .photo img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:var(--line); display:block; }
   .photo .actions { margin-top:6px; }
@@ -45,7 +46,7 @@
 <body>
 <main>
   <h1>Switchback review</h1>
-  <p class="sub">Hikes people send in as new trails, trail reviews and photos. Approve a trail to add it for everyone, or reject it with a reply they'll see in the app. Reviews and photos are public as soon as they're posted: hide one to take it down.</p>
+  <p class="sub">New trails and problems with a trail that people send in, trail reviews and photos. Approve a new trail to add it for everyone, or reject it with a reply they'll see in the app. Reviews and photos are public as soon as they're posted: hide one to take it down. Server: check for a newer version and install it.</p>
 
   <form id="login">
     <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" placeholder="PIN" autocomplete="current-password" required>
@@ -56,7 +57,8 @@
     <button type="button" data-view="submissions" aria-pressed="true">Submissions</button>
     <button type="button" data-view="reviews" aria-pressed="false">Reviews</button>
     <button type="button" data-view="photos" aria-pressed="false">Photos</button>
-    <label>Show <select id="filter"></select></label>
+    <button type="button" data-view="server" aria-pressed="false">Server</button>
+    <label id="filterlabel">Show <select id="filter"></select></label>
     <button type="button" id="reload">Refresh</button>
     <span class="meta" id="count"></span>
   </div>
@@ -104,12 +106,14 @@ const when = t => t ? new Date(t).toLocaleString() : "";
 function setView(v) {
   view = v;
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
-  $("#filter").innerHTML = FILTERS[v].map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
+  $("#filterlabel").hidden = v === "server";
+  if (FILTERS[v]) $("#filter").innerHTML = FILTERS[v].map(([val, label]) => `<option value="${val}">${label}</option>`).join("");
   load();
 }
 
 async function load() {
   showMsg("Loading…");
+  if (view === "server") return loadServer(false);
   try {
     const status = $("#filter").value;
     if (view === "submissions") rows = (await api("GET", `/v1/admin/submissions?status=${status}`)).submissions || [];
@@ -209,6 +213,80 @@ async function decide(s, status, reply, el) {
     showMsg("Couldn't save: " + e.message, true);
     el.querySelectorAll("button").forEach(b => b.disabled = false);
   }
+}
+
+// ── Server: what is running, checking for a newer published version, and installing it ──────────────────────
+// The server never updates by itself. "Check for updates" compares what is running with what is published;
+// "Update now" asks the machine to install the published version (it restarts, and puts the old one back if the
+// new one doesn't start).
+let server = null, updating = false;
+
+async function loadServer(check) {
+  try {
+    server = await api("GET", "/v1/admin/update" + (check ? "?check=1" : ""));
+    showMsg("");
+    $("#bar").hidden = false;
+    renderServer();
+  } catch (e) { showMsg(e.message, true); }
+}
+
+function renderServer() {
+  const d = server, list = $("#list");
+  $("#count").textContent = "";
+  const el = document.createElement("section"); el.className = "card";
+  const short = h => h ? h.slice(0, 12) : "unknown";
+  let found = "";
+  if (d.check_error) found = `<p class="meta bad">${esc(d.check_error)}</p>`;
+  else if (d.latest && d.update_available) found = `
+    <p><strong>A newer version is published.</strong></p>
+    <p class="meta">${d.latest.notes ? esc(d.latest.notes) + "<br>" : ""}${d.latest.published_at ? "Published " + when(d.latest.published_at) + " · " : ""}file ${esc(short(d.latest.sha256))}</p>`;
+  else if (d.latest) found = `<p><strong>Up to date.</strong> <span class="meta">This is the published version${d.latest.published_at ? " (" + when(d.latest.published_at) + ")" : ""}.</span></p>`;
+  const st = d.status;
+  const last = st ? `<p class="meta ${st.state === "failed" ? "bad" : ""}">Last update${st.at ? " (" + when(st.at) + ")" : ""}: ${esc(st.message || st.state)}</p>` : "";
+  const setup = d.can_update ? "" : `
+    <p class="meta">Updating from this page isn't set up on the server yet. Run the install command on it once more (it keeps your data, settings and PIN); after that, updates can be done from here:</p>
+    <div class="note">curl -fsSL https://raw.githubusercontent.com/CadeWardC/switchback/main/server/deploy/install.sh | sudo bash</div>`;
+  el.innerHTML = `
+    <div class="head">
+      <div><h2>Server</h2>
+        <div class="meta">Running version ${esc(d.version || "unknown")} · file ${esc(short(d.sha256))} · started ${when(d.started_at)}</div></div>
+      <span class="pill ${updating ? "pending" : "ready"}">${updating ? "updating" : "running"}</span>
+    </div>
+    <div id="found">${found}</div>
+    ${last}${setup}
+    <div class="actions">
+      <button type="button" id="check">Check for updates</button>
+      ${d.latest && d.update_available && d.can_update ? `<button type="button" class="primary" id="update">Update now</button>` : ""}
+    </div>`;
+  list.innerHTML = ""; list.appendChild(el);
+  el.querySelectorAll("button").forEach(b => b.disabled = updating);
+  el.querySelector("#check").onclick = async e => { e.target.disabled = true; e.target.textContent = "Checking…"; await loadServer(true); };
+  const up = el.querySelector("#update");
+  if (up) up.onclick = startUpdate;
+}
+
+async function startUpdate() {
+  if (!confirm("Update the server now? It restarts, so the app can't reach it for a few seconds.")) return;
+  const before = server.status ? server.status.at : null;
+  updating = true; renderServer();
+  showMsg("Updating: downloading the published version and restarting. This takes up to a minute…");
+  try { await api("POST", "/v1/admin/update"); }
+  catch (e) { updating = false; renderServer(); showMsg("Couldn't start the update: " + e.message, true); return; }
+  // the server goes away while it restarts, so a failed request here just means "not back yet"
+  const deadline = Date.now() + 6 * 60 * 1000;
+  let done = null;
+  while (Date.now() < deadline && !done) {
+    await new Promise(r => setTimeout(r, 2500));
+    if (!key) { updating = false; return; }
+    try {
+      const d = await api("GET", "/v1/admin/update");
+      if (!d.requested && d.status && d.status.state !== "running" && d.status.at !== before) done = d;
+    } catch {}
+  }
+  updating = false;
+  if (!done) { await loadServer(false); showMsg("The update hasn't reported back. Press Check for updates in a minute; if it still says a newer version is published, see journalctl -u switchback-update on the server.", true); return; }
+  await loadServer(true);
+  showMsg(done.status.message || "Done.", done.status.state === "failed");
 }
 
 function lock() { key = ""; store.set("sb.session", ""); $("#login").hidden = false; $("#bar").hidden = true; $("#list").innerHTML = ""; }

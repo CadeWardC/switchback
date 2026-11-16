@@ -376,6 +376,35 @@ else
 fi
 mv /usr/local/bin/switchback-api.new /usr/local/bin/switchback-api
 
+# Updating from the review page (its Server tab): the API, which can't touch its own program, leaves a request file
+# in $DATA/update; systemd sees it and runs the updater as root. The updater takes nothing from the request: it
+# installs the published release, checked against its checksum, and puts the old program back if the new one fails.
+install -d -o switchback -g switchback -m 0750 "$DATA/update"
+install -d -m 0755 /var/lib/switchback-update
+install -m 0755 "$(dirname "$0")/switchback-update.sh" /usr/local/sbin/switchback-update
+printf 'REPO=%q\n' "$REPO" > $ETC/update.conf
+chown root:root $ETC/update.conf
+chmod 0644 $ETC/update.conf
+cat > /etc/systemd/system/switchback-update.service <<'EOF'
+[Unit]
+Description=Update the Switchback API to the published version
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/switchback-update
+EOF
+cat > /etc/systemd/system/switchback-update.path <<EOF
+[Unit]
+Description=Watch for update requests from the Switchback review page
+
+[Path]
+PathExists=$DATA/update/request
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat > /etc/systemd/system/switchback-api.service <<EOF
 [Unit]
 Description=Switchback API
@@ -388,6 +417,9 @@ User=switchback
 Group=switchback
 EnvironmentFile=$ETC/api.env
 Environment=GOMEMLIMIT=256MiB
+Environment=UPDATE_DIR=$DATA/update
+Environment=UPDATE_STATUS=/var/lib/switchback-update/status.json
+Environment=UPDATE_REPO=$REPO
 ExecStart=/usr/local/bin/switchback-api
 Restart=always
 RestartSec=2
@@ -402,7 +434,7 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
-ReadWritePaths=$PHOTOS
+ReadWritePaths=$PHOTOS $DATA/update
 MemoryMax=600M
 LimitNOFILE=65536
 
@@ -411,6 +443,7 @@ WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 systemctl enable switchback-api >/dev/null
+systemctl enable --now switchback-update.path >/dev/null
 systemctl restart switchback-api
 for _ in $(seq 1 20); do
   curl -fs http://127.0.0.1:8080/healthz >/dev/null 2>&1 && break

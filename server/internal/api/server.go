@@ -49,6 +49,8 @@ type Server struct {
 	AdminToken string
 	// AdminPIN unlocks the review page at /review (6-12 digits). Empty: only ADMIN_TOKEN works.
 	AdminPIN string
+	// Update is the running version, and how the review page asks for a new one (see update.go).
+	Update Update
 }
 
 func (s *Server) Handler() http.Handler {
@@ -98,6 +100,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/admin/photos/{id}", s.admin(s.setPhotoStatus))
 	mux.HandleFunc("GET /v1/admin/reviews", s.admin(s.adminReviews))
 	mux.HandleFunc("POST /v1/admin/reviews/{id}", s.admin(s.setReviewHidden))
+	mux.HandleFunc("GET /v1/admin/update", s.admin(s.adminUpdate))
+	mux.HandleFunc("POST /v1/admin/update", s.admin(s.adminStartUpdate))
 
 	mux.HandleFunc("GET /p/{key}", func(w http.ResponseWriter, r *http.Request) { s.Store.Serve(w, r, r.PathValue("key")) })
 	return recoverer(cors(mux))

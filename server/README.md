@@ -93,7 +93,18 @@ branch, publishes it to the `server-latest` release.
    Console) and `RESEND_API_KEY` + `MAIL_FROM` (resend.com, with your domain verified). Then
    `sudo systemctl restart switchback-api`.
 
-To update the API later, run the script again.
+To update the API later, open the review page's **Server** tab: *Check for updates* compares the running program
+with the published one, and *Update now* installs it. Or run the script again (which also brings the rest of the
+Pi's setup up to date).
+
+How the page's update works: the API runs as an account that can't touch its own program, so it only leaves a
+file, `/srv/switchback/update/request`. `switchback-update.path` (systemd) sees it and runs
+`/usr/local/sbin/switchback-update` (`deploy/switchback-update.sh`) as root. That script takes nothing from the
+request: it always downloads the `server-latest` release, refuses it unless it matches its published SHA-256,
+swaps it in, restarts the API, and puts the previous program back if the new one doesn't answer. It writes how it
+went to `/var/lib/switchback-update/status.json`, which the page shows. Only the API program changes. Releases are
+built from `main` by the Server workflow, so a change shows up as an update once it is on `main` and that run has
+finished.
 
 ### What the script sets up
 
@@ -150,6 +161,7 @@ same request twice is harmless. Lists take `?cursor=` from the previous page.
 | `POST /v1/admin/submissions/{id}` `{status: "approved"\|"rejected", reply?}` | approving adds a new trail to `community_trails` or a correction to `trail_overrides`; rejecting takes it off again | |
 | `GET /review` · `POST /v1/admin/login` `{pin}` → `{token}` | the review page, and unlocking it with `ADMIN_PIN` (a session key for 12 hours; 5 tries per 15 minutes per address, 20 an hour in all) | |
 | `GET /v1/admin/photos?status=ready\|hidden\|uploading\|all` · `POST /v1/admin/photos/{id}` `{status: "ready"\|"hidden"}` | photos, and taking one down (or back up) | |
+| `GET /v1/admin/update` (`?check=1` also asks what is published) · `POST /v1/admin/update` | the running version, whether a newer one is published and how the last update went; asking the machine to install the published version (409 `not_set_up` where the updater isn't installed) | |
 | `GET /v1/admin/reviews?status=shown\|hidden\|all` · `POST /v1/admin/reviews/{id}` `{hidden: true\|false}` | trail reviews, and hiding one (or showing it again) | |
 
 `trail` is `{id, name, start: [lat, lon], bbox: [south, west, north, east]}`, the app's trail id plus enough to

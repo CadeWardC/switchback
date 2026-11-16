@@ -16,16 +16,26 @@
 //	MAIL_FROM          Switchback <signin@example.com>
 //	TRUST_CLOUDFLARE   1 to take client IPs from CF-Connecting-IP (only behind the tunnel)
 //	DB_MAX_CONNS       default 10
+//	UPDATE_DIR         where "update the server" requests from the review page are left for the machine's updater
+//	                   (the Pi's setup sets it); empty: the page shows the version but can't update
+//	UPDATE_STATUS      the file the updater writes how it went to
+//	UPDATE_REPO        OWNER/NAME on GitHub whose server-latest release is installed (default CadeWardC/switchback)
+//
+// switchback-api --version prints what it was built from and stops.
 package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -38,7 +48,34 @@ import (
 	"switchback/server/internal/storage"
 )
 
+// version is the commit this was built from (set by the release build with -ldflags "-X main.version=...").
+var version = "dev"
+
+var repoRE = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+
+// ownSHA256 is the checksum of this program's own file: what the published checksum is compared with.
+func ownSHA256() string {
+	path, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "version") {
+		fmt.Println(version)
+		return
+	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})))
 	if err := run(); err != nil {
 		slog.Error("stopped", "err", err)
@@ -102,6 +139,10 @@ func run() error {
 		}
 	}
 
+	updateRepo := env("UPDATE_REPO", "CadeWardC/switchback")
+	if !repoRE.MatchString(updateRepo) {
+		return errors.New("UPDATE_REPO must be OWNER/NAME on GitHub")
+	}
 	srv := &api.Server{
 		EmailKey:   emailKey,
 		DB:         pool,
@@ -112,6 +153,15 @@ func run() error {
 		Limit:      ratelimit.New(),
 		AdminToken: adminToken,
 		AdminPIN:   adminPIN,
+		Update: api.Update{
+			Version:    version,
+			SHA256:     ownSHA256(),
+			Started:    time.Now().UTC(),
+			Dir:        env("UPDATE_DIR", ""),
+			StatusFile: env("UPDATE_STATUS", ""),
+			BinaryURL:  "https://github.com/" + updateRepo + "/releases/download/server-latest/switchback-api-linux-arm64",
+			NotesURL:   "https://api.github.com/repos/" + updateRepo + "/releases/tags/server-latest",
+		},
 		Cfg: api.Config{
 			PublicURL: env("PUBLIC_URL", "http://localhost:8080"),
 			TrustCF:   env("TRUST_CLOUDFLARE", "") == "1",
