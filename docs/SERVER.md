@@ -1,76 +1,82 @@
-# Switchback server: sync, submissions and review
+# Switchback server: accounts, your hikes, photos and review
 
-The phone app works fully with no account. Signing in (Settings › Account & sync: server address + API key, kept
-in the phone's secure store) backs saved trails and recorded hikes up to a self-hosted Switchback server and keeps
-them in sync between devices. Hikes can also be submitted for review, to be added to the public trail data.
+The phone app (`mobile/`) works fully without an account. With one (Settings › Account › Create an account, or
+Log in: email and password), your recorded hikes, saved trails and hike photos are kept on your account on the
+Switchback server and synced to every phone you log in on, so they survive a lost phone or a reinstall. Hikes can be
+submitted as new trails, which you approve or reject on the review page.
 
-## Collections
+The server is `server/` in this repository (Go and PostgreSQL); its own README has every route and setting. This
+page is the overview and how to put it on the Orange Pi.
 
-The phone app (`mobile/`) writes these. Code: `mobile/src/core/server.ts` (the API), `sync.ts` (syncing),
-`syncFormat.ts` (ids and document shapes, unit-tested in `mobile/test/sync.test.ts`, which also runs against a
-live server when `SB_URL` and `SB_KEY` are set).
+## What the app stores on your account
 
-| Collection | Document id | Body | Written by |
-| --- | --- | --- | --- |
-| `saved_trails` | `t.<region>.<trail id>`, or `h.<hash>` when the id has characters the server doesn't allow | `{v: 2, trail}`: the saved trail as the app keeps it (region, id, name, length, climb, difficulty, start, `saved` in ms). Your own trail (a hike you recorded, kept in Saved) has region `own` and `walk` = the hike's id | the app |
-| `activities` | `w.<hike id>` | `{v: 2, walk}`: the recorded hike with its marked spots; each stretch's points as `{line, ele, t, acc}`: `line` an encoded polyline at 1e-6° (~0.1 m), heights, seconds after the start, GPS accuracy. A 30 km hike is a few hundred KB | the app |
-| `submissions` | `s.<hike id>.<time>` | `{v: 2, status, submitted_at, name, review: {rating, text}, public_use_consent, app_version, hike: {start, distance, moving_time, gain, trail_name, segments: [{line, alt, t}], points: [{kind: "spot", note, lat, lon, time}]}, gpx, reviewed_at, reviewer_note}`; `status` is `pending`, then `approved` or `rejected`; `gpx` is the submission file `docs/SUBMISSIONS.md` describes | the app creates it; the review page sets the status |
-| `approved_hikes` | the submission's id | `{v, name, approved_at, submitted_at, review, hike}` | the review page, on approval (removed again on rejection) |
+| Where on the server | What | Who sees it |
+| --- | --- | --- |
+| `/v1/me/docs/saved_trails/<id>` | each saved trail `{v: 2, trail}` (your own recorded trails too: region `own`) | only you |
+| `/v1/me/docs/activities/<id>` | each recorded hike `{v: 2, walk}` with its marked spots; points as 1e-6° polylines with heights and times (a 30 km hike is a few hundred KB) | only you |
+| `/v1/photos/<uuid>` | photos on your recorded hikes (taken while recording or added later from the library): a display copy (≤ 1000 px short side) and a thumbnail, JPEG, no metadata, with the hike's id and where and when | only you (the files are at unguessable links) |
+| `/v1/submissions/<uuid>` | a hike you submitted as a new trail: name, line, a note with your review, the spots you marked and your agreement to public use | you and the reviewer; everyone once approved |
 
+The server never stores email addresses: a keyed hash stands in for them, and passwords are kept as bcrypt hashes.
 Settings, caches, offline maps, trail packs and the hike being recorded stay on the phone.
 
-## How the app syncs
+Code: `mobile/src/core/server.ts` (accounts and requests), `sync.ts` (syncing), `syncFormat.ts` (ids and document
+shapes), `myPhotos.ts` (photos); tests in `mobile/test/sync.test.ts`, which also run against a server when
+`SB_URL` is set (for example `SB_URL=http://localhost:8080 npx jest`).
 
-- The app watches its two lists (saved trails, kept hikes): whatever is added or changed is queued for upload,
-  whatever is removed for deletion. Everything works offline; the queue is sent when the server can be reached: at
-  launch, when the app comes back to the screen, when the connection returns, a couple of seconds after a change,
-  and from Settings › Account & sync › Sync now.
-- Then each collection is pulled with `GET /v1/{collection}?since=<server_time from the last list>`: live documents
-  are applied, `deleted: true` ones removed. A change on the phone that hasn't been sent yet wins over the server's
-  copy of the same item; otherwise the server's (last write wins).
-- **First sync** (or after signing in to a different server): the server's copy is taken first, so a second phone
-  can't overwrite the first, then everything only the phone has is uploaded.
-- Errors: no connection is shown as offline in Settings (changes wait); anything else (a wrong key, a block in
-  front of the server, an item over ~2 MB) is shown once as a message and stays in Settings until a sync succeeds.
+## How syncing works
 
-## Submissions
+- Everything works offline. The app watches its saved trails and kept hikes: whatever changes is queued and sent
+  when the server can be reached (at launch, when the app comes back to the screen, when the connection returns, a
+  couple of seconds after a change, and Settings › Account › Sync now). Photos follow their hikes.
+- Then each collection is pulled with `?since=<server_time from the last list>`: changes from your other phones
+  come in, deletions included. A change on this phone that hasn't been sent yet wins over the server's copy.
+- The first time you log in, what's on your account comes down first, then what only this phone has goes up.
+- Logging in returns a short access token and a refresh token; the refresh token is kept in the phone's secure
+  store and renews the access token when it runs out.
 
-A finished hike goes to the Log and to Saved as your own trail, then the app offers to submit it (also from the
-hike's page in the Log). A submission needs a real trail name (not "Morning hike"), may carry a 1-5 star review,
-and includes the spots marked with Mark a spot during the hike: spots can only be submitted as part of a recorded
-hike, so every spot comes from someone who walked there. The hiker must agree that what they submit may be shown
-publicly and that photos they submit are for public use. Nothing is added until it is approved.
+## Submissions and the review page
 
-**Review page:** open `web/review.html` in a browser (it has no secrets in it), enter the server address and the
-owner key (kept only for that browser tab), and approve or reject each submission. It shows the track and spots on
-a map, the review, and the hiker's consent. Approving copies it to `approved_hikes`.
+After a hike is kept (in the Log, and in Saved as your own trail), the app offers to submit it: it needs a real
+trail name, may carry a 1-5 star review, and includes the spots marked on the way. The hiker agrees that it may be
+shown publicly and that photos they submit are for public use. The hike's page in the Log shows whether it is
+waiting, approved or not added, and your reply.
 
-## Opening it to other people: what the server needs
+**Review page:** open `web/review.html` in a browser (it has no secrets in it), enter the server's address and the
+admin token (`ADMIN_TOKEN` on the server; kept only for that browser tab). Submissions: see the line on a map, the
+note, who sent it; approve (adds it to the community trails) or reject, with a reply. Photos: hide or show any
+photo.
 
-Today the server has one key that can read, write and delete everything. That's fine while you're the only user,
-but every person given the app would need that same key, and could then read everyone's hikes, delete data,
-or approve their own submissions. A public website couldn't read anything without embedding the key. To open
-Switchback up, the server needs these changes (all on the Orange Pi; nothing changes for the API the app uses
-today):
+## Putting it on the Orange Pi
 
-1. **Accounts with their own keys.** `POST /v1/auth/signup` / `login` returning a per-person key. Store each
-   person's documents under their account (e.g. key the store on `(user, collection, id)`), so
-   `GET/PUT/DELETE /v1/saved_trails/...` and `/v1/activities/...` only ever see that person's own documents.
-   The app's sync code then works unchanged: only the key differs per person. Signing in stays optional.
-2. **Submit-only access to `submissions`.** A person's key may `PUT` a new submission (stamped with their account)
-   and `GET` their own, but can't list others' or change `status`.
-3. **An owner/admin key** (the current one) that alone can list all submissions and write `status` and
-   `approved_hikes`. The review page keeps working with it as is.
-4. **A public read-only route** for approved data, e.g. `GET /public/v1/approved_hikes` (and `?since=`), no key,
-   cached. A public trail site (and the app, to show approved points to everyone) would read only from there.
-5. Optionally: rate limits on signup and submissions, and a size cap per account.
+Your Pi currently runs the simple document store behind the Cloudflare tunnel at `switchback2.opcw032522.uk`. The
+accounts server replaces it (the document store's data was only tests).
 
-If you add the server's code to this repository (or another repository I can open), I can make these changes
-and build the public site on top of route 4.
+1. **Read `server/deploy/setup-pi.sh` first.** Besides Postgres 17 and the API it sets up a firewall, automatic
+   security updates, a nightly maintenance job and low-power settings, and turns Wi-Fi and Bluetooth off when the Pi
+   is on Ethernet (`--keep-radios` keeps them).
+2. **Stop the document store** so the new server can have port 8080 (or whichever port it used: the API listens on
+   `127.0.0.1:8080`).
+3. **Run the setup script** on the Pi (it downloads the latest `server-latest` release, built by the Server
+   workflow from main):
+   ```sh
+   git clone https://github.com/CadeWardC/switchback && cd switchback/server/deploy
+   sudo ./setup-pi.sh --domain switchback2.opcw032522.uk
+   ```
+   Leave out `--tunnel-token` to keep your existing tunnel as it is.
+4. **Point the tunnel at it**: in Cloudflare Zero Trust › Networks › Tunnels › your tunnel › Public hostnames, set
+   `switchback2.opcw032522.uk` → `http://localhost:8080`. Check `https://switchback2.opcw032522.uk/healthz` says
+   `ok`. (If the app ever reports a 403 "blocked before it reached the server", turn off Cloudflare's Browser
+   Integrity Check for this host.)
+5. **The admin token** for the review page: `sudo grep ADMIN_TOKEN /etc/switchback/api.env`.
+6. **Build the address into the app**: GitHub › the repository › Settings › Secrets and variables › Actions ›
+   Variables › New repository variable `SWITCHBACK_SERVER_URL` = `https://switchback2.opcw032522.uk`. The next app
+   builds use it (anyone can still change it on the Account screen, under Server).
 
-### Cloudflare
+## Notes
 
-The tunnel's Browser Integrity Check blocks some non-browser clients (it answered `error code: 1010` to Python's
-default HTTP client in testing; curl and browsers got through). If the app ever shows "blocked before it reached
-the server (403)", turn Browser Integrity Check off for this hostname, or add a WAF skip rule for `/v1/*` and
-`/health`.
+- Email-code and Google sign-in also exist on the server, but the app uses email and password. A password account
+  is never merged with an email-code or Google sign-in for the same address (the email isn't checked when
+  registering, so merging would let someone take over another person's account).
+- There is no "forgot password" yet: it needs the server to send email (`RESEND_API_KEY`), which it can, for the
+  email-code sign-in.

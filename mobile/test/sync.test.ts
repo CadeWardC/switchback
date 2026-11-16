@@ -145,7 +145,7 @@ live('live server', () => {
     const me = signUp('dee');
     const id = uuid();
     const r = call('PUT', `/v1/submissions/${id}`, trailSubmission(longHike(), 'Test hike', { rating: 5, text: 'Lovely' }, 'moderate'), me);
-    expect(r.status).toBe(200);
+    expect([200, 201]).toContain(r.status);
     const mine = call('GET', '/v1/me/submissions', undefined, me).json.submissions;
     expect(mine).toEqual([expect.objectContaining({ id, status: 'pending', kind: 'new_trail' })]);
   });

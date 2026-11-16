@@ -8,15 +8,17 @@ subscription and no API keys.
 | Folder | What it is | Builds |
 | --- | --- | --- |
 | [`mobile/`](mobile) | **The phone app** (React Native / Expo): native map and screens, recording with the screen off, the lock-screen hike | iPhone IPA (`build-rn-ios.yml`, `switchback-rn-ios-N`) and Android APK (`build-rn-android.yml`, `switchback-rn-android-N`) |
+| [`server/`](server) | The Switchback server (Go, PostgreSQL): accounts, your hikes, photos, submissions | `server.yml` (`server-latest`, for the Orange Pi) |
 | [`web/`](web) | The website, also wrapped as an app with Capacitor | GitHub Pages (`pages.yml`), Android APK and iPhone IPA (`build-android-apk.yml`, `build-web-ios-ipa.yml`) |
 
 The original iPhone app (Swift) has been removed; it is in the git history. Its map style lives on in
 [`map-style/`](map-style) (written by `scripts/make-style.py`), which both apps build their maps from.
 
-- **Optional sync and submissions (phone app):** sign in to your own Switchback server (Settings › Account & sync)
-  to back up saved trails and hikes and sync them between devices; without it everything stays on the phone. A
-  finished hike is kept in Saved as your own trail, and you're offered to submit it (with the spots you marked and
-  an optional review) for review on `web/review.html`. See [docs/SERVER.md](docs/SERVER.md).
+- **Accounts (phone app, optional):** create an account or log in (email and password) to keep your hikes, saved
+  trails and hike photos on your account on the Switchback server (`server/`), synced to every phone you log in on;
+  without one everything stays on the phone. Take photos while recording or add them to a kept hike. A finished
+  hike is kept in Saved as your own trail and can be submitted as a new trail, approved on `web/review.html`. See
+  [docs/SERVER.md](docs/SERVER.md).
 - **Hike tab:** the map and the recorder share one tab (Hike, Saved and Log, each with an icon); tap Record a hike
   on the map's sheet to start. Drag along any elevation chart to see that spot on the map.
 

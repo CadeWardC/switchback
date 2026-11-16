@@ -160,7 +160,7 @@ function photoCard(p) {
       ${p.status === "hidden" ? `<button data-set="ready">Show</button>` : `<button class="danger" data-set="hidden">Hide</button>`}</div>`;
   el.querySelector("button[data-set]").onclick = async (e) => {
     e.target.disabled = true;
-    try { await api("POST", `/v1/admin/photos/${encodeURIComponent(p.id)}`, { status: e.target.dataset.set }); showMsg("Photo updated."); load(); }
+    try { await api("POST", `/v1/admin/photos/${encodeURIComponent(p.id)}`, { status: e.target.dataset.set }); await load(); showMsg("Photo updated."); }
     catch (err) { showMsg("Couldn't save: " + err.message, true); e.target.disabled = false; }
   };
   return el;
@@ -179,8 +179,8 @@ async function decide(s, status, reply, el) {
   try {
     const out = await api("POST", `/v1/admin/submissions/${encodeURIComponent(s.id)}`, { status, reply: reply || "" });
     Object.assign(s, out || { status, reply });
+    await load();
     showMsg(`“${s.name || s.id}” ${status}.`);
-    load();
   } catch (e) {
     showMsg("Couldn't save: " + e.message, true);
     el.querySelectorAll("button").forEach(b => b.disabled = false);
