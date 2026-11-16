@@ -2,8 +2,9 @@
 
 The phone app (`mobile/`) works fully without an account. With one (Settings › Account › Create an account, or
 Log in: email and password), your recorded hikes, saved trails and hike photos are kept on your account on the
-Switchback server and synced to every phone you log in on, so they survive a lost phone or a reinstall. Hikes can be
-submitted as new trails, which you approve or reject on the review page.
+Switchback server and synced to every phone you log in on, so they survive a lost phone or a reinstall. Trail
+reviews and photos are public: every trail's page shows its rating, reviews and photos to everyone, with or without
+an account. Hikes can be submitted as new trails, which you approve or reject on the review page.
 
 The server is `server/` in this repository (Go and PostgreSQL); its own README has every route and setting. This
 page is the overview and how to put it on the Orange Pi.
@@ -14,7 +15,8 @@ page is the overview and how to put it on the Orange Pi.
 | --- | --- | --- |
 | `/v1/me/docs/saved_trails/<id>` | each saved trail `{v: 2, trail}` (your own recorded trails too: region `own`) | only you |
 | `/v1/me/docs/activities/<id>` | each recorded hike `{v: 2, walk}` with its marked spots; points as 1e-6° polylines with heights and times (a 30 km hike is a few hundred KB) | only you |
-| `/v1/photos/<uuid>` | photos on your recorded hikes (taken while recording or added later from the library): a display copy (≤ 1000 px short side) and a thumbnail, JPEG, no metadata, with the hike's id and where and when | only you (the files are at unguessable links) |
+| `/v1/photos/<uuid>` | photos on your recorded hikes (taken while recording or added later from the library): a display copy (≤ 1000 px short side) and a thumbnail, JPEG, no metadata, with the hike's id, its trail, and where and when | everyone, on the trail's page, when the hike followed a known trail (public use); otherwise only you |
+| `/v1/reviews/<uuid>` | your review of a trail you recorded a hike of: 1-5 stars and words, one per trail (edit or delete it any time) | everyone, on the trail's page, with your name |
 | `/v1/submissions/<uuid>` | a hike you submitted as a new trail: name, line, a note with your review, the spots you marked and your agreement to public use | you and the reviewer; everyone once approved |
 
 The server never stores email addresses: a keyed hash stands in for them, and passwords are kept as bcrypt hashes.
@@ -44,8 +46,8 @@ waiting, approved or not added, and your reply.
 
 **Review page:** open `web/review.html` in a browser (it has no secrets in it), enter the server's address and the
 admin token (`ADMIN_TOKEN` on the server; kept only for that browser tab). Submissions: see the line on a map, the
-note, who sent it; approve (adds it to the community trails) or reject, with a reply. Photos: hide or show any
-photo.
+note, who sent it; approve (adds it to the community trails) or reject, with a reply. Reviews and Photos: they are
+public as soon as they're posted; hide any one to take it down (or show it again).
 
 ## Putting it on the Orange Pi
 

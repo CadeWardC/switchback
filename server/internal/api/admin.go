@@ -252,3 +252,90 @@ func (s *Server) setPhotoStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, out)
 }
+
+// adminReviews lists trail reviews, newest first: ?status=shown, hidden or all (the default).
+func (s *Server) adminReviews(w http.ResponseWriter, r *http.Request) {
+	where, args := ``, []any{}
+	switch r.URL.Query().Get("status") {
+	case "", "all":
+	case "shown":
+		where = ` WHERE NOT r.hidden`
+	case "hidden":
+		where = ` WHERE r.hidden`
+	default:
+		writeErr(w, r, fail(http.StatusBadRequest, "bad_status", "status is shown, hidden or all."))
+		return
+	}
+	s.writeAdminReviews(w, r, where, args...)
+}
+
+type adminReviewOut struct {
+	reviewOut
+	TrailName string `json:"trail_name"`
+	Hidden    bool   `json:"hidden"`
+}
+
+func (s *Server) writeAdminReviews(w http.ResponseWriter, r *http.Request, where string, args ...any) {
+	rows, err := s.DB.Query(r.Context(), `
+		SELECT r.id, r.trail_id, r.user_id, u.display_name, r.rating, r.body, r.hiked_on, r.conditions,
+		       coalesce((SELECT array_agg(p.id::text ORDER BY p.created_at) FROM photos p WHERE p.review_id = r.id AND p.status = 'ready'), '{}'),
+		       r.created_at, r.updated_at, coalesce(t.name, ''), r.hidden
+		FROM reviews r JOIN users u ON u.id = r.user_id LEFT JOIN trail_refs t ON t.trail_id = r.trail_id`+where+`
+		ORDER BY r.created_at DESC, r.id DESC LIMIT 1000`, args...)
+	if err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	defer rows.Close()
+	out := []adminReviewOut{}
+	for rows.Next() {
+		var o adminReviewOut
+		if err := rows.Scan(&o.ID, &o.TrailID, &o.UserID, &o.DisplayName, &o.Rating, &o.Body, &o.hikedOn, &o.Conditions,
+			&o.PhotoIDs, &o.CreatedAt, &o.UpdatedAt, &o.TrailName, &o.Hidden); err != nil {
+			writeErr(w, r, err)
+			return
+		}
+		if o.hikedOn != nil {
+			d := o.hikedOn.Format("2006-01-02")
+			o.HikedOn = &d
+		}
+		out = append(out, o)
+	}
+	if err := rows.Err(); err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"reviews": out})
+}
+
+// setReviewHidden hides a review (or shows it again) and recounts its trail's numbers.
+func (s *Server) setReviewHidden(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r)
+	if err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	var in struct {
+		Hidden bool `json:"hidden"`
+	}
+	if err := readJSON(w, r, &in); err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	err = s.inTx(r.Context(), func(tx pgx.Tx) error {
+		var trail string
+		if err := tx.QueryRow(r.Context(), `UPDATE reviews SET hidden = $2 WHERE id = $1 RETURNING trail_id`, id, in.Hidden).Scan(&trail); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(r.Context(), `
+			UPDATE reports SET status = 'closed' WHERE target_kind = 'review' AND target_id = $1 AND status = 'open'`, id); err != nil {
+			return err
+		}
+		return refreshStats(r.Context(), tx, &trail)
+	})
+	if err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"id": id, "hidden": in.Hidden})
+}

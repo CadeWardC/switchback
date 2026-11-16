@@ -92,6 +92,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/admin/submissions/{id}", s.admin(s.reviewSubmission))
 	mux.HandleFunc("GET /v1/admin/photos", s.admin(s.adminPhotos))
 	mux.HandleFunc("POST /v1/admin/photos/{id}", s.admin(s.setPhotoStatus))
+	mux.HandleFunc("GET /v1/admin/reviews", s.admin(s.adminReviews))
+	mux.HandleFunc("POST /v1/admin/reviews/{id}", s.admin(s.setReviewHidden))
 
 	mux.HandleFunc("GET /p/{key}", func(w http.ResponseWriter, r *http.Request) { s.Store.Serve(w, r, r.PathValue("key")) })
 	return recoverer(cors(mux))

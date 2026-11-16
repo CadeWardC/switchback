@@ -25,6 +25,7 @@ import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
 import { LightLine, Ridge } from '../ui/Ridge';
+import { TrailCommunity } from '../ui/Community';
 import { fonts, useTheme } from '../ui/theme';
 
 const WEBSITE = 'https://cadewardc.github.io/switchback/';
@@ -218,6 +219,8 @@ export function TrailSheet() {
           ) : null}
         </View>
       )}
+
+      <TrailCommunity trail={whole} />
 
       {[...official, ...details].length > 0 && (
         <View style={{ gap: 8 }}>

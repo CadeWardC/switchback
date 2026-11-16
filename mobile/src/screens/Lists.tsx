@@ -26,6 +26,8 @@ import { SubmissionRow } from './Submit';
 import { account } from '../core/server';
 import { accountPhotos, loadMyPhotos, myPhotos, pickPhotos, type RemotePhoto } from '../core/myPhotos';
 import { PhotoGrid } from '../ui/MyPhotos';
+import { writeReview } from '../ui/Community';
+import { trailRefOfWalk } from '../core/community';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
@@ -258,6 +260,9 @@ export function WalkSheet() {
       {ridge && path.length > 1 ? <Card><Ridge profile={ridge} path={path} height={84} units={u} /></Card> : null}
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
       <HikePhotos walk={w} />
+      {w.trail ? (
+        <Button icon="pencil" title={`Review ${w.trail.name}`} onPress={() => { const ref = trailRefOfWalk(w); if (ref) void writeReview(ref, w.started); }} />
+      ) : null}
       <SubmissionRow walk={w} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />
@@ -294,7 +299,10 @@ function HikePhotos({ walk }: { walk: Walk }) {
     <View style={{ gap: 8 }}>
       <PhotoGrid mine={mine} remote={remote} />
       <Button icon="camera" title={busy ? 'Adding…' : mine.length || remote.length ? 'Add more photos' : 'Add photos'} onPress={() => void add()} disabled={busy} />
-      {!me && (mine.length > 0) && <T v="tiny" muted>Kept on this phone. Log in (Settings › Account) to keep them on your account too.</T>}
+      {!me && (mine.length > 0) && <T v="tiny" muted>Kept on this phone. Log in (Settings › Account) to upload them.</T>}
+      <T v="tiny" muted>{walk.trail
+        ? `Photos you add here are shown publicly on ${walk.trail.name}'s page: anyone may see, share and reuse them.`
+        : 'Photos here are seen only by you, until this hike is added as a trail.'}</T>
     </View>
   );
 }

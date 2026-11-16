@@ -1,6 +1,8 @@
 // How saved trails and hikes look on the server: document ids and compact hikes. No React Native in here, so
 // tests (and anything else) can use it as is.
 import type { SavedTrail, Walk, WalkPoint } from '@web/lib/storage';
+import { bboxOf } from '@web/lib/geo';
+import type { Coord } from '@web/lib/polyline';
 
 /** Names and ids the server takes: 1-128 of A-Z a-z 0-9 _ - . */
 export const validName = (s: string) => /^[A-Za-z0-9_.-]{1,128}$/.test(s);
@@ -127,4 +129,16 @@ export function trailSubmission(w: Walk, name: string, review: { rating: number 
     note,
     ...(difficulty && DIFFICULTY[difficulty] ? { difficulty: DIFFICULTY[difficulty] } : {}),
   };
+}
+
+/** How the server is told which trail a review or photo is about (the same key as Saved: region/id). */
+export interface TrailRef { id: string; name: string; start: [number, number]; bbox: [number, number, number, number] }
+
+/** The trail a recorded hike followed, placed by the hike's own line; null for a hike not on a known trail. */
+export function trailRefOfWalk(w: Pick<Walk, 'trail' | 'segments'>): TrailRef | null {
+  if (!w.trail) return null;
+  const lines = w.segments.map((s) => s.map((p) => [p.lat, p.lon] as Coord)).filter((l) => l.length);
+  const box = bboxOf(lines);
+  if (!box) return null;
+  return { id: `${w.trail.region}/${w.trail.id}`, name: w.trail.name, start: lines[0][0], bbox: box };
 }

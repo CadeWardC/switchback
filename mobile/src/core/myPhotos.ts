@@ -1,10 +1,11 @@
 // Your own photos, only ever on hikes you recorded yourself: taken while recording, or added to a kept hike from
-// the phone's library.
+// the phone's library. Photos on a hike of a known trail are public: once uploaded they show on that trail's page
+// for everyone (core/community.ts). Photos on a hike of no known trail are seen only by you.
 //
 // A photo is kept on the phone first (a copy at most 1000 px on its short side, re-encoded as JPEG, which also
 // drops its metadata: no location or camera details leave the phone inside the file), listed in my-photos.json,
 // and uploaded to your account when you are logged in and online: PUT /v1/photos/{id} (where and when, which hike
-// they belong to), then the display and thumbnail files. They are listed only to you.
+// they belong to, and its trail), then the display and thumbnail files.
 // After a reinstall, photos already on your account still show: they come from the server (/v1/me/photos).
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -15,6 +16,7 @@ import { loadDoc, saveDoc, type Walk } from '@web/lib/storage';
 import { myLocation } from './state';
 import { account, api, isSignedIn, ServerError } from './server';
 import { uuid } from './syncFormat';
+import { trailRefOfWalk, type TrailRef } from './syncFormat';
 
 export interface MyPhoto {
   id: string;
@@ -29,11 +31,13 @@ export interface MyPhoto {
   /** Taken while recording, before the hike had an id: given the hike's id when it is kept. */
   recording?: boolean;
   walk?: string;
+  /** The trail the hike followed: the photo is shown publicly on its page. */
+  trail?: TrailRef;
   uploaded?: boolean;
 }
 
 /** A photo on your account (from the server), for ones this phone doesn't have (after a reinstall or on another phone). */
-export interface RemotePhoto { id: string; walk_id: string | null; trail_id: string | null; url: string | null; thumb_url: string | null; lat: number | null; lon: number | null; taken_at: string | null }
+export interface RemotePhoto { id: string; display_name?: string; walk_id: string | null; trail_id: string | null; url: string | null; thumb_url: string | null; lat: number | null; lon: number | null; taken_at: string | null }
 
 const DOC = 'my-photos.json';
 export const myPhotos = signal<MyPhoto[]>([]);
@@ -126,11 +130,12 @@ export async function pickPhotos(to: { walk: Walk }): Promise<number> {
   const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 20, quality: 1, exif: true });
   if (r.canceled || !r.assets?.length) return 0;
   const out: Omit<MyPhoto, 'id'>[] = [];
+  const trail = trailRefOfWalk(to.walk) ?? undefined;
   for (const a of r.assets) {
     const t = exifTime(a.exif) ?? to.walk.started;
     const place = exifPlace(a.exif) ?? placeOnHike(to.walk, t);
     const copy = await keepCopy(a.uri, a.width, a.height);
-    out.push({ ...copy, t, ...(place ?? {}), walk: to.walk.id });
+    out.push({ ...copy, t, ...(place ?? {}), walk: to.walk.id, ...(trail ? { trail } : {}) });
   }
   await add(out);
   return out.length;
@@ -140,10 +145,11 @@ export async function pickPhotos(to: { walk: Walk }): Promise<number> {
 export async function claimRecordingPhotos(w: Walk): Promise<void> {
   await ensureLoaded();
   let changed = false;
+  const trail = trailRefOfWalk(w) ?? undefined;
   myPhotos.value = myPhotos.peek().map((p) => {
     if (!p.recording || p.walk) return p;
     changed = true;
-    return { ...p, recording: false, walk: w.id, ...(p.lat == null ? placeOnHike(w, p.t) ?? {} : {}) };
+    return { ...p, recording: false, walk: w.id, ...(trail ? { trail } : {}), ...(p.lat == null ? placeOnHike(w, p.t) ?? {} : {}) };
   });
   if (changed) { await persist(); void uploadPhotos(); }
 }
@@ -185,6 +191,7 @@ async function run(): Promise<void> {
     try {
       await api.call('PUT', `/v1/photos/${p.id}`, {
         walk_id: p.walk,
+        ...(p.trail ? { trail: p.trail } : {}),
         ...(p.lat != null && p.lon != null ? { lat: p.lat, lon: p.lon } : {}),
         taken_at: new Date(p.t).toISOString(),
       });

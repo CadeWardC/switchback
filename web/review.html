@@ -45,7 +45,7 @@
 <body>
 <main>
   <h1>Switchback review</h1>
-  <p class="sub">Hikes people send in as new trails, and their photos. Approve a trail to add it for everyone, or reject it with a reply they'll see in the app. Hide a photo to take it down.</p>
+  <p class="sub">Hikes people send in as new trails, trail reviews and photos. Approve a trail to add it for everyone, or reject it with a reply they'll see in the app. Reviews and photos are public as soon as they're posted: hide one to take it down.</p>
 
   <form id="login">
     <input id="url" type="url" placeholder="https://your-server.example" required>
@@ -55,6 +55,7 @@
   <div id="msg"></div>
   <div class="bar" id="bar" hidden>
     <button type="button" data-view="submissions" aria-pressed="true">Submissions</button>
+    <button type="button" data-view="reviews" aria-pressed="false">Reviews</button>
     <button type="button" data-view="photos" aria-pressed="false">Photos</button>
     <label>Show <select id="filter"></select></label>
     <button type="button" id="reload">Refresh</button>
@@ -70,6 +71,7 @@ const store = { get(k) { try { return sessionStorage.getItem(k) } catch { return
 let base = "", key = "", view = "submissions", rows = [];
 const FILTERS = {
   submissions: [["pending", "Waiting for review"], ["approved", "Approved"], ["rejected", "Rejected"], ["all", "All"]],
+  reviews: [["shown", "Shown"], ["hidden", "Hidden"], ["all", "All"]],
   photos: [["ready", "Shown"], ["hidden", "Hidden"], ["all", "All"]],
 };
 
@@ -111,6 +113,7 @@ async function load() {
     if (health.trim() !== "ok") throw new Error("The server didn't answer /healthz. Check the address.");
     const status = $("#filter").value;
     if (view === "submissions") rows = (await api("GET", `/v1/admin/submissions?status=${status}`)).submissions || [];
+    else if (view === "reviews") rows = (await api("GET", `/v1/admin/reviews?status=${status}`)).reviews || [];
     else rows = (await api("GET", `/v1/admin/photos?status=${status}`)).photos || [];
     showMsg("");
     $("#bar").hidden = false;
@@ -123,6 +126,7 @@ function render() {
   const list = $("#list"); list.innerHTML = "";
   if (!rows.length) { list.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
   if (view === "submissions") { for (const s of rows) list.appendChild(submissionCard(s)); return; }
+  if (view === "reviews") { for (const r of rows) list.appendChild(reviewCard(r)); return; }
   const grid = document.createElement("div"); grid.className = "photos";
   for (const p of rows) grid.appendChild(photoCard(p));
   list.appendChild(grid);
@@ -148,6 +152,26 @@ function submissionCard(s) {
   if (s.note) el.querySelector(".note").textContent = s.note;
   if (s.line) requestAnimationFrame(() => drawMap(el.querySelector(".map"), decodeLine(s.line)));
   el.querySelectorAll("button[data-act]").forEach(b => b.onclick = () => decide(s, b.dataset.act, el.querySelector(".actions input").value, el));
+  return el;
+}
+
+function reviewCard(r) {
+  const el = document.createElement("section"); el.className = "card";
+  const stars = "★★★★★".slice(0, r.rating) + "☆☆☆☆☆".slice(0, 5 - r.rating);
+  el.innerHTML = `
+    <div class="head">
+      <div><h2>${esc(r.trail_name || r.trail_id)}</h2>
+        <div class="meta">${stars} · from ${esc(r.display_name || "someone")} · ${when(r.created_at)}${r.hiked_on ? " · hiked " + esc(r.hiked_on) : ""}</div></div>
+      <span class="pill ${r.hidden ? "hidden" : "ready"}">${r.hidden ? "hidden" : "shown"}</span>
+    </div>
+    ${r.body ? `<div class="note"></div>` : ""}
+    <div class="actions">${r.hidden ? `<button data-hide="false">Show</button>` : `<button class="danger" data-hide="true">Hide</button>`}</div>`;
+  if (r.body) el.querySelector(".note").textContent = r.body;
+  el.querySelector("button[data-hide]").onclick = async (e) => {
+    e.target.disabled = true;
+    try { await api("POST", `/v1/admin/reviews/${encodeURIComponent(r.id)}`, { hidden: e.target.dataset.hide === "true" }); await load(); showMsg("Review updated."); }
+    catch (err) { showMsg("Couldn't save: " + err.message, true); e.target.disabled = false; }
+  };
   return el;
 }
 

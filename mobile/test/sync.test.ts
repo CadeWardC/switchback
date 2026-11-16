@@ -7,7 +7,7 @@ const { execFileSync } = require('node:child_process') as { execFileSync: (cmd: 
 const { writeFileSync } = require('node:fs') as { writeFileSync: (file: string, data: string) => void };
 declare const process: { env: Record<string, string | undefined> };
 import type { SavedTrail, Walk } from '@web/lib/storage';
-import { compactWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, trailSubmission, uuid, validName, walkDocId } from '../src/core/syncFormat';
+import { compactWalk, trailRefOfWalk, decodeTrack, encodeTrack, expandWalk, trailDocId, trailKey, trailSubmission, uuid, validName, walkDocId } from '../src/core/syncFormat';
 
 // a 30 km hike, a point every 4 m, in two stretches, with heights (some missing) and two marked spots
 function longHike(): Walk {
@@ -148,5 +148,44 @@ live('live server', () => {
     expect([200, 201]).toContain(r.status);
     const mine = call('GET', '/v1/me/submissions', undefined, me).json.submissions;
     expect(mine).toEqual([expect.objectContaining({ id, status: 'pending', kind: 'new_trail' })]);
+  });
+
+  test('a review of a trail you hiked is public, one per person, and the owner can hide it', () => {
+    const me = signUp('eve');
+    const w = longHike();
+    const ref = trailRefOfWalk(w)!;
+    expect(ref.id).toBe('missouri/r123');
+    const id = uuid();
+    expect(call('PUT', `/v1/reviews/${id}`, { trail: ref, rating: 4, body: 'Muddy but lovely', hiked_on: '2026-11-01' }, me).status).toBe(201);
+    expect(call('PUT', `/v1/reviews/${uuid()}`, { trail: ref, rating: 2, body: 'again' }, me).json.error.code).toBe('already_reviewed');
+    expect(call('PUT', `/v1/reviews/${id}`, { trail: ref, rating: 5, body: 'Edited' }, me).status).toBe(200);
+    // anyone can read it, without an account
+    const pub = call('GET', `/v1/trails/reviews?trail=${encodeURIComponent(ref.id)}`).json;
+    expect(pub.reviews).toEqual([expect.objectContaining({ id, rating: 5, body: 'Edited', display_name: 'eve' })]);
+    expect(pub.stats).toEqual(expect.objectContaining({ reviews: 1, rating: 5 }));
+    const admin = process.env.SB_ADMIN;
+    if (!admin) return;
+    expect(call('GET', '/v1/admin/reviews?status=shown', undefined, admin).json.reviews.some((r: any) => r.id === id && r.trail_name === 'Test trail')).toBe(true);
+    expect(call('POST', `/v1/admin/reviews/${id}`, { hidden: true }, admin).status).toBe(200);
+    expect(call('GET', `/v1/trails/reviews?trail=${encodeURIComponent(ref.id)}`).json.reviews).toEqual([]);
+    expect(call('POST', `/v1/admin/reviews/${id}`, { hidden: false }, admin).status).toBe(200);
+  });
+
+  test('a photo on a hike of a trail shows publicly on that trail once uploaded', () => {
+    const photos = process.env.SB_PHOTOS; // a folder with display.jpg and thumb.jpg (JPEG, no EXIF)
+    if (!photos) return;
+    const me = signUp('fay');
+    const w = { ...longHike(), trail: { region: 'missouri', id: 'p' + run, name: 'Photo trail' } };
+    const ref = trailRefOfWalk(w)!;
+    const id = uuid();
+    expect(call('PUT', `/v1/photos/${id}`, { walk_id: walkDocId(w.id), trail: ref, lat: 38.51, lon: -92.31, taken_at: new Date().toISOString() }, me).status).toBe(200);
+    for (const size of ['display', 'thumb']) {
+      const out = execFileSync('curl', ['-sS', '-o', '/dev/null', '-w', '%{http_code}', '-X', 'PUT', '-H', `Authorization: Bearer ${me}`,
+        '-H', 'Content-Type: image/jpeg', '--data-binary', `@${photos}/${size}.jpg`, `${URL}/v1/photos/${id}/file?size=${size}`]).toString();
+      expect(Number(out)).toBeLessThan(300);
+    }
+    const pub = call('GET', `/v1/trails/photos?trail=${encodeURIComponent(ref.id)}`).json.photos;
+    expect(pub).toEqual([expect.objectContaining({ id, display_name: 'fay', status: 'ready' })]);
+    expect(pub[0].url).toBeTruthy();
   });
 });
