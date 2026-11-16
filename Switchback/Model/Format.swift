@@ -62,6 +62,21 @@ enum Fmt {
         return String(format: "%d:%02d:%02d", t / 3600, (t / 60) % 60, t % 60)
     }
 
+    static var speedUnit: String { Units.current == .imperial ? "mph" : "km/h" }
+
+    /// Metres a second as mph or km/h.
+    static func speed(_ mps: Double?) -> String {
+        guard let mps, mps.isFinite, mps >= 0 else { return "–" }
+        let v = Units.current == .imperial ? mps * 3600 / metersPerMile : mps * 3.6
+        return String(format: "%.1f %@", v, speedUnit)
+    }
+
+    /// Average speed over a distance, in mph or km/h.
+    static func speed(distance: Double, time: TimeInterval) -> String {
+        guard distance > 30, time > 0 else { return "–" }
+        return speed(distance / time)
+    }
+
     static func pace(distance: Double, time: TimeInterval) -> String {
         guard distance > 30, time > 0 else { return "–" }
         let unit = Units.current == .imperial ? metersPerMile : 1000

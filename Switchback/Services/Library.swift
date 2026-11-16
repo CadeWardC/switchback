@@ -79,6 +79,57 @@ final class Library: ObservableObject {
         persistActivities()
     }
 
+    // MARK: Backup
+
+    /// Everything you'd lose by deleting the app: recorded hikes and saved trails, in one file.
+    struct Backup: Codable {
+        var app = "Switchback"
+        var version = 1
+        var exported = Date()
+        var activities: [Activity]
+        var trails: [Trail]
+    }
+
+    enum BackupError: LocalizedError {
+        case notABackup
+
+        var errorDescription: String? { "That isn't a Switchback backup file." }
+    }
+
+    /// Writes the backup to a temporary file, ready to share or save to Files.
+    func backupFile() throws -> URL {
+        let data = try JSONEncoder().encode(Backup(activities: activities, trails: trails))
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("backup", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let day = Date().formatted(.iso8601.year().month().day())
+        let url = dir.appendingPathComponent("Switchback backup \(day).json")
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
+    /// Adds the hikes and saved trails from a backup file that aren't here already. Nothing is replaced or removed.
+    func restore(from url: URL) throws -> (hikes: Int, trails: Int) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let data = try Data(contentsOf: url)
+        guard let backup = try? JSONDecoder().decode(Backup.self, from: Compression.unpack(data)) else {
+            throw BackupError.notABackup
+        }
+        let haveHikes = Set(activities.map(\.id))
+        let newHikes = backup.activities.filter { !haveHikes.contains($0.id) }
+        if !newHikes.isEmpty {
+            activities = (activities + newHikes).sorted { $0.start > $1.start }
+            persistActivities()
+        }
+        let haveTrails = Set(trails.map(\.id))
+        let newTrails = backup.trails.filter { !haveTrails.contains($0.id) }
+        if !newTrails.isEmpty {
+            trails += newTrails
+            persistTrails()
+        }
+        return (newHikes.count, newTrails.count)
+    }
+
     private func persistTrails() { Files.save(trails, to: trailsURL) }
     private func persistActivities() { Files.save(activities, to: activitiesURL) }
 }

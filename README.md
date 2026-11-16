@@ -77,14 +77,17 @@ subscription and no API keys.
   shows time, distance, climb and what's left on the lock screen and in the Dynamic Island.
 - **One-tap offline:** "Download for offline" on a trail page saves it and downloads the map around it (about a km of
   margin), as detailed as the size limit allows.
-- **Record & navigate:** GPS recording that keeps going with the phone locked (distance, time, moving time, pace,
-  elevation gain). Follow a trail and it shows how far is left, and buzzes (plus a notification when the phone is
+- **Record & navigate:** GPS recording that keeps going with the phone locked (distance, time, moving time, speed in
+  mph or km/h, pace, elevation gain). The location dot has an arrow for the way the phone points, so you can turn to
+  see which path is which. Follow a trail and it shows how far is left, and buzzes (plus a notification when the phone is
   locked) if you go more than 60 m off it. A hike in progress survives the app being closed.
 - **Saved:** bookmarked trails, GPX import (from Files or "Open in Switchback"), and **offline maps**: download the topo
   or USGS satellite tiles and the trails for an area, then use it without signal. Zooming in past a map's last level (or
   past what you downloaded) enlarges the closest tiles instead of going blank.
 - **Activity:** every recorded hike with its map, stats and elevation chart; share as GPX, rename, or save it as a
   trail to follow again.
+- **Backup:** Settings › Backup exports every recorded hike and saved trail to one file and imports it again (after a
+  reinstall, or on another phone); importing only adds what's missing.
 
 ## Download the trails
 

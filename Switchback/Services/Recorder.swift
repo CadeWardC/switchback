@@ -65,6 +65,13 @@ final class Recorder: NSObject, ObservableObject {
         return l.altitude
     }
 
+    /// How fast you're going right now, in metres a second (nil when not recording or the GPS doesn't say).
+    func currentSpeed(at now: Date) -> Double? {
+        guard state == .recording, let l = lastLocation, l.speed >= 0 else { return nil }
+        // fixes only arrive every few metres, so none for a while means you're standing still
+        return now.timeIntervalSince(l.timestamp) > 8 ? 0 : l.speed
+    }
+
     func elapsed(at now: Date) -> TimeInterval {
         guard let s = startDate else { return 0 }
         let pausedNow = pausedAt.map { now.timeIntervalSince($0) } ?? 0

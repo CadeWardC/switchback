@@ -154,9 +154,65 @@ struct TrailMapView: UIViewRepresentable {
         private var lastCamera: UUID?
         private var wasFollowing = false
         var pendingFit: BBox?
+        private weak var mapView: MKMapView?
+        private weak var headingArrow: UIImageView?
+
+        override init() {
+            super.init()
+            Compass.shared.start()
+            NotificationCenter.default.addObserver(self, selector: #selector(turnHeadingArrow), name: Compass.changed, object: nil)
+        }
+
+        /// An arrow circling the location dot, pointing the way the phone points.
+        private static let arrowImage: UIImage = {
+            let side: CGFloat = 52
+            return UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+                let tip = UIBezierPath()
+                tip.move(to: CGPoint(x: side / 2, y: 2))
+                tip.addLine(to: CGPoint(x: side / 2 + 8, y: 14))
+                tip.addLine(to: CGPoint(x: side / 2, y: 11))
+                tip.addLine(to: CGPoint(x: side / 2 - 8, y: 14))
+                tip.close()
+                tip.lineJoinStyle = .round
+                UIColor.white.setStroke()
+                tip.lineWidth = 2.5
+                tip.stroke()
+                UIColor.systemBlue.setFill()
+                tip.fill()
+            }
+        }()
+
+        func mapView(_ mapView: MKMapView, didAdd views: [MKAnnotationView]) {
+            for view in views where view.annotation is MKUserLocation {
+                guard headingArrow?.superview !== view else { continue }
+                headingArrow?.removeFromSuperview()
+                let arrow = UIImageView(image: Self.arrowImage)
+                arrow.translatesAutoresizingMaskIntoConstraints = false
+                arrow.isHidden = true
+                view.addSubview(arrow)
+                NSLayoutConstraint.activate([
+                    arrow.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                    arrow.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+                ])
+                headingArrow = arrow
+                self.mapView = mapView
+                turnHeadingArrow()
+            }
+        }
+
+        func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+            turnHeadingArrow()   // the map turned under the arrow
+        }
+
+        @objc private func turnHeadingArrow() {
+            guard let arrow = headingArrow, let map = mapView, let heading = Compass.shared.heading else { return }
+            arrow.isHidden = false
+            arrow.transform = CGAffineTransform(rotationAngle: (heading - map.camera.heading) * .pi / 180)
+        }
 
         func apply(_ p: TrailMapView, to map: MKMapView) {
             parent = p
+            mapView = map
             applyBase(p, map)
             applyRoutes(p, map)
             applyTrails(p, map)

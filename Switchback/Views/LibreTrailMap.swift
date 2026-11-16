@@ -62,6 +62,7 @@ struct LibreTrailMap: UIViewRepresentable {
         context.coordinator.dark = dark
         map.delegate = context.coordinator
         map.showsUserLocation = true
+        map.showsUserHeadingIndicator = true   // an arrow on the dot for the way the phone points
         map.logoView.isHidden = true
         map.attributionButton.isHidden = true   // the credit line is drawn by the app (MapAttribution)
         map.compassViewPosition = .topRight

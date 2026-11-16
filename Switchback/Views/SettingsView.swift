@@ -15,6 +15,10 @@ struct SettingsView: View {
     @AppStorage(Overpass.unnamedKey) private var unnamedTrails = true
     @AppStorage(Trail.informalKey) private var informalTrails = false
     @AppStorage(Trail.sideKey) private var sideTrails = false
+    @ObservedObject private var library = Library.shared
+    @State private var backupURL: URL?
+    @State private var importingBackup = false
+    @State private var backupResult: String?
 
     var body: some View {
         NavigationStack {
@@ -37,6 +41,25 @@ struct SettingsView: View {
                     Toggle("Informal trails", isOn: $informalTrails)
                 } footer: {
                     Text("The Switchback map (our own, in light and dark), Topo and USGS Satellite can be downloaded for offline use (Saved › Offline maps); the Switchback map is the smallest and stays sharp at every zoom. USGS covers the United States only. Waymarked routes draws every signposted hiking route in the world on top of the map. Forest Service trails add official national forest trails in the US. Unnamed trails are paths mapped without a name, drawn dashed. The list shows hikes: loops, trails with a trailhead, trails an official list has and trail systems. Access trails, connectors, short pieces, road walks and unnamed paths stay on the map without a pin; switch on List every trail to list them too. Informal trails are hidden unless switched on: lines official trail lists say aren't for hikers (ORV, snowmobile, water routes), and paths no official list knows that nothing marks as a hiking trail. Clear the cache for these switches to apply to places you've already seen.")
+                }
+                Section {
+                    if let backupURL {
+                        ShareLink(item: backupURL) {
+                            Label("Export hikes and saved trails", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    Button {
+                        importingBackup = true
+                    } label: {
+                        Label("Import a backup", systemImage: "square.and.arrow.down")
+                    }
+                    if let backupResult {
+                        Text(backupResult).font(.footnote).foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Backup")
+                } footer: {
+                    Text("Deleting or reinstalling the app erases your \(library.activities.count) recorded hikes and \(library.trails.count) saved trails. Export puts them all in one file: save it to Files or iCloud Drive first, then import it here afterwards. Importing only adds what's missing; nothing you have is replaced.")
                 }
                 Section("Storage") {
                     LabeledContent("Map cache", value: ByteCountFormatter.string(fromByteCount: cacheSize, countStyle: .file))
@@ -102,6 +125,24 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+            .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url):
+                    do {
+                        let added = try library.restore(from: url)
+                        backupResult = added.hikes + added.trails == 0
+                            ? "Nothing new in that backup: everything in it is already here."
+                            : "Imported \(added.hikes) hikes and \(added.trails) saved trails."
+                    } catch {
+                        backupResult = "Couldn't import: \(error.localizedDescription)"
+                    }
+                case .failure(let error):
+                    backupResult = "Couldn't import: \(error.localizedDescription)"
+                }
+            }
+            .task(id: library.activities.count &+ library.trails.count) {
+                backupURL = try? library.backupFile()
             }
             .task {
                 packStatus = await TrailPacks.shared.statusLines()

@@ -172,12 +172,13 @@ struct RecordView: View {
                         StatTile(title: "Time", value: Fmt.clock(recorder.elapsed(at: ctx.date)))
                         StatTile(title: "Distance", value: Fmt.distance(recorder.distance))
                         StatTile(title: "Elevation gain", value: Fmt.elevation(recorder.gain))
+                        StatTile(title: "Speed", value: Fmt.speed(recorder.currentSpeed(at: ctx.date)))
+                        StatTile(title: "Avg speed", value: Fmt.speed(distance: recorder.distance, time: recorder.movingTime))
                         StatTile(title: "Pace", value: Fmt.pace(distance: recorder.distance, time: recorder.movingTime))
                         StatTile(title: "Moving time", value: Fmt.clock(recorder.movingTime))
+                        StatTile(title: "Altitude", value: recorder.currentAltitude.map { Fmt.elevation($0) } ?? "–")
                         if let r = recorder.remaining {
                             StatTile(title: "To the end", value: Fmt.distance(r))
-                        } else {
-                            StatTile(title: "Altitude", value: recorder.currentAltitude.map { Fmt.elevation($0) } ?? "–")
                         }
                     }
                 }

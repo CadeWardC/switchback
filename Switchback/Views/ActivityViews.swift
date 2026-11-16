@@ -138,6 +138,7 @@ struct ActivityDetailView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), alignment: .leading, spacing: 14) {
                     StatTile(title: "Distance", value: Fmt.distance(a.distance))
                     StatTile(title: "Elevation gain", value: Fmt.elevation(a.gain))
+                    StatTile(title: "Avg speed", value: Fmt.speed(distance: a.distance, time: a.movingTime))
                     StatTile(title: "Pace", value: Fmt.pace(distance: a.distance, time: a.movingTime))
                     StatTile(title: "Moving time", value: Fmt.clock(a.movingTime))
                     StatTile(title: "Total time", value: Fmt.clock(a.elapsedTime))
