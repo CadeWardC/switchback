@@ -80,6 +80,7 @@ enum Overpass {
           relation["type"="route"]["route"~"^(hiking|foot|walking)$"](\(b));
           way["highway"~"^(path|footway|bridleway)$"]["name"]["footway"!~"^(sidewalk|crossing)$"]["access"!~"^(private|no)$"](\(b));
           way["highway"="track"]["name"]["tracktype"!="grade1"]["access"!~"^(private|no)$"](\(b));
+          way["highway"="cycleway"]["name"]["access"!~"^(private|no)$"]["foot"!~"^(private|no)$"](\(b));
         """
         let query = """
         [out:json][timeout:25];
@@ -215,7 +216,9 @@ enum Overpass {
         // Named paths that aren't part of a route: join the pieces that share a name.
         var byName: [String: [(id: Int64, coords: [Coord], tags: [String: String])]] = [:]
         for e in response.elements where e.type == "way" {
-            guard let tags = e.tags, let name = tags["name"], !relationNames.contains(name.lowercased()) else { continue }
+            guard var tags = e.tags, let name = tags["name"], !relationNames.contains(name.lowercased()) else { continue }
+            // a named greenway or rail trail (mapped as a bike path): open to walkers unless it says otherwise
+            if tags["highway"] == "cycleway" { tags["switchback:multiuse"] = "yes" }
             for run in runs(e.geometry) {
                 byName[name, default: []].append((id: e.id, coords: run, tags: tags))
             }
