@@ -24,9 +24,9 @@ to bigger hardware without rewriting the app.
  Orange Pi 3B, 4 GB, NVMe SSD
  ├─ cloudflared        the tunnel
  ├─ switchback-api     Go, one static binary: JSON API, auth, photo uploads and downloads
- ├─ PostgreSQL 16      + PostGIS: users, hikes, reviews, photo records
+ ├─ PostgreSQL 17      + PostGIS: users, hikes, reviews, photo records
  ├─ /srv/photos        photo files (content-addressed, served by the API with immutable cache headers)
- └─ WAL-G + rclone     continuous database backup and nightly photo copy ──> Cloudflare R2 (free 10 GB)
+ └─ pgBackRest + rclone continuous database backup and nightly photo copy ──> Cloudflare R2 (free 10 GB)
 ```
 
 ### Why Go + Postgres, not PocketBase
@@ -49,7 +49,7 @@ Swift client types can be generated from it.
 
 | | Choice | Why |
 |---|---|---|
-| OS | Armbian (Debian 12) or Ubuntu 24.04 server, arm64 | Long-term updates, no desktop |
+| OS | **Armbian minimal** (Debian 12 Bookworm, server, no desktop), arm64 | Built for this board, small, long-term updates |
 | Disk | **NVMe SSD** in the M.2 slot (256 GB+), boot from it | SD cards wear out and corrupt under database writes |
 | Memory | 4 GB + **zram** swap (compressed, in RAM) | Safety margin without wearing the SSD |
 | Power | Small UPS or a power bank that passes power through | Short outages don't take it down or corrupt anything |
@@ -65,7 +65,7 @@ maintenance_work_mem = 128MB
 max_connections = 40          # the API uses a pool of ~20
 random_page_cost = 1.1        # SSD
 wal_compression = on
-archive_mode = on             # for WAL-G backups
+archive_mode = on             # for pgBackRest backups
 ```
 
 Memory budget: Postgres ~1 GB, API ~50 MB, cloudflared ~30 MB, OS ~300 MB, leaving ~2.5 GB for the file cache
@@ -75,6 +75,29 @@ Memory budget: Postgres ~1 GB, API ~50 MB, cloudflared ~30 MB, OS ~300 MB, leavi
 
 All run under **systemd** (start on boot, restart on crash), with **unattended-upgrades** for security patches.
 The firewall (`ufw`) blocks everything coming in from the internet; SSH only from the home network, keys only.
+
+## Low power, fast when needed
+
+A server has to stay on to answer, so "low energy when not in use" means **idling as low as possible** and
+speeding up instantly when a request comes in. The RK3566 idles at roughly 1.5–2.5 W (to be measured with a USB
+power meter), about $2–3 a year of electricity.
+
+| | Setting | Saves |
+|---|---|---|
+| CPU | `schedutil` governor (the default): drops to 408 MHz when idle, jumps to 1.8 GHz in milliseconds | Power at idle with no slowdown. Not `powersave`, which pins it slow |
+| No desktop | Armbian minimal: no display server, no GPU use | Memory and wakeups |
+| Radios off | Wi-Fi and Bluetooth disabled (`rfkill`, modules blacklisted); Ethernet only | ~0.2–0.5 W |
+| SSD | A low-power **M.2 2242 NVMe**; APST (the drive's own sleep states) left on; PCIe ASPM `powersave` if it's stable | ~0.5–1 W at idle |
+| Fewer wakeups | Unneeded services off (bluetooth, ModemManager, wpa_supplicant, avahi); nightly jobs run back to back once a night | CPU stays in its idle state longer |
+| Logs | `journald` limited to 50 MB, `noatime` on disks | Fewer disk writes |
+| Postgres | `checkpoint_timeout = 15min`, `wal_writer_delay = 1s` (crash safety unchanged: `synchronous_commit = on`) | Fewer writes when quiet |
+| API | Go is idle at ~0% CPU between requests; `GOMEMLIMIT=256MiB` | Memory stays predictable |
+| No Docker | Everything runs directly under systemd | Docker's daemon, memory and disk overhead |
+| Cooling | Passive heatsink (no fan) | No throttling, no fan power |
+
+And the fast side: Postgres and file caches in RAM, connection pooling and prepared statements in the API, indexes
+on every query the API makes, `fq` + BBR for TCP, and Cloudflare answering cached requests so the Pi doesn't
+wake for them at all.
 
 ## Data
 
@@ -243,7 +266,7 @@ That's comfortably enough for tens of thousands of users posting at a normal rat
 
 ## Backups and recovery
 
-- **Database:** WAL-G sends each change to R2 as it happens (continuous archiving) plus a full backup each night.
+- **Database:** pgBackRest sends each change to R2 as it happens (continuous archiving) plus a full backup each night.
   We can restore to any moment in the last 14 days.
 - **Photos:** rclone copies new files to R2 each night.
 - **Config:** everything that sets up the Pi is a script in this repo, so a new Pi (or a cloud server) is set up the
@@ -303,7 +326,7 @@ server/
     setup-pi.sh             one script: packages, Postgres, tuning, users, firewall, services
     switchback-api.service
     cloudflared.yml
-    walg.env.example
+    pgbackrest.conf.example
   loadtest/                 k6 scripts
 ```
 
