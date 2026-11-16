@@ -14,7 +14,7 @@ import {
   recStarted, recState, say, units, walks, tab,
 } from '../core/state';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
-import { climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace } from '../core/hikeMath';
+import { averageSpeed, climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace, speed, speedNow } from '../core/hikeMath';
 import { split } from '../core/shape';
 import { useValue } from '../ui/hooks';
 import { Big, Button, Card, GoButton, Note, Stat, T, Tap } from '../ui/kit';
@@ -142,6 +142,8 @@ function Walking() {
   const walkedText = split(fmtDistance(len, u));
   const spare = sun ? (sun.sunset.getTime() - (f ? back.getTime() : now.getTime())) / 60000 : null;
   const height = me?.ele ?? newest?.ele ?? null;
+  const perHour = imperial ? 'mph' : 'km/h';
+  const going = state === 'recording' ? speedNow(segs, now.getTime()) : null;
 
   return (
     <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled">
@@ -185,6 +187,8 @@ function Walking() {
         {ahead && <Stat label={leftLabel(ahead.kind)} value={fmtDistance(ahead.left, u)} />}
         {ahead && <Stat label={late ? 'Back by, after sunset' : 'Back by'} value={clock(back)} />}
         {f?.profile && <Stat label="Climb left" value={fmtElevation(climbAhead, u)} />}
+        <Stat label={`Speed, ${perHour}`} value={speed(going, imperial)} />
+        <Stat label={`Average, ${perHour}`} value={averageSpeed(secs, len, imperial)} />
         <Stat label="Moving" value={fmtClock(secs)} />
         <Stat label={`Pace, min/${imperial ? 'mi' : 'km'}`} value={pace(secs, len, imperial)} />
         <Stat label="Sunset" value={sun ? clock(sun.sunset) : '–'} />

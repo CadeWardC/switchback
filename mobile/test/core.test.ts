@@ -3,10 +3,11 @@ import { encodePolyline, type Coord } from '@web/lib/polyline';
 import { makeTrail, type Trail } from '@web/lib/trail';
 import { openPack, readBlock, cellKeys } from '../src/core/pack';
 import { shapePath, split } from '../src/core/shape';
-import { bigTime, clock, climbedSoFar, daylight, dur, grouped, hikeNumbers, hm, leftLabel, lineLength, pace } from '../src/core/hikeMath';
+import { averageSpeed, bigTime, clock, climbedSoFar, daylight, dur, grouped, hikeNumbers, hm, leftLabel, lineLength, pace, speed, speedNow } from '../src/core/hikeMath';
+import { backupName, backupText, importSummary, newSaved, newWalks, readBackup, readGpxHike } from '../src/core/backup';
 import { stepJourney } from '@web/lib/journey';
 import { climbAs, hikesOf, totals, yearsOf } from '../src/core/stats';
-import type { WalkSummary } from '@web/lib/storage';
+import type { SavedTrail, Walk, WalkPoint, WalkSummary } from '@web/lib/storage';
 import { EMPTY, headFeatures, lineColor, lineFeature, pickKey, thin, trailFeatures } from '../src/core/trailMap';
 import { trailGpx, walkGpx } from '../src/core/gpx';
 
@@ -203,5 +204,96 @@ describe('totals in the Log', () => {
     expect(climbAs(100)).toBe('once up the Statue of Liberty');
     expect(climbAs(620)).toBe('1.4 times up the Empire State Building');
     expect(climbAs(8849 * 12)).toBe('12 times up Mount Everest');
+  });
+});
+
+describe('speed', () => {
+  // a point every 5 s, about 1.4 m/s north (0.0000629° of latitude is 7 m)
+  const walked = (n: number, t0 = 1_000_000): WalkPoint[] =>
+    Array.from({ length: n }, (_, i) => ({ lat: 38.9 + i * 0.0000629, lon: -92.3, ele: 200, t: t0 + i * 5000, acc: 5 }));
+  it('comes from the newest points', () => {
+    const s = walked(12);
+    const now = s[s.length - 1].t + 2000;
+    expect(speedNow([s], now)).toBeCloseTo(1.4, 1);
+    // a slow first stretch does not hold the number down: only the last 20 s count
+    const slow: WalkPoint[] = [{ lat: 38.8990, lon: -92.3, ele: 200, t: 0, acc: 5 }, ...s];
+    expect(speedNow([slow], now)).toBeCloseTo(1.4, 1);
+  });
+  it('is nothing before two points, and zero once you have stopped', () => {
+    expect(speedNow([], 0)).toBeNull();
+    expect(speedNow([walked(1)], 1_000_000)).toBeNull();
+    const s = walked(6);
+    expect(speedNow([s], s[5].t + 60_000)).toBe(0);
+    // a new stretch (after a pause) starts from nothing
+    expect(speedNow([s, []], s[5].t)).toBeNull();
+  });
+  it('is said in miles or kilometres an hour', () => {
+    expect(speed(1.4, true)).toBe('3.1');
+    expect(speed(1.4, false)).toBe('5.0');
+    expect(speed(0, true)).toBe('0.0');
+    expect(speed(null, true)).toBe('–');
+    expect(averageSpeed(3600, 5000, false)).toBe('5.0');
+    expect(averageSpeed(3600, 1609.344 * 3, true)).toBe('3.0');
+    expect(averageSpeed(5, 20, true)).toBe('–');
+  });
+});
+
+describe('backup', () => {
+  const points = (t0: number, n = 12, lat0 = 38.9): WalkPoint[] =>
+    Array.from({ length: n }, (_, i) => ({ lat: lat0 + i * 0.0001, lon: -92.3, ele: 200 + i, t: t0 + i * 10_000, acc: 6 }));
+  const t0 = Date.UTC(2026, 4, 2, 15, 0, 5);
+  const hike: Walk = {
+    id: 'abc123', name: 'Rock <Bridge> & back', started: t0 - 5000, ended: t0 + 400_000, seconds: 220, length: 244, gain: 11,
+    segments: [points(t0), points(t0 + 300_000, 11, 38.9012)],
+    markers: [{ lat: 38.9005, lon: -92.3, ele: 205, t: t0 + 50_000, name: 'Spring' }],
+    trail: { region: 'missouri', id: 't1', name: 'Rock Bridge' },
+  };
+  const saved: SavedTrail = { region: 'missouri', id: 't1', name: 'Rock Bridge', area: 'A park', length: 1200, gain: 30, difficulty: 'easy', loop: true, start: [38.9, -92.3], saved: 5 };
+
+  it('writes everything and reads it back', () => {
+    const text = backupText([hike], [saved], t0);
+    expect(readBackup(text)).toEqual({ walks: [hike], saved: [saved] });
+    expect(backupName(new Date(2026, 10, 6))).toBe('Switchback-backup-2026-11-06.json');
+  });
+  it('turns away what is not a backup, and leaves out what is broken inside one', () => {
+    expect(readBackup('not json')).toBeNull();
+    expect(readBackup('{"walks":[]}')).toBeNull();
+    expect(readBackup('[1,2]')).toBeNull();
+    const text = JSON.stringify({ app: 'switchback', walks: [hike, { id: 'x' }, null, { ...hike, id: 'short', segments: [[hike.segments[0][0]]] }], saved: [saved, { name: 'no id' }] });
+    expect(readBackup(text)).toEqual({ walks: [hike], saved: [saved] });
+  });
+  it('reads a hike back from the GPX file it shared', () => {
+    const back = readGpxHike(walkGpx(hike), 'file.gpx')!;
+    expect(back.name).toBe(hike.name);
+    expect(back.started).toBe(Math.floor(hike.started / 1000) * 1000);
+    expect(back.segments.map((s) => s.length)).toEqual([12, 11]);
+    expect(back.segments[0][3]).toMatchObject({ lat: hike.segments[0][3].lat, lon: -92.3, ele: 203, t: hike.segments[0][3].t });
+    expect(back.seconds).toBe(210);
+    expect(back.length).toBeGreaterThan(200);
+    expect(back.markers).toEqual([{ lat: 38.9005, lon: -92.3, ele: 205, t: t0 + 50_000, name: 'Spring' }]);
+    // the same file twice is the same hike
+    expect(readGpxHike(walkGpx(hike), 'file.gpx')!.id).toBe(back.id);
+  });
+  it('does not take a trail line (no times) or other text for a hike', () => {
+    expect(readGpxHike(trailGpx(trail('1')), 'trail.gpx')).toBeNull();
+    expect(readGpxHike('hello', 'x.txt')).toBeNull();
+    expect(readGpxHike('<gpx><trk><trkseg><trkpt lat="1" lon="2"><time>2026-05-02T15:00:00Z</time></trkpt></trkseg></trk></gpx>', 'x.gpx')).toBeNull();
+  });
+  it('names a hike after its file when the track has no name', () => {
+    const text = '<gpx><trk><trkseg><trkpt lat="1" lon="2"><time>2026-05-02T15:00:00Z</time></trkpt><trkpt lat="1.001" lon="2"><time>2026-05-02T15:01:00Z</time></trkpt></trkseg></trk></gpx>';
+    expect(readGpxHike(text, 'Sunday walk.gpx')).toMatchObject({ name: 'Sunday walk', started: Date.UTC(2026, 4, 2, 15), seconds: 60 });
+  });
+  it('only adds what is not here already', () => {
+    const other: Walk = { ...hike, id: 'zzz', started: t0 + 86_400_000 };
+    expect(newWalks([hike], [hike, other, other]).map((w) => w.id)).toEqual(['zzz']);
+    // the same hike from its GPX file (another id, the same start) is not added twice
+    expect(newWalks([hike], [readGpxHike(walkGpx(hike), 'f.gpx')!])).toEqual([]);
+    expect(newSaved([saved], [saved, { ...saved, id: 't2' }, { ...saved, id: 't2' }]).map((s) => s.id)).toEqual(['t2']);
+  });
+  it('says what an import did', () => {
+    expect(importSummary(2, 1, 0)).toBe('Added 2 hikes and 1 saved trail.');
+    expect(importSummary(1, 0, 1)).toBe('Added 1 hike. 1 file was not a Switchback backup or a recorded GPX track.');
+    expect(importSummary(0, 0, 0)).toBe('Nothing new: everything in there is already on this phone.');
+    expect(importSummary(0, 0, 2)).toBe('2 files were not a Switchback backup or a recorded GPX track.');
   });
 });

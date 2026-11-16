@@ -179,6 +179,19 @@ export function folderBytes(d: Directory): number {
   }
 }
 
+/** Lets the person choose files (Files, iCloud Drive) and reads each as text. Empty when they cancel. */
+export async function pickTextFiles(): Promise<{ name: string; text: string | null }[]> {
+  const picked = await File.pickFileAsync({ multipleFiles: true });
+  if (picked.canceled) return [];
+  const out: { name: string; text: string | null }[] = [];
+  for (const f of picked.result) {
+    let text: string | null = null;
+    try { text = await f.text(); } catch { /* not a text file, or it could not be opened */ }
+    out.push({ name: f.name, text });
+  }
+  return out;
+}
+
 /** A text file in the cache, for handing to the share sheet. */
 export function cacheFile(name: string, text: string): File {
   const f = new File(Paths.cache, name);

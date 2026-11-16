@@ -5,19 +5,20 @@
 // every other trail fades back, and its starts show as radio markers: a tap chooses where the hike begins.
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
-import { Camera, GeoJSONSource, Layer, Map, type CameraRef, type MapRef } from '@maplibre/maplibre-react-native';
+import { Camera, GeoJSONSource, Images, Layer, Map, type CameraRef, type MapRef } from '@maplibre/maplibre-react-native';
 import { effect } from '@preact/signals-core';
 import { save } from '@web/lib/storage';
 import type { BBox } from '@web/lib/geo';
 import { accessPoints, shortLoops } from '@web/lib/trail';
 import { light as lightTokens, dark as darkTokens, mapColors } from '@web/tokens';
 import {
-  backLine, chosenShort, chosenStart, closeTrail, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
+  backLine, chosenShort, chosenStart, closeTrail, compass, flyTo, following, hikesInView, initialView, myLocation, openTrail, recSegments, recState, selected, shownTrail, shownWalk,
   tab, trailsInView, unverifiedInView, units, view, MIN_TRAIL_ZOOM,
 } from '../core/state';
 import { EMPTY, headFeatures, lineColor, lineFeature, linesFeature, pickKey, pointFeatures, trailFeatures } from '../core/trailMap';
 import { baseRoute, highlightLines, pickStart, startFeatures, usableStarts } from '../core/choice';
 import { platform } from '../platform';
+import { watchCompass } from '../platform/compass';
 import { useValue } from '../ui/hooks';
 import { useTheme } from '../ui/theme';
 import { styleFor } from './style';
@@ -25,6 +26,8 @@ import { styleFor } from './style';
 /** Trails are drawn under the base map's labels. */
 const UNDER_LABELS = 'housenumber';
 const TAP_LAYERS = ['sb-starts', 'sb-heads', 'sb-trail', 'sb-side', 'sb-unnamed', 'sb-unverified'];
+/** The arrow on the location dot (drawn pointing north; the layer turns it). */
+const MAP_IMAGES = { 'me-heading': require('../../assets/me-heading.png') };
 /** While a trail is open, the others are drawn this faint, and a little thinner. */
 const FADE = 0.35, THIN = 0.8;
 const width = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 8, a, 14, b] as const;
@@ -57,6 +60,7 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
   const open = useValue(selected);
   const shown = useValue(shownTrail);
   const me = useValue(myLocation);
+  const facing = useValue(compass);
   const back = useValue(backLine);
   const segs = useValue(recSegments);
   const rec = useValue(recState);
@@ -99,8 +103,18 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
     if (currentTab === 'log' && walk) return linesFeature(walk.segments.map((s) => s.map((x) => [x.lat, x.lon] as [number, number])));
     return EMPTY;
   }, [segs, rec, walk, currentTab]);
-  const meData = useMemo(() => (me ? pointFeatures([{ at: me.at }]) : EMPTY), [me]);
+  // the arrow on the dot: the way the phone points; with no compass, the way you are walking
+  const pointing = facing ?? me?.heading ?? null;
+  const meData = useMemo(() => (me ? pointFeatures([{ at: me.at, props: pointing != null ? { heading: Math.round(pointing) } : {} }]) : EMPTY), [me, pointing]);
   const backData = useMemo(() => (back ? lineFeature(back) : EMPTY), [back]);
+
+  // the compass runs once the phone has said where it is (so it is allowed to)
+  const located = !!me;
+  useEffect(() => {
+    if (!located) return;
+    const stop = watchCompass((deg) => { compass.value = deg; });
+    return () => { stop(); compass.value = null; };
+  }, [located]);
 
   // camera requests from anywhere in the app
   useEffect(() => effect(() => {
@@ -151,6 +165,8 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
       preferredFramesPerSecond={60}
     >
       <Camera ref={camera} initialViewState={{ center: [initialView.lon, initialView.lat], zoom: initialView.zoom }} />
+
+      <Images images={MAP_IMAGES} />
 
       <GeoJSONSource id="sb-trails" data={trailData}>
         <Layer id="sb-side-casing" type="line" beforeId={UNDER_LABELS} filter={['==', ['get', 'h'], 0]} layout={round}
@@ -221,6 +237,8 @@ export const TrailMap = memo(function TrailMap({ bottomInset }: { bottomInset: n
 
       <GeoJSONSource id="sb-me" data={meData}>
         <Layer id="sb-me-halo" type="circle" paint={{ 'circle-radius': 17, 'circle-color': mapColors.me, 'circle-opacity': 0.3 }} />
+        <Layer id="sb-me-heading" type="symbol" filter={['has', 'heading']}
+          layout={{ 'icon-image': 'me-heading', 'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true }} />
         <Layer id="sb-me" type="circle" paint={{ 'circle-radius': 7.5, 'circle-color': mapColors.me, 'circle-stroke-color': p.mapCasing, 'circle-stroke-width': 3 }} />
       </GeoJSONSource>
     </Map>

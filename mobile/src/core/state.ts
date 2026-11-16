@@ -14,6 +14,7 @@ import type { Coord } from '@web/lib/polyline';
 import { accessPoints, shortLoops, type Profile, type Trail } from '@web/lib/trail';
 import { baseRoute, defaultStart, usableStarts } from './choice';
 import { climbedSoFar } from './hikeMath';
+import { newSaved, newWalks } from './backup';
 import type { Stop } from '@web/lib/follow';
 import type { Journey } from '@web/lib/journey';
 import type { BBox } from '@web/lib/geo';
@@ -68,6 +69,8 @@ export const flyTo = signal<{ center?: Coord; zoom?: number; bounds?: BBox } | n
 /** Where you are (the yellow dot). */
 export interface Me { at: Coord; accuracy: number; ele: number | null; heading: number | null }
 export const myLocation = signal<Me | null>(null);
+/** The way the phone points (degrees from north), from its compass, while the app is on screen. */
+export const compass = signal<number | null>(null);
 /** While off the trail: the dotted line from you back to it. */
 export const backLine = signal<[Coord, Coord] | null>(null);
 /** The point being touched on the ridge, shown on the map. */
@@ -203,6 +206,29 @@ export const renameWalk = (id: string, name: string) => updateWalk(id, { name })
 export async function deleteWalk(id: string): Promise<void> {
   walks.value = walks.peek().filter((x) => x.id !== id);
   await platform.documents.remove(walkDoc(id));
+}
+
+/** Every kept hike in full (its points too), for a backup file. */
+export async function allWalks(): Promise<Walk[]> {
+  const out: Walk[] = [];
+  for (const s of walks.peek()) {
+    const w = await loadWalk(s.id);
+    if (w) out.push(w);
+  }
+  return out;
+}
+
+/** Adds hikes and saved trails read from a file: only the ones not here already. Resolves to how many were added. */
+export async function importKept(hikes: Walk[], saved: SavedTrail[]): Promise<{ hikes: number; saved: number }> {
+  const kept: Walk[] = [];
+  for (const w of newWalks(walks.peek(), hikes)) {
+    if (await saveDoc(walkDoc(w.id), w)) kept.push(w);
+    else storageFailed.value = true;
+  }
+  if (kept.length) walks.value = [...walks.peek(), ...kept.map(summaryOf)].sort((a, b) => b.started - a.started);
+  const trails = newSaved(savedTrails.peek(), saved);
+  if (trails.length) savedTrails.value = [...savedTrails.peek(), ...trails].sort((a, b) => b.saved - a.saved);
+  return { hikes: kept.length, saved: trails.length };
 }
 
 export function isSaved(t: { region: string; id: string }, list = savedTrails.value): boolean {

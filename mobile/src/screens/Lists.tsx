@@ -18,7 +18,7 @@ import {
 import { climbAs, hikesOf, totals, yearsOf } from '../core/stats';
 import { split } from '../core/shape';
 import { walkGpx } from '../core/gpx';
-import { climbedSoFar } from '../core/hikeMath';
+import { averageSpeed, climbedSoFar, pace } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
@@ -210,6 +210,8 @@ export function WalkSheet() {
         <Stat label="Distance" value={fmtDistance(w.length, u)} />
         <Stat label="Moving" value={fmtClock(w.seconds)} />
         <Stat label="Climbed" value={climbed != null ? fmtElevation(climbed, u) : '–'} />
+        <Stat label={`Average, ${u === 'imperial' ? 'mph' : 'km/h'}`} value={averageSpeed(w.seconds, w.length, u === 'imperial')} />
+        <Stat label={`Pace, min/${u === 'imperial' ? 'mi' : 'km'}`} value={pace(w.seconds, w.length, u === 'imperial')} />
         <Stat label="On the trail" value={fmtClock((w.ended - w.started) / 1000)} />
         <Stat label="Highest" value={prof ? fmtElevation(prof.max, u) : '–'} />
         <Stat label="Spots marked" value={String(w.markers?.length ?? 0)} />
