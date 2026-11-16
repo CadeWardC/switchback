@@ -62,9 +62,7 @@ subscription and no API keys.
 - **Fast:** trails found are cached on the phone in 0.05° cells for two weeks, so places you've seen load instantly and a
   search only fetches the cells it doesn't have. If the main Overpass server is slow, a second one is asked after 3 s
   and the first answer wins. Trail shapes are simplified (Douglas–Peucker, 3 m) to draw quickly.
-- **Photos:** each trail page opens with photos from Wikimedia Commons (ones OpenStreetMap or Wikidata link to the
-  trail and its sights first, then ones taken nearby, with their author and licence), and a satellite picture of the
-  route drawn by MapKit. List rows show small satellite pictures of each trail. Recorded hikes can show the photos you
+- **Photos:** each trail page opens with a satellite picture of the route drawn by MapKit. List rows show small satellite pictures of each trail. Recorded hikes can show the photos you
   took during them (from your library, placed on the map where you took them; they never leave the phone).
 - **Highlights:** viewpoints, peaks, waterfalls, lakes, caves, water, shelters, campsites, picnic areas, toilets and
   trailhead parking along each trail (from OpenStreetMap), on the map and listed with their distance along the trail.
@@ -95,7 +93,6 @@ The whole trail dataset is free to download as GeoJSON, one file per US state an
 | | Source | Licence |
 | --- | --- | --- |
 | Trails | [OpenStreetMap](https://www.openstreetmap.org) via the [Overpass API](https://overpass-api.de) (hiking route relations, plus named paths) | ODbL |
-| Photos | [Wikimedia Commons](https://commons.wikimedia.org) and [Wikidata](https://www.wikidata.org) | Each photo's own licence (shown) |
 | Elevation | [Open-Meteo elevation API](https://open-meteo.com/en/docs/elevation-api) (Copernicus DEM GLO-90) | CC BY 4.0 |
 | Topo map | [OpenTopoMap](https://opentopomap.org) | CC-BY-SA |
 | US topo map | [USGS The National Map](https://basemap.nationalmap.gov) (USGSTopo) | Public domain |

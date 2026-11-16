@@ -8,7 +8,6 @@ struct TrailDetailView: View {
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var profiles: Profiles
     @EnvironmentObject private var highlights: Highlights
-    @EnvironmentObject private var trailPhotos: TrailPhotos
     @EnvironmentObject private var offline: OfflineStore
     @AppStorage(BaseMap.storageKey) private var baseMap: BaseMap = .switchback
     @AppStorage(BaseMap.showRoutesKey) private var showRoutes = false
@@ -42,7 +41,7 @@ struct TrailDetailView: View {
         let pois = highlights.pois(for: t.id) ?? []
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                TrailHero(trail: t, photos: trailPhotos.photos(for: t.id) ?? [])
+                TrailHero(trail: t)
 
                 ZStack(alignment: .bottomLeading) {
                     AppMap(baseMap: baseMap, trails: [t], selectedId: t.id, initialBox: t.bbox, showsUserButton: false,
@@ -173,8 +172,7 @@ struct TrailDetailView: View {
         .task(id: t.id) {
             gpxURL = try? GPX.file(named: t.name, contents: GPX.document(for: shown))
             async let profile = profiles.ensureProfile(for: base)
-            let found = await highlights.ensure(for: base)
-            await trailPhotos.ensure(for: base, pois: found)
+            _ = await highlights.ensure(for: base)
             _ = await profile
         }
     }
