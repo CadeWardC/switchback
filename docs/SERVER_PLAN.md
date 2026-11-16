@@ -134,8 +134,31 @@ trailhead, doesn't exist, or something else (free text).
 4. The monthly trail-pack build checks overrides against new OpenStreetMap data and flags ones that OSM has since
    fixed, so they can be removed.
 
-Submitters agree (once, when first submitting) that their trail lines and corrections can be published under the
+Submitters agree (once, when first submitting) that their trail lines and corrections are published under the
 same open licence as the trail data (ODbL), so they could later be added to OpenStreetMap too.
+
+## Open data
+
+Switchback's community data is open, like the trail data it's built on. Everyone who posts agrees to these licences
+when they first post (in the terms of use and on the posting screen).
+
+| Data | Open | Licence |
+|---|---|---|
+| Trail packs, community trails, corrections | Yes | ODbL (required: they extend OpenStreetMap data) |
+| Ratings and reviews | Yes, with display names, no account ids or emails | ODbL |
+| Photos (display size and thumbnail) | Yes, credited to the display name | CC BY-SA 4.0, the same as most of Wikimedia Commons |
+| Hike logs and shared hikes | Only the ones a person made public | ODbL |
+| Accounts, emails, sessions, private hikes and logs, activity history, reports | **Never** | Private |
+
+- **Monthly open-data release**, built next to the trail packs (`.github/workflows/trail-packs.yml` downloads an
+  export from `GET /v1/export` at build time): reviews and ratings, community trails and corrections, and public hike
+  logs as GeoJSON and CSV, plus a photo index (file URLs, author, licence, location, trail). Photos themselves are
+  linked, not copied into the release, to keep it small.
+- `docs/DOWNLOADS.md` and `DATA_LICENSE.md` describe the open data next to the trail files.
+- Deleting a review, photo or account removes it from the next release (earlier releases stay as they were; the terms
+  say so).
+- Before export, text is checked against the same rules as posting (no emails or phone numbers), and hidden or
+  reported posts are left out.
 
 ### Trail IDs
 
@@ -294,7 +317,8 @@ server/
 6. **App:** photo upload and photos in the header.
 7. **Submissions:** corrections and new trails, the review queue, community data in the cell endpoint and on the map.
 8. **Hikes:** backup and sharing.
-9. **Moderation:** reports, admin page. **Before** opening it up to the public.
+9. **Moderation:** reports, admin page, terms of use (with the open-data licences). **Before** opening it up to the public.
+10. **Open data:** the export endpoint and the monthly release.
 
 ## Running costs
 
