@@ -1,0 +1,96 @@
+name: Website (GitHub Pages)
+
+# Builds the website in web/ and publishes it with GitHub Pages.
+#
+# The site reads the trail files (regions.json and one <region>.trails per state or province) from the
+# "trails-us" release. Release downloads send no CORS headers, so a browser can't fetch them from another
+# address: this job copies them into the site (data/), with each region's "trails wanted" and "needs
+# verification" lists,, where the site loads them from its own address.
+# It runs again every week so the site picks up rebuilt trail files.
+#
+# One-time setup: Settings > Pages > Build and deployment > Source = "GitHub Actions".
+
+on:
+  push:
+    # Any branch may trigger it, but only the repository's default branch is published (see the job's "if").
+    # The default branch is not called "main" at the moment; this keeps working if it is renamed.
+    branches: ["**"]
+    paths:
+      - "web/**"
+      - "Switchback/Resources/switchback-style*.json" # the map style the site is built from
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * 1" # Mondays 07:17 UTC
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer run waits for the one in progress instead of cancelling it half way.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: ${{ github.repository }}
+  TAG: trails-us
+
+jobs:
+  build:
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the site
+        working-directory: web
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Copy the trail files into the site
+        run: |
+          mkdir -p web/dist/data
+          gh release download "$TAG" -R "$REPO" --pattern '*.trails' --pattern regions.json -D web/dist/data --clobber
+          # trails wanted, and trails that need verification: a region may have neither (the site treats a
+          # missing file as an empty list)
+          gh release download "$TAG" -R "$REPO" --pattern '*.wanted.json' --pattern '*.needs-verification.geojson' -D web/dist/data --clobber || echo "no wanted or needs-verification lists yet"
+          # every region the list names must have its file, or the map would show an area it can't load
+          python3 - <<'PY'
+          import json, os, sys
+          regions = json.load(open("web/dist/data/regions.json"))["regions"]
+          path = lambda r: f"web/dist/data/{r}.trails"
+          missing = [r for r in regions if not os.path.exists(path(r)) or os.path.getsize(path(r)) < 10]
+          total = sum(os.path.getsize(os.path.join("web/dist/data", f)) for f in os.listdir("web/dist/data"))
+          print(f"{len(regions)} regions, {total / 1e6:.1f} MB of trail files")
+          if not regions or missing:
+              sys.exit(f"trail files missing or empty: {missing or 'no regions'}")
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -266,7 +266,7 @@ struct LibreTrailMap: UIViewRepresentable {
             wasFollowing = p.followUser
             guard styleReady, let style = map.style else { return }
 
-            let trailSig = p.trails.map { "\($0.id)\($0.difficulty.rawValue)\($0.segments.count)" }.joined(separator: "|")
+            let trailSig = p.trails.map { "\($0.id)\($0.difficulty.rawValue)\($0.segments.count)\($0.path.count)\(Int($0.length))" }.joined(separator: "|")
             if trailSig != shownTrails {
                 shownTrails = trailSig
                 let lines: [MLNShape & MLNFeature] = p.trails.map { Self.lineFeature($0) }

@@ -7,7 +7,7 @@ struct TrailRegionsView: View {
     @State private var failed: Set<String> = []
     @State private var query = ""
 
-    private static let countries = ["US": "United States", "CA": "Canada"]
+    private static let countries = ["US": "United States", "CA": "Canada", "CH": "Switzerland"]
 
     var body: some View {
         List {

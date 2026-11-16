@@ -18,6 +18,8 @@ struct TrailDetailView: View {
     /// The trailhead to start from: nil = the nearest one, "" = the trail on its own.
     @State private var startId: String?
     @State private var addedIds: Set<String> = []
+    /// The short loop picked, if the trail has one: nil = the whole loop.
+    @State private var shortId: String?
 
     init(trail: Trail) {
         _trail = State(initialValue: trail)
@@ -36,7 +38,8 @@ struct TrailDetailView: View {
     }
 
     var body: some View {
-        let base = shown
+        let whole = shown
+        let base = whole.shortLoops.first { $0.id == shortId }.map { whole.shortened(to: $0) } ?? whole
         let from = start(base)
         let t = base.hike(from: from, adding: base.extensions.filter { addedIds.contains($0.id) })
         let pois = highlights.pois(for: t.id) ?? []
@@ -55,6 +58,11 @@ struct TrailDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(t.name)
                         .font(.title2.bold())
+                    if let line = from?.startLine {
+                        Text(line)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                     if let area = t.area {
                         Label(area, systemImage: "tree.fill")
                             .font(.subheadline.weight(.medium))
@@ -87,9 +95,10 @@ struct TrailDetailView: View {
                     }
                 }
 
+                routeOptions(whole)
                 hikeOptions(base, from: from, chartIsTrailOnly: t.tags["switchback:chart"] == "trail")
 
-                actions(t)
+                actions(t, from: from)
                 offlineButton(t)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -179,6 +188,26 @@ struct TrailDetailView: View {
         }
     }
 
+    /// The whole loop, or a shorter one by a cut-across.
+    @ViewBuilder
+    private func routeOptions(_ whole: Trail) -> some View {
+        let shorts = whole.shortLoops
+        if !shorts.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Picker("Route", selection: Binding(get: { shortId ?? "" }, set: { shortId = $0.isEmpty ? nil : $0 })) {
+                    Text("Full loop · \(Fmt.distance(whole.length))").tag("")
+                    ForEach(shorts) { s in
+                        Text("\(s.name) · \(Fmt.distance(s.length))").tag(s.id)
+                    }
+                }
+                .pickerStyle(.segmented)
+                Text("The short loop takes a cut-across and skips part of the trail.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     /// Where to start from (trailheads and car parks, with the walk in) and side loops to add.
     @ViewBuilder
     private func hikeOptions(_ base: Trail, from: TrailAccess?, chartIsTrailOnly: Bool) -> some View {
@@ -190,7 +219,8 @@ struct TrailDetailView: View {
                     Menu {
                         Picker("Start from", selection: Binding(get: { from?.id ?? "" }, set: { startId = $0 })) {
                             ForEach(points) { p in
-                                Text("\(p.name) · \(Fmt.distance(base.hike(from: p, adding: []).length))").tag(p.id)
+                                Text("\(p.name) · \(Fmt.distance(base.hike(from: p, adding: []).length))"
+                                     + (p.viaText.map { " · \($0)" } ?? "")).tag(p.id)
                             }
                             Text("The trail on its own · \(Fmt.distance(base.length))").tag("")
                         }
@@ -207,9 +237,11 @@ struct TrailDetailView: View {
                         }
                     }
                     if let from, from.distance >= 30 {
+                        // the trail as walked from here: without its own way out to a trailhead this hike doesn't use
+                        let own = base.hike(from: from, adding: []).length - (base.isLoop ? 2 : 1) * from.distance
                         Text(base.isLoop
-                             ? "\(Fmt.distance(base.length)) loop + \(Fmt.distance(from.distance)) each way from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")"
-                             : "\(Fmt.distance(base.length)) trail + \(Fmt.distance(from.distance)) from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")")
+                             ? "\(Fmt.distance(own)) loop + \(Fmt.distance(from.distance)) each way from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")"
+                             : "\(Fmt.distance(own)) trail + \(Fmt.distance(from.distance)) from the trailhead.\(chartIsTrailOnly ? " Elevation is for the trail itself." : "")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -231,7 +263,7 @@ struct TrailDetailView: View {
     }
 
     @ViewBuilder
-    private func actions(_ t: Trail) -> some View {
+    private func actions(_ t: Trail, from: TrailAccess?) -> some View {
         HStack(spacing: 10) {
             Button {
                 recorder.follow(t)
@@ -244,7 +276,7 @@ struct TrailDetailView: View {
             .buttonStyle(.borderedProminent)
 
             Button {
-                openDirections(to: t)
+                openDirections(to: t, from: from)
             } label: {
                 Label("Drive", systemImage: "car.fill")
                     .frame(maxWidth: .infinity)
@@ -315,9 +347,10 @@ struct TrailDetailView: View {
         }
     }
 
-    private func openDirections(to t: Trail) {
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: t.start.cl))
-        item.name = "\(t.name) trailhead"
+    /// Driving directions to where the hike starts: the trailhead picked, by its own name when it has one.
+    private func openDirections(to t: Trail, from: TrailAccess?) {
+        let item = MKMapItem(placemark: MKPlacemark(coordinate: (from?.point ?? t.start).cl))
+        item.name = from.flatMap { $0.isNamed ? $0.name : nil } ?? "\(t.name) trailhead"
         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
 }

@@ -37,7 +37,7 @@ subscription and no API keys.
   compressed block per 0.25° cell), all published monthly in the single release `trails-us` with `regions.json`. The app
   downloads a state's file once, the first time the map shows it, then has every trail there instantly and offline,
   unpacking only the cells around the map. As soon as the map knows where you are, your area's file downloads (Missouri is about
-  0.4 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 38 MB), so trails work
+  1 MB, about a second), then the rest of your country quietly on Wi-Fi (the US is about 85 MB), so trails work
   offline wherever you go in it; travelling to another country does the same there. Only the list of areas is built
   into the app (`BUNDLED_STATES: "none"`; `"all"` builds every US state in instead). Each file also holds the trail
   highlights (viewpoints, peaks, waterfalls, water, shelters, campsites, toilets, parking within ~200 m of a trail),
@@ -46,7 +46,7 @@ subscription and no API keys.
   duplicate names). Each trail also carries detailed elevation (`scripts/elevation.py`): sampled every 10 m from AWS
   Terrain Tiles (zoom 13, ~15 m), with gain, descent, lowest and highest worked out from those samples, and the chart
   reduced to the points it can't redraw within 1.5 m (typically a tenth to a third), stored as small deltas — about
-  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, and a downloaded
+  40–80 bytes a trail, so charts, gain and difficulty are instant and offline. Settings › Check for trail updates checks right away, Settings › Reset and download again replaces every trail file on the phone with the current one, and a downloaded
   offline map area can be updated with a swipe (only changed pieces are fetched for our own map).
   `scripts/build_trail_pack.py` uses the same rules (and trail ids) as the live search, and also: puts every trail in
   its area (the smallest named park, nature reserve or protected area it lies in); names unnamed paths from the map
@@ -58,8 +58,19 @@ subscription and no API keys.
   trailheads and car parks within 100 m of a trail and the walk from each to the trails within 3 km, so a trail page
   can start from a trailhead you pick (length, map and navigation include the walk in); (4) offers a loop that hangs
   off another loop as an extension; (5) marks access trails, spurs and connectors as side trails (Settings › Side
-  trails); and (6) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
-- **Regions:** the pack job's matrix in `trail-packs.yml` lists the areas (any Geofabrik extract); each becomes one
+  trails); (6) offers a short loop where a short cut-across joins two points of a loop (the trail page then has Full loop and Short loop; the cut-across is not listed as a trail); and (7) groups trail systems ("Cedar Creek Trail - …") into one entry in the list.
+- **The way in:** each trailhead a hike can be started from says which named trails the walk to it follows
+  (`scripts/ways_in.py`, run on each finished pack: at most two, never unnamed paths or the hike itself, nothing for a
+  walk under 150 m). The start picker shows it ("Camp Five Pond Trailhead · 3.4 mi · via Ridge Trail"), a quiet line
+  under the hike's title says where it starts and how you get in, driving directions go to the trailhead picked by
+  its own name, and tapping a trail on the main map draws its way in from the nearest trailhead. Search, lists and
+  the title keep just the hike's name.
+- **Countries without official lists (Switzerland):** `scripts/local_rules.py` sorts a finished pack by what the
+  country's own map says, in its languages. A signposted route is a hike (one with no name is named for its ends,
+  "Furi – Furgg", or left as an unnamed line); a named path on no route is a hike only with a hiking grade, a trail's
+  name ("Höhenweg", "Sentier …", "Sentiero …") or a park around it; one named like a street ("…strasse", "Rue …")
+  is informal. Each build keeps a list with one line per trail saying what it was taken for and why.
+- **Regions:** `data/trail-regions.json` lists the areas the pack job builds (any Geofabrik extract); each becomes one
   `.trails` file with its country, display name and the 1° squares it has trails in (`coverage`), so the app knows
   exactly which file covers a place. US states are built in; others download in the background as soon as the map
   knows your location (or the map shows them), and Settings › Trail regions lists them all to download ahead of a
