@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Switchback's own map styles (MapLibre style JSON), light and dark:
-Switchback/Resources/switchback-style.json and switchback-style-dark.json.
+map-style/switchback-style.json and switchback-style-dark.json.
 
 Map data: OpenFreeMap (OpenMapTiles schema, from OpenStreetMap). Hillshading: AWS Terrain Tiles (terrarium).
 Point-of-interest icons ("sb-<class>") are drawn by the app at runtime from SF Symbols.
@@ -276,7 +276,7 @@ def build(C):
         "layers": L,
     }
 
-here = os.path.join(os.path.dirname(__file__), "..", "Switchback", "Resources")
+here = os.path.join(os.path.dirname(__file__), "..", "map-style")
 for name, pal in [("switchback-style.json", LIGHT), ("switchback-style-dark.json", DARK)]:
     style = build(pal)
     with open(os.path.join(here, name), "w") as f:

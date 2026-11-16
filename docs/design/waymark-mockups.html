@@ -1,0 +1,315 @@
+<title>Switchback Look Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: two questions, each a row of Waymark phones to choose between, then the settled screens. */
+:root {
+  --bg: #f3f4f2; --fg: #171a18; --muted: #5d655f; --line: #d9dcd6; --panel: #ffffff; --pick: #1f6b45;
+  --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Waymark's own tokens: the phones below are drawn only from these */
+  --p-font: "Figtree", system-ui, sans-serif; --p-num: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --p-bg: #edf0ec; --p-fg: #10201a; --p-muted: #5b6861; --p-line: #dde2dc; --p-line2: #b9c2bb; --p-edge: #cfd6cf; --p-card: #ffffff; --p-tint: #dce9e1;
+  --p-accent: #12543f; --p-on: #ffffff; --p-you: #f4c430; --p-dusk: #e9a15b;
+  --p-land: #e6eae3; --p-wood: #d3e2d4; --p-water: #c5dce8; --p-road: #ffffff; --p-contour: #cdd6cb; --p-easy: #23945a;
+  --p-paint-y: #e3b21c; --p-paint-o: #e07a1f; --p-paint-b: #2f6fc0;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #121413; --fg: #eceeea; --muted: #9aa39c; --line: #2a2e2b; --panel: #1a1d1b; --pick: #6fc493; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #121413; --fg: #eceeea; --muted: #9aa39c; --line: #2a2e2b; --panel: #1a1d1b; --pick: #6fc493; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; text-wrap: balance; }
+h3 { font-size: 13px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--pick); margin: 44px 0 4px; }
+h3 + p { color: var(--muted); margin: 0 0 20px; max-width: 66ch; }
+.lede { color: var(--muted); max-width: 66ch; margin: 0 0 18px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { font: 500 13px var(--text); color: var(--muted); background: none; border: 0; padding: 7px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg button:focus-visible { outline: 2px solid var(--pick); outline-offset: -2px; }
+.hint { color: var(--muted); font-size: 13px; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 264px), 1fr)); gap: 36px 28px; }
+.idea { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.idea h2 { font-size: 17px; font-weight: 700; margin: 0; }
+.idea h2 span { font: 600 12px var(--text); color: var(--pick); margin-right: 6px; }
+.idea p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.idea p b { color: var(--fg); font-weight: 600; }
+.ask { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); max-width: 70ch; }
+.ask b { color: var(--fg); }
+
+/* ---------- the Waymark phone ---------- */
+.phone { width: 264px; height: 548px; border-radius: 30px; position: relative; overflow: hidden; background: var(--p-bg); color: var(--p-fg); font-family: var(--p-font); border: 1px solid var(--p-edge); font-size: 12px; line-height: 1.35; }
+.phone.dark { --p-bg: #0d1512; --p-fg: #eaf1ec; --p-muted: #93a39a; --p-line: #223029; --p-line2: #3a4a41; --p-edge: #26342c; --p-card: #15201b; --p-tint: #1b3329;
+  --p-accent: #1d7a5b; --p-dusk: #d98f4c; --p-land: #111a16; --p-wood: #15261d; --p-water: #142a36; --p-road: #26342c; --p-contour: #1d2a23; --p-easy: #4fc588; }
+.phone * { box-sizing: border-box; }
+.abs { position: absolute; }
+.map { position: absolute; inset: 0; } .map svg { width: 100%; height: 100%; display: block; }
+.k { color: var(--p-muted); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; padding-bottom: 60px; background: var(--p-bg); border-radius: 20px 20px 0 0; }
+.grab { display: block; width: 34px; height: 8px; margin: 6px auto 2px; }
+.head { padding: 2px 12px 4px; } .name { font: 800 19px var(--p-num); letter-spacing: -0.02em; } .park { color: var(--p-muted); font-size: 11px; }
+/* the three numbers that matter, never smaller than this */
+.big3 { display: grid; grid-template-columns: repeat(3, 1fr); margin: 4px 12px 8px; }
+.big3 div { border-left: 1px solid var(--p-line2); padding-left: 9px; } .big3 div:first-child { border-left: 0; padding-left: 0; }
+.big3 b { display: block; font: 800 22px var(--p-num); letter-spacing: -0.03em; line-height: 1.05; }
+.big3 b small { font: 600 11px var(--p-font); letter-spacing: 0; margin-left: 2px; }
+.big3 span { font-size: 10px; color: var(--p-muted); }
+.card { margin: 0 12px; background: var(--p-card); border-radius: 14px; padding: 9px 12px; position: relative; }
+.lbl { font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.dots { display: flex; gap: 4px; justify-content: center; margin-top: 6px; } .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--p-line2); } .dots .on { background: var(--p-fg); width: 14px; border-radius: 3px; }
+.go { margin: 8px 12px 8px; height: 38px; display: grid; place-items: center; background: var(--p-accent); color: var(--p-on); border-radius: 10px 0 0 10px; font: 700 13.5px var(--p-num); padding-right: 10px; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%); }
+.tabs { position: absolute; left: 10px; right: 10px; bottom: 8px; height: 44px; border-radius: 16px; background: var(--p-card); border: 1px solid var(--p-line); display: flex; justify-content: space-around; align-items: center; color: var(--p-muted); font-size: 9.5px; }
+.tabs div { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.tabs i { display: block; }
+.tabs .on { color: var(--p-fg); font-weight: 700; } .tabs .on svg { color: var(--p-accent); }
+.day { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--p-tint) 0 78%, var(--p-dusk) 100%); position: relative; margin: 16px 0 16px; }
+.day .hike { position: absolute; left: 14%; width: 38%; top: -3px; bottom: -3px; border-radius: 8px; background: var(--p-accent); }
+.day em { position: absolute; top: 15px; font: normal 9.5px var(--p-font); color: var(--p-muted); transform: translateX(-50%); white-space: nowrap; }
+.day strong { position: absolute; top: -15px; font: 700 9.5px var(--p-num); transform: translateX(-50%); white-space: nowrap; }
+.verdict { font-size: 11.5px; font-weight: 600; } .verdict span { color: var(--p-muted); font-weight: 400; }
+.pick2 { display: flex; margin: 0 12px 8px; background: var(--p-card); border-radius: 12px; padding: 3px; gap: 3px; }
+.pick2 div { flex: 1; text-align: center; padding: 5px 0; border-radius: 9px; font-size: 11px; font-weight: 600; color: var(--p-muted); }
+.pick2 .on { background: var(--p-accent); color: var(--p-on); }
+.find { position: absolute; left: 10px; right: 10px; top: 12px; height: 34px; border-radius: 17px; background: var(--p-card); display: flex; align-items: center; padding: 0 12px; color: var(--p-muted); font-size: 11.5px; }
+.list { margin: 2px 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+.row { position: relative; background: var(--p-card); border-radius: 14px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+.row .t { font: 700 13px var(--p-num); } .row .s { color: var(--p-muted); font-size: 10.5px; }
+.paint { display: flex; flex-direction: column; gap: 2px; } .paint i { display: block; width: 6px; height: 10px; border-radius: 1.5px; }
+.shape { margin-left: auto; width: 34px; height: 34px; flex: 0 0 auto; }
+.two { display: inline-flex; gap: 4px; margin-top: 4px; } .two span { font: 700 10px var(--p-num); padding: 2px 7px; border-radius: 8px; background: var(--p-tint); } .two span + span { background: none; border: 1px solid var(--p-line2); font-weight: 600; }
+.tick { position: absolute; right: 0; display: flex; font-size: 10px; }
+.tick b { font: 700 10px var(--p-num); background: var(--p-card); padding: 3px 5px 3px 7px; border-radius: 8px 0 0 8px; }
+.tick span { background: var(--p-card); padding: 3px 8px 3px 2px; color: var(--p-muted); font-weight: 500; }
+.tick.next b, .tick.next span { background: var(--p-you); color: #231b00; }
+.walk { position: absolute; left: 10px; right: 10px; bottom: 62px; background: var(--p-card); border-radius: 16px; padding: 10px 12px; }
+.walk .next { font: 800 17px var(--p-num); letter-spacing: -0.02em; } .walk .next span { font: 500 11px var(--p-font); color: var(--p-muted); margin-left: 4px; }
+.walk .big3 { margin: 8px 0 0; }
+.ctl2 { display: flex; gap: 6px; margin-top: 9px; } .ctl2 div { flex: 1; height: 32px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 11.5px; background: var(--p-tint); } .ctl2 .stop { background: var(--p-accent); color: var(--p-on); }
+.glance { position: absolute; inset: 0; padding: 46px 18px 0; }
+.glance .huge { font: 800 74px var(--p-num); letter-spacing: -0.05em; line-height: .95; } .glance .huge small { font: 700 20px var(--p-font); letter-spacing: 0; margin-left: 4px; }
+.glance .cap2 { font-size: 13px; color: var(--p-muted); margin-bottom: 14px; }
+.glance .nx { background: var(--p-you); color: #231b00; border-radius: 14px; padding: 10px 12px; margin-top: 4px; font: 800 17px var(--p-num); } .glance .nx span { display: block; font: 600 11px var(--p-font); color: #5a4700; }
+.now { position: absolute; left: 10px; right: 10px; bottom: 62px; background: var(--p-you); color: #231b00; border-radius: 16px; padding: 10px 12px; }
+.now .lbl { color: #5a4700; } .now .b { font: 800 22px var(--p-num); letter-spacing: -0.02em; } .now .b span { font: 500 11px var(--p-font); color: #5a4700; margin-left: 4px; }
+@media (prefers-reduced-motion: no-preference) { .phone { transition: background-color .2s, color .2s; } }
+</style>
+
+<div class="wrap">
+  <h1>Waymark, as it will be built</h1>
+  <p class="lede">Your last round of choices, drawn together: a green Start button, the row of words with a blaze, a plain Finish button, a prompt when you reach the end, and the hike on the lock screen.</p>
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Phone theme">
+      <button type="button" id="theme-light" aria-pressed="false">Light</button>
+      <button type="button" id="theme-dark" aria-pressed="false">Dark</button>
+    </div>
+    <span class="hint">Deer Run Trail is the example throughout.</span>
+  </div>
+  <h3>The screens</h3>
+  <p>This is what the app is now being built to. Anything you want changed can still change.</p>
+  <div class="ideas" id="q1"></div>
+  <p class="ask"><b>The lock screen is drawn, not built.</b> It is the last piece to be made, after the app itself has been tried on a phone. Figures are placed by hand.</p>
+</div>
+
+<script>
+const RIDGE = "M0 34 20 30 44 18 66 22 90 10 112 16 134 28 160 36 186 30 210 20 240 34";
+const TRAIL_D = "M214 96c-10-22-22-30-30-12s-12 30-20 6-20-22-22 0 14 30 6 50-22 22-14 46 26 22 20 44-40 14-58 28-28 40-30 70M214 96c-14 12-28 30-30 60s8 60 2 84c-10 14-34 10-50 6s-34 2-44 16";
+function mapSvg(o = {}) {
+  const w = o.sel ? 4 : 2.6;
+  return `<svg viewBox="0 0 264 548" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+    <rect width="264" height="548" fill="var(--p-land)"/>
+    <path d="M150 0h114v230c-40 20-70 60-110 60s-60-70-40-130S120 40 150 0z" fill="var(--p-wood)"/>
+    <path d="M0 250c50-20 90 10 110 60s-10 110-60 120S0 420 0 420z" fill="var(--p-wood)"/>
+    <g fill="none" stroke="var(--p-contour)"><path d="M170 20c30 40 20 90-10 130s-20 90 20 120"/><path d="M200 10c25 50 15 100-10 140s-10 80 30 110"/><path d="M10 280c40-10 70 20 80 60s-20 70-60 70"/></g>
+    <path d="M0 150c60 10 80 60 70 120S90 380 60 548" fill="none" stroke="var(--p-road)" stroke-width="5"/>
+    <ellipse cx="96" cy="118" rx="9" ry="6" fill="var(--p-water)"/>
+    <g fill="none" stroke-linejoin="round" stroke-linecap="round"><path d="${TRAIL_D}" stroke="var(--p-bg)" stroke-width="${w + 3}"/><path d="${TRAIL_D}" stroke="var(--p-easy)" stroke-width="${w}"/>
+    ${o.cut ? `<path d="M118 262c14-6 26-2 38 4" stroke="var(--p-easy)" stroke-width="2.4" stroke-dasharray="1 5"/>` : ""}</g>
+    <circle cx="214" cy="96" r="6" fill="var(--p-easy)" stroke="var(--p-bg)" stroke-width="2"/>
+    ${o.you ? `<circle cx="${o.you}" cy="214" r="11" fill="var(--p-you)" opacity=".28"/><circle cx="${o.you}" cy="214" r="5" fill="var(--p-you)" stroke="var(--p-bg)" stroke-width="2"/>` : ""}
+  </svg>`;
+}
+const grab = `<svg class="grab" viewBox="0 0 34 8" aria-hidden="true"><path d="M2 6 9 2 17 6 25 2 32 6" fill="none" stroke="var(--p-line2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const IC = { map: '<path d="M2 4.5 6 3l4 1.5L14 3v9.5L10 14l-4-1.5L2 14z"/><path d="M6 3v9.5M10 4.5V14"/>', hike: '<path d="M3 13h8L5 8h8L7 3h6"/>', saved: '<path d="M4 2.5h8V14l-4-3-4 3z"/>', log: '<path d="M2 12l3-5 3 3 3-6 3 4"/>', you: '<circle cx="8" cy="5.5" r="2.8"/><path d="M2.5 14c.9-3 3-4.2 5.5-4.2s4.6 1.2 5.5 4.2"/>' };
+const ic = (n, sz = 17, w = 1.6) => `<svg viewBox="0 0 16 16" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const tabs = (on = 0) => `<div class="tabs">${[["map", "Explore"], ["hike", "Record"], ["saved", "Saved"], ["log", "Activity"]].map(([i, t], k) => `<div class="${k === on ? "on" : ""}">${ic(i)}${t}</div>`).join("")}</div>`;
+const bar1 = `<div class="tabs" style="justify-content:space-between;padding:0 34px">
+  <div class="on">${ic("map")}Explore</div>
+  <div style="margin-top:-22px"><span style="width:50px;height:50px;border-radius:50%;background:var(--p-you);color:#231b00;display:grid;place-items:center;border:4px solid var(--p-bg)">${ic("hike", 22, 2)}</span><span style="color:var(--p-fg);font-weight:700">Hike</span></div>
+  <div>${ic("you")}Mine</div></div>`;
+const bar2 = `<div class="tabs" style="border:0;background:none;font:600 12.5px var(--p-font);justify-content:space-between;padding:0 14px">
+  ${["Explore", "Hike", "Saved", "Log"].map((t, k) => `<div style="gap:5px;color:${k ? "var(--p-muted)" : "var(--p-fg)"}"><i style="width:6px;height:9px;border:0;border-radius:1.5px;background:${k ? "transparent" : "var(--p-you)"}"></i>${t}</div>`).join("")}</div>`;
+const bar3 = `<div class="abs" style="right:12px;top:54px;width:36px;height:36px;border-radius:12px;background:var(--p-card);display:grid;place-items:center;color:var(--p-fg)">${ic("you")}</div>
+  <div class="abs" style="right:14px;bottom:16px;height:48px;padding:0 18px 0 14px;border-radius:24px;background:var(--p-you);color:#231b00;display:flex;align-items:center;gap:8px;font:800 14px var(--p-num)">${ic("hike", 20, 2)}Hike</div>`;
+const big3 = (mi = "3.7", ft = "246", t = "1:45") => `<div class="big3"><div><b>${mi}<small>mi</small></b><span>Distance</span></div><div><b>${ft}<small>ft</small></b><span>Climb</span></div><div><b>${t}<small>h</small></b><span>Easy pace</span></div></div>`;
+const head = `<div class="head"><div class="name">Deer Run Trail</div><div class="park">Rock Bridge Memorial State Park · yellow blazes</div></div>`;
+const page = (mapBottom, body, o = {}) => `<div class="map" style="bottom:${mapBottom}px">${mapSvg({ sel: 1, cut: o.cut })}</div><div class="sheet">${grab}${head}${body}<div class="go">Start hike</div></div>${tabs()}`;
+
+const STOPS = [["Creek", 0.6, 39, 56], ["Short loop", 1.1, 71, 50], ["High point", 1.9, 123, 46], ["Overlook", 3.1, 201, 58]];
+// the ridge with its pins; w = how much of the 240-wide chart the hike takes (the rest is light to spare)
+function pins(h = 96, w = 240, clock = false) {
+  const k = w / 240;
+  const path = RIDGE.replace(/(\d+) (\d+)/g, (_, x, y) => `${(x * k).toFixed(1)} ${y}`);
+  return `<svg viewBox="0 0 240 ${h}" style="width:100%;height:${h}px;display:block" aria-hidden="true">
+    ${clock ? `<rect x="${w}" y="34" width="${240 - w}" height="46" fill="var(--p-tint)" opacity=".7"/><rect x="226" y="34" width="14" height="46" fill="var(--p-dusk)" opacity=".55"/>
+      <text x="${(w + 226) / 2}" y="61" text-anchor="middle" font-size="8.5" font-weight="600" fill="var(--p-muted)" font-family="Figtree, sans-serif">2 h to spare</text>` : ""}
+    <g transform="translate(0 34)"><path d="${path}V46H0z" fill="var(--p-easy)" opacity=".16"/><path d="${path}" fill="none" stroke="var(--p-easy)" stroke-width="1.6"/></g>
+    ${STOPS.map(([n, mi, x, y], i) => { const X = x * k, top = i % 2 ? 22 : 10; return `<path d="M${X} ${top + 4}V${y}" stroke="var(--p-line2)" stroke-dasharray="2 2"/><circle cx="${X}" cy="${y}" r="3" fill="var(--p-card)" stroke="var(--p-easy)" stroke-width="1.6"/><text x="${X}" y="${top}" text-anchor="middle" font-size="${clock ? 7.5 : 8.5}" font-weight="600" fill="var(--p-fg)" font-family="Figtree, sans-serif">${clock ? (i % 2 ? "" : n) : n + " " + mi}</text>`; }).join("")}
+    <g font-size="8" fill="var(--p-muted)" font-family="Figtree, sans-serif">${clock
+      ? `<text x="0" y="${h - 4}">1:10 now</text><text x="${w}" y="${h - 4}" text-anchor="middle">2:55 back</text><text x="240" y="${h - 4}" text-anchor="end">sunset 4:58</text>`
+      : `<text x="0" y="${h - 4}">0</text><text x="62" y="${h - 4}">1</text><text x="127" y="${h - 4}">2</text><text x="192" y="${h - 4}">3</text><text x="240" y="${h - 4}" text-anchor="end">3.7 mi</text>`}</g></svg>`;
+}
+const daybar = `<div class="day"><div class="hike"></div><strong style="left:14%">1:10</strong><strong style="left:52%">2:55</strong><em style="left:14%">now</em><em style="left:52%">back</em><em style="left:92%">sunset 4:58</em></div>`;
+
+const Q1 = [
+  ["1a", "Swipe sideways", "Elevation first; swipe the card for daylight. <b>Smallest.</b> Daylight is hidden until you swipe, and the dots are the only clue it is there.",
+    page(268, big3() + `<div class="card"><div class="lbl"><span>Elevation</span><span>swipe →</span></div>${pins(92)}<div class="dots"><i class="on"></i><i></i></div></div>`)],
+  ["1b", "One taller card", "Elevation with daylight right under it, always in view. <b>Nothing hidden.</b> The map gets a little less room until you drag the sheet down.",
+    page(336, big3() + `<div class="card"><div class="lbl"><span>Elevation</span></div>${pins(86)}<div class="lbl" style="margin-top:6px"><span>Daylight</span><span style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--p-fg)">2 h to spare</span></div>${daybar}<div style="height:6px"></div></div>`)],
+  ["1c", "Scroll down", "Elevation, then daylight as its own card below it. Familiar, but daylight starts below the fold on small phones.",
+    page(300, big3() + `<div class="card">${`<div class="lbl"><span>Elevation</span></div>` + pins(86)}</div><div class="card" style="margin-top:6px;padding-bottom:2px"><div class="lbl"><span>Daylight</span><span>↓</span></div><div style="height:16px;overflow:hidden">${daybar}</div></div>`)],
+  ["1d", "One chart, on a clock", "The ridge is drawn against the time of day: it starts now, ends when you would be back, and the space left before sunset is the light to spare. <b>Distance, climb, the stops and daylight in one picture.</b> Before you set off it uses your easy pace; once walking, your real one.",
+    page(282, big3() + `<div class="card"><div class="lbl"><span>The hike against today's light</span></div>${pins(98, 112, true)}<div class="verdict">Start by 3:10 to be back before dark.</div></div>`)],
+];
+
+const rows = (hint) => [["Deer Run Trail", "3.7 mi · 246 ft · Loop", ["y"], "M30 8c-3-5-6-6-8-2s-3 6-5 1-5-5-5 0 3 7 1 12-5 5-3 11 6 5 5 10M30 8c-3 3-7 7-7 14s2 14 0 20", 1],
+     ["Gans Creek Wild Area", "6.7 mi · 489 ft · Loop", ["o", "o"], "M6 26c4-10 8-4 12-12s8-8 12-2-2 8 2 14-8 6-12 2-8 4-14-2z", 0],
+     ["Sinkhole Trail", "1.5 mi · 138 ft · Loop", ["b"], "M10 12c6-5 14-3 16 5s-5 13-11 11S5 17 10 12z", 0]]
+  .map(([t, s, paint, shape, two]) => `<div class="row"><span class="paint">${paint.map(c => `<i style="background:var(--p-paint-${c})"></i>`).join("")}</span><div><div class="t">${t}</div>${hint && two ? `<div class="two"><span>3.7 mi full</span><span>2.3 mi short</span></div>` : `<div class="s">${s}</div>`}</div><svg class="shape" viewBox="0 0 36 44" aria-hidden="true"><path d="${shape}" fill="none" stroke="var(--p-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`).join("");
+const listScreen = (hint) => `<div class="map">${mapSvg({ you: 146 })}</div><div class="find">Search trails and parks</div><div class="sheet">${grab}<div class="list">${rows(hint)}</div></div>${tabs()}`;
+
+const Q2 = [
+  ["2a", "On the trail page, above the numbers", "Two plain choices under the name. Tap Short and the three big numbers, the chart and the line on the map all change. <b>This is where the choice has its effect, so it is the one to keep whatever else you pick.</b>",
+    page(300, `<div class="pick2"><div>Full loop</div><div class="on">Short loop</div></div>` + big3("2.3", "150", "1:05") + `<div class="card"><div class="lbl"><span>Elevation</span></div>${pins(86)}</div>`, { cut: 1 })],
+  ["2b", "In the list, as two lengths", "The trail's card shows both lengths, so you know before opening it that a shorter walk exists. Tapping a length opens the page already set to it. Filters such as “under 3 mi” would find Deer Run through its short loop.", listScreen(true)],
+  ["2c", "On the map, by tapping the cut-across", "The cut-across is drawn dotted; tap it to switch. Direct, but easy to miss and fiddly with a thumb, so only as an extra.",
+    page(330, big3("2.3", "150", "1:05") + `<div class="card" style="padding:8px 12px"><div class="verdict">Short loop <span>by the cut-across at 1.1 mi. Tap it again for the full loop.</span></div></div>`, { cut: 1 })],
+];
+
+const DONE = [
+  ["G", "The trail's real paint", "Blazes in the park's own colour for that trail, the count still showing difficulty, and the trail's shape on each card.", listScreen(false)],
+  ["H", "Off the trail", "The card turns sign yellow and says how far and which way.",
+    `<div class="map">${mapSvg({ sel: 1 })}</div><svg class="abs" style="left:0;top:0;width:100%;height:100%" viewBox="0 0 264 548" aria-hidden="true"><circle cx="96" cy="214" r="11" fill="var(--p-you)" opacity=".28"/><circle cx="96" cy="214" r="5" fill="var(--p-you)" stroke="var(--p-bg)" stroke-width="2"/><path d="M104 214h38" stroke="var(--p-you)" stroke-width="2.5" stroke-dasharray="1 5" stroke-linecap="round"/><path d="M140 208l8 6-8 6z" fill="var(--p-you)"/></svg>
+     <div class="now"><div class="lbl">Off the trail</div><div class="b">160 ft <span>to your right</span></div><div style="font-size:11px;margin-top:4px">Follow the dots back. Your own track is saved if you need to retrace it.</div></div>${tabs(1)}`],
+];
+
+const walked = `<div class="big3"><div><b>0.3<small>mi</small></b><span>Walked</span></div><div><b>3.4<small>mi</small></b><span>Left</span></div><div><b>2:48<small>pm</small></b><span>Back by</span></div></div>`;
+const ctl = `<div class="ctl2"><div>Pause</div><div>Mark a spot</div><div class="stop">Finish</div></div>`;
+// the ridge with you on it: walked part solid, the rest lighter
+const progress = `<svg viewBox="0 0 240 70" style="width:100%;height:70px;display:block;margin-top:6px" aria-hidden="true">
+  <g transform="translate(0 14)"><path d="${RIDGE}V46H0z" fill="var(--p-easy)" opacity=".12"/><path d="${RIDGE}" fill="none" stroke="var(--p-line2)" stroke-width="1.6"/>
+  <path d="M0 34 20 30" fill="none" stroke="var(--p-easy)" stroke-width="2.6" stroke-linecap="round"/></g>
+  ${STOPS.map(([n, mi, x, y]) => `<circle cx="${x}" cy="${y - 20}" r="3" fill="var(--p-card)" stroke="var(--p-easy)" stroke-width="1.6"/>`).join("")}
+  <circle cx="20" cy="44" r="5" fill="var(--p-you)" stroke="var(--p-card)" stroke-width="2"/>
+  <g font-size="8" font-weight="600" fill="var(--p-fg)" font-family="Figtree, sans-serif"><text x="39" y="26" text-anchor="middle">Creek</text><text x="123" y="16" text-anchor="middle">High point</text></g></svg>`;
+const Q3 = [
+  ["3a", "Map with what is ahead", "The map stays, the things ahead sit on its edge with the distance left, and the card names the next one above the three numbers. <b>Best for finding your way.</b>",
+    `<div class="map">${mapSvg({ sel: 1, you: 146 })}</div>
+     <div class="tick next" style="top:120px"><b>0.3 mi</b><span>Creek</span></div><div class="tick" style="top:146px"><b>0.8</b><span>Short loop</span></div><div class="tick" style="top:172px"><b>1.6</b><span>High point</span></div>
+     <div class="walk"><div class="lbl" style="margin-bottom:0"><span>Next</span></div><div class="next">Creek crossing <span>in 0.3 mi</span></div>${walked}${ctl}</div>${tabs(1)}`],
+  ["3b", "Glance", "No map. One huge number for the distance left, then the time you will be back and the next thing. Readable at arm's length, in sun, with gloves. <b>Tap anywhere to flip to the map and back.</b>",
+    `<div class="glance"><div class="cap2">Deer Run Trail</div><div class="huge">3.4<small>mi</small></div><div class="cap2">left · 0.3 walked</div>
+     <div class="huge" style="font-size:44px">2:48<small style="font-size:15px">pm</small></div><div class="cap2">back by · sunset 4:58</div>
+     <div class="nx">Creek crossing<span>in 0.3 mi</span></div></div><div class="abs" style="left:18px;right:18px;bottom:62px">${ctl}</div>${tabs(1)}`],
+  ["3c", "Map with the ridge as your progress bar", "The card is the ridge you saw on the trail page, with you on it in yellow: what you have climbed behind you, what is left ahead, the stops still to come. <b>The same picture before and during the hike.</b>",
+    `<div class="map">${mapSvg({ sel: 1, you: 146 })}</div>
+     <div class="walk"><div class="next">Creek crossing <span>in 0.3 mi</span></div>${progress}${walked}${ctl}</div>${tabs(1)}`],
+];
+const slim = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-muted)">Light</span>
+  <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--p-tint) 0 78%,var(--p-dusk) 100%);position:relative"><i style="position:absolute;left:14%;width:38%;top:-2px;bottom:-2px;border-radius:6px;background:var(--p-accent)"></i></div>
+  <span style="font:700 10px var(--p-num)">2 h to spare</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--p-muted);margin-top:4px"><span>Back by 2:55 if you start now</span><span>Sunset 4:58</span></div>`;
+const rows2 = [["Deer Run Trail", ["y"], "M30 8c-3-5-6-6-8-2s-3 6-5 1-5-5-5 0 3 7 1 12-5 5-3 11 6 5 5 10M30 8c-3 3-7 7-7 14s2 14 0 20", `<div class="two" style="flex-direction:column;gap:3px"><span>3.7 mi · 246 ft · full loop</span><span>2.3 mi · 150 ft · short loop</span></div>`],
+  ["Gans Creek Wild Area", ["o", "o"], "M6 26c4-10 8-4 12-12s8-8 12-2-2 8 2 14-8 6-12 2-8 4-14-2z", `<div class="s">6.7 mi · 489 ft · Loop</div>`],
+  ["Sinkhole Trail", ["b"], "M10 12c6-5 14-3 16 5s-5 13-11 11S5 17 10 12z", `<div class="s">1.5 mi · 138 ft · Loop</div>`]]
+  .map(([t, paint, shape, sub]) => `<div class="row"><span class="paint">${paint.map(c => `<i style="background:var(--p-paint-${c})"></i>`).join("")}</span><div><div class="t">${t}</div>${sub}</div><svg class="shape" viewBox="0 0 36 44" aria-hidden="true"><path d="${shape}" fill="none" stroke="var(--p-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`).join("");
+const FINAL = [
+  ["1", "The list", "A trail with a short loop shows both, each with its own length and climb. Tapping a line opens the trail set to that one. Other trails keep the single line.",
+    `<div class="map">${mapSvg({ you: 146 })}</div><div class="find">Search trails and parks</div><div class="sheet">${grab}<div class="list">${rows2}</div></div>${tabs()}`],
+  ["2", "The trail page", "Distance, climb and time stay large. Elevation with its pins and the daylight line share one card, cut down so about a fifth more of the map shows than in the last round. Drag the card up for the rest of the page.",
+    page(282, big3() + `<div class="card" style="padding:7px 12px 8px">${pins(74)}${slim}</div>`)],
+  ["3", "While walking", "Pared down to what you check on the move. The map takes most of the screen and the tab bar steps away while a hike is running. One card: the ridge with you on it in yellow and the next thing named on it, then the two numbers that matter, miles left and when you will be back. Pause and Finish wait behind the small button, so nothing gets pressed in a pocket.",
+    `<div class="map" style="bottom:170px">${mapSvg({ sel: 1, you: 146 })}</div>
+     <div class="sheet" style="padding:0 12px 14px">${grab}
+       <div style="position:relative">${progress.replace('<text x="39" y="26" text-anchor="middle">Creek</text><text x="123" y="16" text-anchor="middle">High point</text>', '<text x="39" y="24" text-anchor="middle">Creek · 0.3 mi</text>')}
+         <i style="position:absolute;right:0;top:0;width:26px;height:26px;border-radius:13px;background:var(--p-card);display:grid;place-items:center;font-style:normal;font-weight:800;letter-spacing:1px;color:var(--p-muted)">···</i></div>
+       <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:10px;margin-top:4px">
+         <div><div style="font:800 44px var(--p-num);letter-spacing:-0.05em;line-height:.95">3.4<small style="font:700 14px var(--p-font);letter-spacing:0;margin-left:3px">mi</small></div><div class="k" style="font-size:11px">left</div></div>
+         <div style="border-left:1px solid var(--p-line2);padding-left:12px"><div style="font:800 44px var(--p-num);letter-spacing:-0.05em;line-height:.95">2:48</div><div class="k" style="font-size:11px">back by</div></div></div>
+     </div>`],
+];
+const card = ([n, name, text, phone]) => `<section class="idea"><div class="phone">${phone}</div><h2><span>${n}</span>${name}</h2><p>${text}</p></section>`;
+const chartCard = `<div class="card" style="padding:7px 12px 8px">${pins(74)}${slim}</div>`;
+const trailPage = (mapBottom, mid, foot, bar = tabs()) => `<div class="map" style="bottom:${mapBottom}px">${mapSvg({ sel: 1 })}</div><div class="sheet">${grab}${head}${mid}${chartCard}${foot}</div>${bar}`;
+const START = [
+  ["S1", "Yellow, with the switchback", "A plain rounded button in sign yellow with the switchback mark. The same size as before; only the colour and shape change.",
+    trailPage(282, big3(), `<div style="margin:8px 12px;height:40px;border-radius:13px;background:var(--p-you);color:#231b00;display:flex;align-items:center;justify-content:center;gap:8px;font:800 14px var(--p-num)">${ic("hike", 19, 2)}Start hike</div>`)],
+  ["S2", "Slide to start", "Drag the yellow marker along the track to set off. It cannot be pressed by accident, and it is a small switchback of its own. Finish would work the same way.",
+    trailPage(282, big3(), `<div style="margin:8px 12px;height:40px;border-radius:20px;background:var(--p-card);border:1px solid var(--p-line);position:relative;display:grid;place-items:center;font:700 12.5px var(--p-num);color:var(--p-muted)">Slide to start  ›››<span style="position:absolute;left:3px;top:3px;width:46px;height:32px;border-radius:16px;background:var(--p-you);color:#231b00;display:grid;place-items:center">${ic("hike", 19, 2)}</span></div>`)],
+  ["S3", "A round button beside the numbers", "Start moves up next to the three numbers, so the card loses a whole row and more of the map shows. The trade is that the three numbers get slightly less room.",
+    trailPage(236, `<div style="display:flex;align-items:center;margin-right:12px"><div style="flex:1">${big3()}</div><span style="width:52px;height:52px;border-radius:50%;background:var(--p-you);color:#231b00;display:grid;place-items:center;font:800 11px var(--p-num);line-height:1.05;text-align:center">Start</span></div>`, `<div style="height:8px"></div>`)],
+];
+const listPage = (bar, bottomPad = 60) => `<div class="map">${mapSvg({ you: 146 })}</div><div class="find">Search trails and parks</div><div class="sheet" style="padding-bottom:${bottomPad}px">${grab}<div class="list">${rows2}</div></div>${bar}`;
+const BARS = [
+  ["B1", "Three places, the hike in the middle", "Explore, Hike, Mine. Hike is the raised yellow button; Saved and Activity become one place called Mine, since both are your own things.", listPage(bar1)],
+  ["B2", "Words, marked with a blaze", "No box and no icons: four words on the page itself, a yellow blaze beside the one you are on. The quietest. Record is renamed Hike and Activity becomes Log.", listPage(bar2, 52)],
+  ["B3", "No row at all", "The map and list get the whole screen. One yellow Hike button floats bottom right, and your saved trails and past hikes sit behind the person button under the search box.", listPage(bar3, 12)],
+];
+const quiet = `<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--p-muted);margin-top:8px;padding-top:7px;border-top:1px solid var(--p-line)"><span><b style="color:var(--p-fg);font-family:var(--p-num)">0:09</b> on the trail</span><span><b style="color:var(--p-fg);font-family:var(--p-num)">0.3 mi</b> walked</span><span><b style="color:var(--p-fg);font-family:var(--p-num)">40 ft</b> climbed</span></div>`;
+const two = `<div style="display:grid;grid-template-columns:1.1fr 1fr;gap:10px;margin-top:4px">
+  <div><div style="font:800 44px var(--p-num);letter-spacing:-0.05em;line-height:.95">3.4<small style="font:700 14px var(--p-font);letter-spacing:0;margin-left:3px">mi</small></div><div class="k" style="font-size:11px">left</div></div>
+  <div style="border-left:1px solid var(--p-line2);padding-left:12px"><div style="font:800 44px var(--p-num);letter-spacing:-0.05em;line-height:.95">2:48</div><div class="k" style="font-size:11px">back by</div></div></div>`;
+const ridgeNow = `<div style="position:relative">${progress.replace('<text x="39" y="26" text-anchor="middle">Creek</text><text x="123" y="16" text-anchor="middle">High point</text>', '<text x="39" y="24" text-anchor="middle">Creek · 0.3 mi</text>')}</div>`;
+const cell = (v, k) => `<div style="background:var(--p-card);border-radius:11px;padding:6px 9px"><b style="font:700 14px var(--p-num)">${v}</b><div class="k" style="font-size:9.5px">${k}</div></div>`;
+const WALK = [
+  ["W1", "At rest", "As before, plus one line under the big numbers: time on the trail, distance walked, feet climbed. Small on purpose; the two big numbers still lead.",
+    `<div class="map" style="bottom:196px">${mapSvg({ sel: 1, you: 146 })}</div><div class="sheet" style="padding:0 12px 14px">${grab}${ridgeNow}${two}${quiet}</div>`],
+  ["W2", "Pulled up", "Drag the card up for the rest: moving time and pace, climb still to come, sunset and the light to spare, your height and position with a button to share where you are, and how sure the GPS is. Pause, Mark a spot and slide to finish live here.",
+    `<div class="map" style="bottom:420px">${mapSvg({ sel: 1, you: 146 })}</div><div class="sheet" style="padding:0 12px 14px">${grab}${ridgeNow}${two}${quiet}
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px">${cell("0:08", "Moving")}${cell("28 min/mi", "Pace")}${cell("206 ft", "Climb left")}${cell("4:58", "Sunset")}${cell("2 h 10", "Light to spare")}${cell("742 ft", "Height now")}</div>
+       <div style="background:var(--p-card);border-radius:11px;padding:7px 9px;margin-top:5px;display:flex;justify-content:space-between;align-items:center"><div><b style="font:700 12px var(--p-num)">38.8741, -92.3362</b><div class="k" style="font-size:9.5px">You are here · good to 16 ft</div></div><span style="font-size:10.5px;font-weight:700;color:var(--p-accent)">Share</span></div>
+       <div class="ctl2" style="margin-top:8px"><div>Pause</div><div>Mark a spot</div></div>
+       <div style="margin-top:6px;height:36px;border-radius:18px;background:var(--p-card);border:1px solid var(--p-line);position:relative;display:grid;place-items:center;font:700 12px var(--p-num);color:var(--p-muted)">Slide to finish  ›››<span style="position:absolute;left:3px;top:3px;width:42px;height:28px;border-radius:14px;background:var(--p-accent);color:var(--p-on);display:grid;place-items:center">${ic("hike", 17, 2)}</span></div></div>`],
+];
+const startBtn = `<div style="margin:8px 12px;height:42px;border-radius:14px;background:var(--p-accent);color:var(--p-on);display:flex;align-items:center;padding:0 5px;font:700 14px var(--p-num)"><span style="width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center">${ic("hike", 18, 2)}</span><span style="flex:1;text-align:center;padding-right:32px">Start hike</span></div>`;
+const greenBtn = (t) => `<div style="flex:1;height:36px;border-radius:12px;background:var(--p-accent);color:var(--p-on);display:grid;place-items:center;font:700 12.5px var(--p-num)">${t}</div>`;
+const plainBtn = (t) => `<div style="flex:1;height:36px;border-radius:12px;background:var(--p-tint);display:grid;place-items:center;font:700 12.5px var(--p-num)">${t}</div>`;
+const lock = `<div style="position:absolute;inset:0;background:linear-gradient(160deg,#1c2b26,#0b100e);color:#f1f5f2">
+  <div style="text-align:center;margin-top:58px;font:500 13px var(--p-font);opacity:.8">Thursday, November 12</div>
+  <div style="text-align:center;font:700 68px var(--p-num);letter-spacing:-0.04em;line-height:1">2:31</div>
+  <div style="position:absolute;left:10px;right:10px;bottom:74px;background:rgba(28,38,34,.92);border-radius:22px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;opacity:.75"><span>Switchback · Deer Run Trail</span><span>0:09</span></div>
+    <div style="display:flex;gap:16px;margin-top:6px"><div><b style="font:800 26px var(--p-num);letter-spacing:-0.03em">3.4<small style="font:700 11px var(--p-font);margin-left:2px">mi</small></b><div style="font-size:10px;opacity:.7">left</div></div>
+      <div><b style="font:800 26px var(--p-num);letter-spacing:-0.03em">2:48</b><div style="font-size:10px;opacity:.7">back by</div></div>
+      <div style="margin-left:auto;text-align:right;align-self:center"><b style="font:700 12px var(--p-num);color:#f4c430">Creek crossing</b><div style="font-size:10px;opacity:.7">in 0.3 mi</div></div></div>
+    <svg viewBox="0 0 240 40" style="width:100%;height:36px;display:block;margin-top:6px" aria-hidden="true"><path d="M0 28 20 24 44 12 66 16 90 4 112 10 134 22 160 30 186 24 210 14 240 28" fill="none" stroke="#5f6f67" stroke-width="2"/><path d="M0 28 20 24" fill="none" stroke="#4fc588" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="24" r="5" fill="#f4c430" stroke="#1c2622" stroke-width="2"/></svg>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10px;opacity:.5">Swipe up to open</div></div>`;
+const FINAL2 = [
+  ["1", "The list", "The row at the bottom is four plain words, all the same weight, with a yellow blaze beside the one you are on. Hike is where you record.", listPage(bar2, 52)],
+  ["2", "The trail page", "Start hike is a solid green button with the switchback mark set into it. No yellow: yellow stays for you and where you are.",
+    trailPage(288, big3(), startBtn, bar2)],
+  ["3", "While walking, pulled up", "As you approved, with Finish as an ordinary green button. It asks once, “Finish this hike?”, so a stray tap cannot end it.",
+    `<div class="map" style="bottom:420px">${mapSvg({ sel: 1, you: 146 })}</div><div class="sheet" style="padding:0 12px 14px">${grab}${ridgeNow}${two}${quiet}
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px">${cell("0:08", "Moving")}${cell("28 min/mi", "Pace")}${cell("206 ft", "Climb left")}${cell("4:58", "Sunset")}${cell("2 h 10", "Light to spare")}${cell("742 ft", "Height now")}</div>
+       <div style="background:var(--p-card);border-radius:11px;padding:7px 9px;margin-top:5px;display:flex;justify-content:space-between;align-items:center"><div><b style="font:700 12px var(--p-num)">38.8741, -92.3362</b><div class="k" style="font-size:9.5px">You are here · good to 16 ft</div></div><span style="font-size:10.5px;font-weight:700;color:var(--p-accent)">Share</span></div>
+       <div style="display:flex;gap:6px;margin-top:8px">${plainBtn("Pause")}${plainBtn("Mark a spot")}${greenBtn("Finish")}</div></div>`],
+  ["4", "When you reach the end", "Back at the trailhead of a loop, or at the far end of a one-way trail, the app asks whether to finish, on screen and as a notification if the phone is in your pocket. Finish saves the hike; Keep going dismisses it and recording carries on. Ignore it and nothing changes. It asks once, not every time you pass.",
+    `<div class="map" style="bottom:230px">${mapSvg({ sel: 1 })}</div><svg class="abs" style="left:0;top:0;width:100%;height:100%" viewBox="0 0 264 548" aria-hidden="true"><circle cx="210" cy="100" r="11" fill="var(--p-you)" opacity=".28"/><circle cx="210" cy="100" r="5" fill="var(--p-you)" stroke="var(--p-bg)" stroke-width="2"/></svg>
+     <div class="sheet" style="padding:0 12px 14px">${grab}
+       <div style="font:800 19px var(--p-num);letter-spacing:-0.02em;margin-top:4px">You are back at the trailhead</div>
+       <div class="k" style="font-size:12px;margin-top:2px">3.7 mi in 1 h 41. Finish this hike?</div>
+       <div style="display:flex;gap:6px;margin-top:12px">${plainBtn("Keep going")}${greenBtn("Finish hike")}</div>
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:10px">${cell("3.7 mi", "Walked")}${cell("1:41", "On the trail")}${cell("251 ft", "Climbed")}</div></div>`],
+  ["5", "On the lock screen", "Yes, this can work much as Apple Maps does. On iPhone it is a Live Activity: the hike stays on the lock screen and in the Dynamic Island with miles left, when you will be back, the next thing and your place on the ridge, without unlocking. On Android the same facts sit in a pinned notification. Apple keeps the full-screen lock-screen map for its own Maps, so other apps get this card.", lock],
+];
+document.getElementById("q1").innerHTML = FINAL2.map(card).join("");
+
+const light = document.getElementById("theme-light"), dark = document.getElementById("theme-dark");
+function setTheme(isDark) {
+  document.querySelectorAll(".phone").forEach(p => p.classList.toggle("dark", isDark));
+  light.setAttribute("aria-pressed", String(!isDark)); dark.setAttribute("aria-pressed", String(isDark));
+}
+light.addEventListener("click", () => setTheme(false));
+dark.addEventListener("click", () => setTheme(true));
+const attr = document.documentElement.getAttribute("data-theme");
+setTheme(attr ? attr === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+</script>
