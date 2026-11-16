@@ -1,5 +1,5 @@
 // Google encoded polylines at 1e-5 precision, and plain integers in the same alphabet
-// (mirrors Switchback/Model/Compact.swift).
+// (the format the trail packs use).
 
 export type Coord = [lat: number, lon: number];
 

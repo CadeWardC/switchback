@@ -22,6 +22,7 @@ import { walkGpx } from '../core/gpx';
 import { climbedSoFar } from '../core/hikeMath';
 import { useValue } from '../ui/hooks';
 import { Ridge } from '../ui/Ridge';
+import { SubmissionRow } from './Submit';
 import { Big, Blazes, Button, Card, Icon, Note, Segmented, Stat, T, Tap } from '../ui/kit';
 import { fonts, radius, shadow, useTheme } from '../ui/theme';
 
@@ -57,6 +58,16 @@ export function SavedScreen({ onSettings }: { onSettings: () => void }) {
     const key = `${s.region}/${s.id}`;
     setOpening(key);
     try {
+      // your own trail is a hike you recorded: it opens as that hike
+      if (s.walk) {
+        const full = await loadWalk(s.walk);
+        if (!full) { say("This hike's file couldn't be read."); return; }
+        shownWalk.value = full;
+        tab.value = 'log';
+        const box = bboxOf(full.segments.map((seg) => seg.map((p) => [p.lat, p.lon] as [number, number])));
+        if (box) flyTo.value = { bounds: box };
+        return;
+      }
       const tr = await findTrail(s.region, s.id);
       if (tr) openTrail(tr);
       else say("This trail isn't in the current trail files. It may have been renamed or removed.");
@@ -234,6 +245,7 @@ export function WalkSheet() {
       </View>
       {ridge && path.length > 1 ? <Card><Ridge profile={ridge} path={path} height={84} units={u} /></Card> : null}
       {w.markers?.length ? <Card><T v="small">{w.markers.map((m) => m.name).join(', ')}</T></Card> : null}
+      <SubmissionRow walk={w} />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button icon="download" title="Share GPX" onPress={() => void exportGpx(w.name, walkGpx(w)).catch(() => say("The GPX file couldn't be shared."))} style={{ flex: 1 }} />
         <Button icon="trash" kind="danger" title="Delete" onPress={del} style={{ flex: 1 }} />

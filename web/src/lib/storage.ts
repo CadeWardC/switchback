@@ -27,6 +27,8 @@ export interface WalkSummary {
   trail?: { region: string; id: string; name: string };
   /** Metres climbed, from the heights the phone gave (absent on hikes kept before this was). */
   gain?: number;
+  /** Set once the hike has been sent in for review (the server's submission id). */
+  submission?: string;
 }
 
 export interface Walk extends WalkSummary {
@@ -47,6 +49,8 @@ export interface SavedTrail {
   loop: boolean;
   start: Coord;
   saved: number;
+  /** A hike you recorded yourself, kept in Saved as your own trail: the hike's id (region is "own"). */
+  walk?: string;
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────────────────────────────

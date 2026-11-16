@@ -30,6 +30,10 @@ const PATHS: Record<string, string> = {
   loop: 'M17 3l3 3-3 3M20 6H8a4 4 0 0 0-4 4v1m3 10-3-3 3-3m-3 3h12a4 4 0 0 0 4-4v-1',
   oneway: 'M4 12h15m-5-5 5 5-5 5',
   external: 'M14 4h6v6m0-6-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  // the tab row: Hike (a boot print of a trail over a peak), Saved, Log
+  hike: 'M3 20 9.5 9l3.5 5 2.5-3.5L21 20H3Zm6.5-11V4m0 0 4 1.5-4 1.5',
+  log: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
+  record: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
 };
 
 export const Icon = memo(function Icon({ name, size = 20, color, filled }: { name: string; size?: number; color: string; filled?: boolean }) {

@@ -11,7 +11,7 @@ on:
     branches: ["**"]
     paths:
       - "web/**"
-      - "Switchback/Resources/switchback-style*.json" # the map style the app is built from
+      - "map-style/switchback-style*.json" # the map style the app is built from
       - ".github/workflows/build-android-apk.yml"
   workflow_dispatch:
 

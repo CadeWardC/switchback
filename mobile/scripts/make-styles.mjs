@@ -1,7 +1,7 @@
-// Writes src/map/styles/light.json and dark.json from the Swift app's outdoor map style
-// (../Switchback/Resources/switchback-style*.json: OpenMapTiles schema, OpenFreeMap tiles, hillshade from the
-// AWS terrain tiles). The same adaptation as web/scripts/make-styles.mjs: the Swift app draws its point-of-
-// interest icons ("sb-…") at runtime and this app has no sprite, so icon layers are dropped or reduced to
+// Writes src/map/styles/light.json and dark.json from Switchback's outdoor map style
+// (../map-style/switchback-style*.json: OpenMapTiles schema, OpenFreeMap tiles, hillshade from the
+// AWS terrain tiles). The same adaptation as web/scripts/make-styles.mjs: the style's point-of-interest
+// icons ("sb-…") have no sprite here, so icon layers are dropped or reduced to
 // their text. Both peak label layers (feet and metres) are kept; the app shows the one for the units setting.
 // Run with `npm run styles`; the output is committed so a plain checkout bundles without running it.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -13,7 +13,7 @@ const out = join(here, '..', 'src', 'map', 'styles');
 mkdirSync(out, { recursive: true });
 
 for (const [from, to] of [['switchback-style.json', 'light.json'], ['switchback-style-dark.json', 'dark.json']]) {
-  const style = JSON.parse(readFileSync(join(here, '..', '..', 'Switchback', 'Resources', from), 'utf8'));
+  const style = JSON.parse(readFileSync(join(here, '..', '..', 'map-style', from), 'utf8'));
   const layers = [];
   for (const layer of style.layers) {
     const layout = layer.layout;

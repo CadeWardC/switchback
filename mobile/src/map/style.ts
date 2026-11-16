@@ -1,4 +1,4 @@
-// The Switchback outdoor map (light and dark), generated from the Swift app's style by
+// The Switchback outdoor map (light and dark), generated from map-style/switchback-style*.json by
 // scripts/make-styles.mjs. Both peak label layers are in it; the one for the reader's units is shown.
 import type { StyleSpecification } from '@maplibre/maplibre-react-native';
 import type { Units } from '@web/lib/format';

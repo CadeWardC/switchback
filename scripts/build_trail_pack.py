@@ -8,7 +8,7 @@ Writes, into <out-dir>:
                     the format the app saves them (encoded polylines), each trail in the cell where it starts
   index.json        {version, region, cell, bbox, cells: {"row_col": bytes}}
 
-The trail rules mirror the app's live search (Overpass.swift), so ids match and the two can be mixed:
+The trail rules match the first app's live Overpass search, so ids match and the two can be mixed:
 hiking/foot/walking route relations, named paths/footways/bridleways and named tracks, and unnamed paths (joined,
 800 m or more). Lines are simplified to 4 m and stored at 1e-5° (about a metre).
 Pieces of one named trail that meet along other trails (or across a gap of a few metres) are joined into one trail:

@@ -1,4 +1,4 @@
-// A trail as the packs store it, and the rules the apps share (mirrors Switchback/Model/Trail.swift).
+// A trail as the packs store it, and the rules the apps share (the website and the React Native app).
 import { decodeInts, decodePolyline, type Coord } from './polyline';
 import { bboxOf, distance, type BBox } from './geo';
 
@@ -220,7 +220,7 @@ export function shortened(t: Trail, short: ShortLoop): Trail {
     ['switchback:short', 'switchback:ext', 'switchback:difficulty', 'switchback:minutes']);
 }
 
-// ── Profiles walked one after another (mirrors ElevationProfile in Trail.swift) ──────────────────────
+// ── Profiles walked one after another  ──────────────────────
 type Pts = [number, number][];
 const profileTotal = (p: Profile) => p.distances[p.distances.length - 1] ?? 0;
 

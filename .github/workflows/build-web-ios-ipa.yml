@@ -1,15 +1,15 @@
 name: Build unsigned IPA (Switchback app, web-based)
 
 # Builds the Switchback app for iPhone from the website in web/ (wrapped with Capacitor), unsigned, and
-# publishes it as a switchback-app-build-N release. This is the app that will replace the Swift one; the
-# Swift app's own builds (build-switchback-ipa.yml, switchback-build-N) are separate.
+# publishes it as a switchback-app-build-N release. The
+# React Native app's builds (build-rn-ios.yml) are separate.
 
 on:
   push:
     branches: ["**"]
     paths:
       - "web/**"
-      - "Switchback/Resources/switchback-style*.json" # the map style the app is built from
+      - "map-style/switchback-style*.json" # the map style the app is built from
       - ".github/workflows/build-web-ios-ipa.yml"
   workflow_dispatch:
 

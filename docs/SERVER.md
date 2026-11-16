@@ -1,46 +1,49 @@
 # Switchback server: sync, submissions and review
 
-The app works fully on the phone with no account. Signing in (Settings › Account & sync: server address + API
-key, kept in the Keychain) backs saved trails and recorded hikes up to a self-hosted Switchback server and keeps
+The phone app works fully with no account. Signing in (Settings › Account & sync: server address + API key, kept
+in the phone's secure store) backs saved trails and recorded hikes up to a self-hosted Switchback server and keeps
 them in sync between devices. Hikes can also be submitted for review, to be added to the public trail data.
 
 ## Collections
 
+The phone app (`mobile/`) writes these. Code: `mobile/src/core/server.ts` (the API), `sync.ts` (syncing),
+`syncFormat.ts` (ids and document shapes, unit-tested in `mobile/test/sync.test.ts`, which also runs against a
+live server when `SB_URL` and `SB_KEY` are set).
+
 | Collection | Document id | Body | Written by |
 | --- | --- | --- | --- |
-| `saved_trails` | `t.<trail id>`, or `h.<sha256 of trail id>` when the id has characters the server doesn't allow (`u123\|456`) or is too long | `{v, trail, saved_at}`: `trail` is the trail exactly as the app stores it (lines as encoded polylines, 1e-5°); `saved_at` in ms | the app (owner) |
-| `activities` | the hike's UUID, lower case | `{v, id, name, start, end, distance, moving_time, elapsed_time, gain, trail_id, trail_name, segments: [{line, alt, t}], points, submission_id}`: `line` is an encoded polyline at 1e-6° (~0.1 m), `alt` metres (null where GPS had none), `t` seconds after `start`; dates in ms. A 30 km hike is about 145 KB | the app (owner) |
-| `submissions` | a new UUID | `{v, status, submitted_at, name, review: {rating, text}, public_use_consent, app_version, hike: <activity body>, reviewed_at, reviewer_note}`; `status` is `pending`, then `approved` or `rejected` | the app creates it; the review page sets the status |
+| `saved_trails` | `t.<region>.<trail id>`, or `h.<hash>` when the id has characters the server doesn't allow | `{v: 2, trail}`: the saved trail as the app keeps it (region, id, name, length, climb, difficulty, start, `saved` in ms). Your own trail (a hike you recorded, kept in Saved) has region `own` and `walk` = the hike's id | the app |
+| `activities` | `w.<hike id>` | `{v: 2, walk}`: the recorded hike with its marked spots; each stretch's points as `{line, ele, t, acc}`: `line` an encoded polyline at 1e-6° (~0.1 m), heights, seconds after the start, GPS accuracy. A 30 km hike is a few hundred KB | the app |
+| `submissions` | `s.<hike id>.<time>` | `{v: 2, status, submitted_at, name, review: {rating, text}, public_use_consent, app_version, hike: {start, distance, moving_time, gain, trail_name, segments: [{line, alt, t}], points: [{kind: "spot", note, lat, lon, time}]}, gpx, reviewed_at, reviewer_note}`; `status` is `pending`, then `approved` or `rejected`; `gpx` is the submission file `docs/SUBMISSIONS.md` describes | the app creates it; the review page sets the status |
 | `approved_hikes` | the submission's id | `{v, name, approved_at, submitted_at, review, hike}` | the review page, on approval (removed again on rejection) |
 
-Settings, caches, offline maps, trail packs and the in-progress recording stay on the phone.
+Settings, caches, offline maps, trail packs and the hike being recorded stay on the phone.
 
 ## How the app syncs
 
-- Every change on the phone (save, rename, delete, a new hike) is applied locally first and queued
-  (`sync-state.json`), so everything works offline. The queue is sent when the server can be reached: on launch,
-  each time the app comes back to the foreground, a couple of seconds after a change, on pull-to-refresh in Saved
-  or Activity, and from Settings › Sync now.
-- Then each collection is pulled with `GET /v1/{collection}?since=<server_time from the last list>`: live
-  documents are upserted, `deleted: true` ones removed. A local change that hasn't been sent yet wins over the
-  server's copy of the same item; otherwise the server's (last write wins).
-- **First sync** (or after signing in to a different server): the full list is taken first, so the server's copy
-  wins for anything both have (a second phone can't overwrite the first), then everything only the phone has is
-  uploaded.
-- Errors: no connection is shown as "offline" (changes wait); a wrong key, a block in front of the server, or an
-  item over ~2 MB is shown in Settings and as a cloud icon in Saved and Activity (tap it for the message).
+- The app watches its two lists (saved trails, kept hikes): whatever is added or changed is queued for upload,
+  whatever is removed for deletion. Everything works offline; the queue is sent when the server can be reached: at
+  launch, when the app comes back to the screen, when the connection returns, a couple of seconds after a change,
+  and from Settings › Account & sync › Sync now.
+- Then each collection is pulled with `GET /v1/{collection}?since=<server_time from the last list>`: live documents
+  are applied, `deleted: true` ones removed. A change on the phone that hasn't been sent yet wins over the server's
+  copy of the same item; otherwise the server's (last write wins).
+- **First sync** (or after signing in to a different server): the server's copy is taken first, so a second phone
+  can't overwrite the first, then everything only the phone has is uploaded.
+- Errors: no connection is shown as offline in Settings (changes wait); anything else (a wrong key, a block in
+  front of the server, an item over ~2 MB) is shown once as a message and stays in Settings until a sync succeeds.
 
 ## Submissions
 
-After a recorded hike is saved (it goes to Activity and to Saved as your own trail), the app offers to submit it.
-A submission needs a real trail name (not "Morning hike"), may include a 1-5 star review, and carries the points
-the hiker marked during the hike. Points can only be submitted as part of a recorded hike, so every point comes
-from someone who walked there. The hiker must agree that what they submit may be shown publicly and that photos
-they submit are for public use. Nothing is added until it is approved.
+A finished hike goes to the Log and to Saved as your own trail, then the app offers to submit it (also from the
+hike's page in the Log). A submission needs a real trail name (not "Morning hike"), may carry a 1-5 star review,
+and includes the spots marked with Mark a spot during the hike: spots can only be submitted as part of a recorded
+hike, so every spot comes from someone who walked there. The hiker must agree that what they submit may be shown
+publicly and that photos they submit are for public use. Nothing is added until it is approved.
 
-**Review page:** open `web/review.html` in a browser (from the repository, or published with GitHub Pages; it
-has no secrets in it), enter the server address and the owner key (kept only for that browser tab), and approve
-or reject each submission. It shows the track and points on a map, the review, and the hiker's consent.
+**Review page:** open `web/review.html` in a browser (it has no secrets in it), enter the server address and the
+owner key (kept only for that browser tab), and approve or reject each submission. It shows the track and spots on
+a map, the review, and the hiker's consent. Approving copies it to `approved_hikes`.
 
 ## Opening it to other people: what the server needs
 

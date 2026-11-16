@@ -1,4 +1,4 @@
-// Trail packs: one file per state or province (mirrors Switchback/Services/TrailPacks.swift).
+// Trail packs: one file per state or province (built by scripts/build_trail_pack.py).
 //   "SBTP1", a 4-byte big-endian header length, the header JSON, then the body.
 //   Header: {version, cell: 0.25, cells: {"<row>_<col>": [offset, length], "p:<row>_<col>": [offset, length]}}
 //   Offsets count from the end of the header. Every block is raw DEFLATE around a JSON array.

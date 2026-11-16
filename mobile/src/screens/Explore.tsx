@@ -9,11 +9,12 @@ import { fmtDistance, fmtElevation, type Units } from '@web/lib/format';
 import { regionName, search, type SearchHit } from '@web/data';
 import {
   climbBands, climbFilter, clearFilters, difficultyFilter, dogsOnly, filters, filterSummary, filtersOn, flyTo, hikesInView, lengthBands,
-  lengthFilter, loading, loadNote, locationState, loopsOnly, openTrail, query, regions, regionsError, sheetIndex, sort, sorted, units, view,
+  lengthFilter, loading, loadNote, locationState, loopsOnly, openTrail, query, regions, regionsError, sheetIndex, sort, sorted, tab, units, view,
   MIN_TRAIL_ZOOM, type ClimbBand, type LengthBand, type Sort,
 } from '../core/state';
 import { grouped } from '../core/hikeMath';
 import { turnOnLocation } from '../core/locate';
+import { start } from '../core/recorder';
 import { useValue } from '../ui/hooks';
 import { Blazes, Button, Chip, Icon, Note, T, Tap, TrailShape } from '../ui/kit';
 import { CardPhoto } from '../ui/Photos';
@@ -227,6 +228,9 @@ export function ExploreSheet() {
   const header = (
     <View style={{ gap: 10, paddingTop: 4, paddingBottom: 8 }}>
       <View style={{ paddingHorizontal: 16 }}><SearchBox /></View>
+      <View style={{ paddingHorizontal: 16 }}>
+        <Button kind="secondary" icon="record" title="Record a hike" onPress={() => { tab.value = 'hike'; void start(); }} />
+      </View>
       {!q && !zoomedOut && <FilterChips u={u} />}
       {!q && !zoomedOut && (
         <View style={{ paddingHorizontal: 16 }}>

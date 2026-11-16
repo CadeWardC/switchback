@@ -11,7 +11,7 @@ import {
 } from '@web/lib/storage';
 import { filters, passes } from '@web/filters';
 import type { Coord } from '@web/lib/polyline';
-import { accessPoints, shortLoops, type Profile, type Trail } from '@web/lib/trail';
+import { accessPoints, difficultyOf, isLoopLine, shortLoops, type Profile, type Trail } from '@web/lib/trail';
 import { baseRoute, defaultStart, usableStarts } from './choice';
 import { climbedSoFar } from './hikeMath';
 import type { Stop } from '@web/lib/follow';
@@ -219,6 +219,18 @@ export function toggleSaved(t: Trail): boolean {
     difficulty: t.difficulty, loop: t.isLoop, start: t.start, saved: Date.now(),
   }, ...savedTrails.peek()];
   return true;
+}
+
+/** A hike you recorded, kept in Saved as your own trail (opening it shows the hike). */
+export function saveOwnTrail(w: Walk): void {
+  const path = w.segments.flat().map((p) => [p.lat, p.lon] as Coord);
+  if (path.length < 2) return;
+  const gain = w.gain ?? Math.round(climbedSoFar(w.segments) ?? 0);
+  const own: SavedTrail = {
+    region: 'own', id: w.id, walk: w.id, name: w.name, area: null, length: w.length, gain,
+    difficulty: difficultyOf(w.length, gain, {}), loop: isLoopLine(path, w.length), start: path[0], saved: Date.now(),
+  };
+  savedTrails.value = [own, ...savedTrails.peek().filter((s) => !(s.region === 'own' && s.id === w.id))];
 }
 
 export function removeSaved(region: string, id: string): void {

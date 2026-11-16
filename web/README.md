@@ -94,8 +94,7 @@ address. A region's file is downloaded the first time the map shows it, kept in 
 (so later visits need no download, and it works offline), and only the 0.25° cells on screen are unpacked.
 
 The file format and the rules shared with the apps (what counts as a hike, difficulty, estimated time) are in
-`src/lib/pack.ts` and `src/lib/trail.ts`, mirroring `Switchback/Services/TrailPacks.swift` and
-`Switchback/Model/Trail.swift`.
+`src/lib/pack.ts` and `src/lib/trail.ts` (the React Native app in `../mobile` uses the same files).
 
 ## The look: Waymark
 
@@ -127,7 +126,7 @@ before the tile store. It is a marked stub today.
 
 The base map is the app's own outdoor style on OpenFreeMap vector tiles. `scripts/make-styles.mjs` (run by
 `npm run dev` and `npm run build`) writes `public/styles/light.json` and `dark.json` from
-`../Switchback/Resources/switchback-style*.json`, leaving out the icons the iPhone app draws itself. If the
+`../map-style/switchback-style*.json`, leaving out the point-of-interest icons (there is no sprite). If the
 tile server can't be reached, trails draw on a plain background and the site says so; it tries again when the
 connection or the tab comes back. Trailhead pins, numbered groups and region labels are painted on a canvas
 (`src/map/images.ts`), so they need no map fonts.

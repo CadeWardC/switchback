@@ -11,8 +11,9 @@ import { MAX_ACCURACY } from '@web/lib/track';
 import { platform } from '../platform';
 import {
   endReached, following, flyTo, journey, myLocation, offTrail, offTrailInfo, recAccuracy, recError, recLength, recMarkers, recSeconds, recSegments,
-  recStarted, recState, say, units, walks, tab,
+  recStarted, recState, saveOwnTrail, say, units, walks, tab,
 } from '../core/state';
+import { submitting } from './Submit';
 import { discard, dropMarker, finish, headBack, keepGoing, pause, resume, showFinished, start, stopFollowing } from '../core/recorder';
 import { climbedSoFar, clock, hikeNumbers, hm, leftLabel, pace } from '../core/hikeMath';
 import { split } from '../core/shape';
@@ -60,10 +61,14 @@ function EndCard({ onFinish }: { onFinish: () => void }) {
 }
 
 function Idle() {
+  const t = useTheme();
   const err = useValue(recError);
   const list = useValue(walks);
   return (
     <BottomSheetScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 48 }}>
+      <Tap onPress={() => { tab.value = 'explore'; }} accessibilityRole="button" style={{ alignSelf: 'flex-start', paddingVertical: 4 }}>
+        <T v="strong" color={t.c.link}>‹ Back to the map</T>
+      </Tap>
       <T v="name">Hike</T>
       <T v="body" muted>Open a trail and press Start hike to follow it: how far is left, when you will be back, and a nudge if you leave it. Or record where you walk:</T>
       <GoButton title="Start recording" onPress={() => void start()} />
@@ -124,7 +129,13 @@ function Walking() {
 
   const done = async () => {
     setAsking(null);
-    await showFinished(await finish());
+    const w = await finish();
+    await showFinished(w);
+    if (w) {
+      // your own hike also goes to Saved, as a trail; then the offer to submit it for review
+      saveOwnTrail(w);
+      submitting.value = w;
+    }
   };
 
   const now = new Date();

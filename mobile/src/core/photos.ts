@@ -1,7 +1,7 @@
 // Photos of a trail, so people can recognise it by its picture.
 //
 // One small interface: photosFor(trail). Behind it is a list of sources; today there is one, Wikimedia
-// Commons, found the way the Swift app does (Switchback/Services/Photos.swift): photos the map data links to
+// Commons, found the way the first (Swift) app did: photos the map data links to
 // first (the trail's `wikimedia_commons`, `image` and `wikidata` tags), then photos taken at the sights along
 // the trail and along its line. Author and licence come with every photo and are always shown.
 // ── TO ADD HIKERS' OWN PHOTOS LATER: write another PhotoSource and put it first in SOURCES. ──

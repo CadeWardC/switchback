@@ -88,6 +88,8 @@ function decodeTrack(s, scale = 1e6) {
   return out;
 }
 
+// a spot marked on a hike is just its name; other kinds (water, hazard…) lead with the kind
+const pointLabel = p => p.kind && p.kind !== "spot" ? esc(p.kind) + (p.note ? ": " + esc(p.note) : "") : esc(p.note || "Spot");
 const km = m => (m / 1000).toFixed(1) + " km (" + (m / 1609.344).toFixed(1) + " mi)";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 
@@ -127,7 +129,7 @@ function card(d) {
     </div>
     <div class="map"></div>
     ${s.review ? `<div class="review">${s.review.rating ? "★".repeat(s.review.rating) + "☆".repeat(5 - s.review.rating) + "<br>" : ""}${esc(s.review.text)}</div>` : ""}
-    ${pts.length ? `<strong>Points marked (${pts.length})</strong><ul class="points">${pts.map(p => `<li>${esc(p.kind)}${p.note ? ": " + esc(p.note) : ""}</li>`).join("")}</ul>` : `<p class="meta">No points marked.</p>`}
+    ${pts.length ? `<strong>Points marked (${pts.length})</strong><ul class="points">${pts.map(p => `<li>${pointLabel(p)}</li>`).join("")}</ul>` : `<p class="meta">No points marked.</p>`}
     <p class="meta">Public use agreed: ${s.public_use_consent ? "yes" : "no"}${s.reviewer_note ? " · your note: " + esc(s.reviewer_note) : ""}</p>
     <div class="actions">
       <input placeholder="Note (optional)" value="${esc(s.reviewer_note || "")}">
@@ -145,7 +147,7 @@ function drawMap(div, h) {
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
   const lines = (h.segments || []).map(s => decodeTrack(s.line)).filter(l => l.length);
   const group = L.featureGroup(lines.map(l => L.polyline(l, { color: "#21a05a", weight: 4 })));
-  for (const p of h.points || []) group.addLayer(L.circleMarker([p.lat, p.lon], { radius: 7, color: "#b3261e", fillOpacity: .9 }).bindPopup(esc(p.kind) + (p.note ? ": " + esc(p.note) : "")));
+  for (const p of h.points || []) group.addLayer(L.circleMarker([p.lat, p.lon], { radius: 7, color: "#b3261e", fillOpacity: .9 }).bindPopup(pointLabel(p)));
   group.addTo(map);
   if (group.getLayers().length) map.fitBounds(group.getBounds(), { padding: [16, 16] }); else map.setView([39, -95], 4);
 }

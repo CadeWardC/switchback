@@ -17,7 +17,7 @@ on:
     branches: ["**"]
     paths:
       - "web/**"
-      - "Switchback/Resources/switchback-style*.json" # the map style the site is built from
+      - "map-style/switchback-style*.json" # the map style the site is built from
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   schedule:

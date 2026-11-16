@@ -3,5 +3,3 @@ build/
 DerivedData/
 .DS_Store
 __pycache__/
-Switchback/Resources/Packs/
-Config/Secrets.xcconfig

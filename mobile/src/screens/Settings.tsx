@@ -1,16 +1,18 @@
-// Settings: units, the trail files on this phone (reset and download again), the maps on this phone (Clear),
+// Settings: account & sync (optional: sign in to your own Switchback server), units, the trail files on this phone (reset and download again), the maps on this phone (Clear),
 // downloading maps over mobile data, the look, and credits.
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Switch, View } from 'react-native';
+import { Alert, ScrollView, Switch, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { resetTrailFiles, trailFilesOnDevice, type TrailFilesInfo } from '@web/data';
 import { mapsOverCellular, themePref, units, type ThemePref } from '../core/state';
 import { clearMaps, offlineSummary } from '../core/offline';
 import { platform } from '../platform';
+import { api, hasKey, normaliseUrl, serverUrl, signIn, signOut } from '../core/server';
+import { lastSync, pendingCount, syncError, syncNow, syncOffline, syncing } from '../core/sync';
 import { useValue } from '../ui/hooks';
 import { Button, Card, Icon, Segmented, T, Tap } from '../ui/kit';
-import { useTheme } from '../ui/theme';
+import { fonts, useTheme } from '../ui/theme';
 
 const mb = (b: number) => `${Math.max(0, b / 1e6).toFixed(b < 1e7 ? 1 : 0)} MB`;
 
@@ -61,6 +63,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
       </View>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: insets.bottom + 32 }}>
         <T v="name">Settings</T>
+        <AccountSection />
         <Section title="Units">
           <Segmented value={u} onChange={(v) => { units.value = v; }} options={[{ value: 'imperial', label: 'Miles and feet' }, { value: 'metric', label: 'Kilometres and metres' }]} />
         </Section>
@@ -93,6 +96,88 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
           <T v="tiny" muted>Version {Constants.expoConfig?.version ?? '1.0.0'} (React Native)</T>
         </Section>
       </ScrollView>
+    </View>
+  );
+}
+
+/** Account & sync. Signing in is optional: without it everything stays on this phone. */
+function AccountSection() {
+  const t = useTheme();
+  const url = useValue(serverUrl);
+  const keyStored = useValue(hasKey);
+  const busy = useValue(syncing);
+  const err = useValue(syncError);
+  const offline = useValue(syncOffline);
+  const last = useValue(lastSync);
+  const waiting = useValue(pendingCount);
+  const [editing, setEditing] = useState(false);
+  const [address, setAddress] = useState(url ?? '');
+  const [key, setKey] = useState('');
+  const [check, setCheck] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const signedIn = !!url && keyStored;
+
+  const input = { height: 46, borderRadius: 10, backgroundColor: t.c.bg, paddingHorizontal: 12, color: t.c.ink, fontSize: 16 } as const;
+  const checkConnection = async () => {
+    const base = normaliseUrl(address) ?? url;
+    if (!base) { setCheck('Enter the server address first (https only).'); return; }
+    setChecking(true);
+    setCheck(await api.health(base));
+    setChecking(false);
+  };
+  const doSignIn = async () => {
+    try {
+      await signIn(address, key);
+      setKey('');
+      setEditing(false);
+      setCheck(null);
+    } catch (e) {
+      Alert.alert("Couldn't sign in", (e as Error).message);
+    }
+  };
+  const doSignOut = () => Alert.alert('Sign out?', 'Your saved trails and hikes stay on this phone. They stop syncing with the server.', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Sign out', style: 'destructive', onPress: () => { void signOut(); setAddress(''); } },
+  ]);
+
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="label" muted>Account & sync</T>
+      <Card style={{ gap: 12 }}>
+        {signedIn && !editing ? (
+          <>
+            <T v="small">Signed in to <T v="small" style={{ fontFamily: fonts.semibold }}>{url!.replace(/^https:\/\//, '')}</T>. Saved trails and hikes are kept on this phone and synced with the server whenever it can be reached.</T>
+            {err ? (
+              <T v="small" color={offline ? t.c.muted : t.c.hard}>{err}</T>
+            ) : (
+              <T v="small" muted>{busy ? 'Syncing…' : last ? `Last synced ${new Date(last).toLocaleString()}` : 'Not synced yet'}</T>
+            )}
+            {waiting > 0 && <T v="small" muted>{waiting} {waiting === 1 ? 'change' : 'changes'} waiting to upload</T>}
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Button kind="primary" title={busy ? 'Syncing…' : 'Sync now'} onPress={() => void syncNow()} disabled={busy} />
+              <Button title={checking ? 'Checking…' : 'Check connection'} onPress={() => void checkConnection()} disabled={checking} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Button kind="quiet" title="Change server or key" onPress={() => { setAddress(url ?? ''); setEditing(true); }} />
+              <Button kind="danger" title="Sign out" onPress={doSignOut} />
+            </View>
+          </>
+        ) : (
+          <>
+            <T v="small" muted>You don't need to sign in: without it, your saved trails and hikes stay on this phone. Sign in to back them up to a Switchback server, sync them between devices and submit hikes. What you already have is uploaded the first time.</T>
+            <TextInput value={address} onChangeText={setAddress} placeholder="Server address (https://…)" placeholderTextColor={t.c.muted}
+              autoCapitalize="none" autoCorrect={false} keyboardType="url" style={input} accessibilityLabel="Server address" />
+            <TextInput value={key} onChangeText={setKey} placeholder={keyStored ? 'API key (saved; type to replace)' : 'API key'} placeholderTextColor={t.c.muted}
+              autoCapitalize="none" autoCorrect={false} secureTextEntry style={input} accessibilityLabel="API key" />
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Button kind="primary" title="Sign in" onPress={() => void doSignIn()} disabled={!normaliseUrl(address) || (!key.trim() && !keyStored)} />
+              <Button title={checking ? 'Checking…' : 'Check connection'} onPress={() => void checkConnection()} disabled={checking} />
+              {editing && <Button kind="quiet" title="Cancel" onPress={() => { setEditing(false); setKey(''); }} />}
+            </View>
+          </>
+        )}
+        {check && <T v="small" muted>{check}</T>}
+      </Card>
     </View>
   );
 }

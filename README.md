@@ -1,12 +1,30 @@
 # Switchback: find trails, follow them, record your hikes
 
-An iPhone app for hiking. Like the big trail apps, but built on open data with no account needed, no
+A hiking app for phones and the web. Like the big trail apps, but built on open data with no account needed, no
 subscription and no API keys.
 
-- **Optional sync and submissions:** sign in to your own Switchback server (Settings › Account & sync) to back up
-  saved trails and hikes and sync them between devices; without it everything stays on the phone. Recorded hikes,
-  with points marked along the way (water, viewpoints, hazards...), can be submitted for review and approved on
-  `web/review.html`. See [docs/SERVER.md](docs/SERVER.md).
+## The apps
+
+| Folder | What it is | Builds |
+| --- | --- | --- |
+| [`mobile/`](mobile) | **The phone app** (React Native / Expo): native map and screens, recording with the screen off, the lock-screen hike | iPhone IPA (`build-rn-ios.yml`, `switchback-rn-ios-N`) and Android APK (`build-rn-android.yml`, `switchback-rn-android-N`) |
+| [`web/`](web) | The website, also wrapped as an app with Capacitor | GitHub Pages (`pages.yml`), Android APK and iPhone IPA (`build-android-apk.yml`, `build-web-ios-ipa.yml`) |
+
+The original iPhone app (Swift) has been removed; it is in the git history. Its map style lives on in
+[`map-style/`](map-style) (written by `scripts/make-style.py`), which both apps build their maps from.
+
+- **Optional sync and submissions (phone app):** sign in to your own Switchback server (Settings › Account & sync)
+  to back up saved trails and hikes and sync them between devices; without it everything stays on the phone. A
+  finished hike is kept in Saved as your own trail, and you're offered to submit it (with the spots you marked and
+  an optional review) for review on `web/review.html`. See [docs/SERVER.md](docs/SERVER.md).
+- **Hike tab:** the map and the recorder share one tab (Hike, Saved and Log, each with an icon); tap Record a hike
+  on the map's sheet to start. Drag along any elevation chart to see that spot on the map.
+
+## What it does
+
+Some of what follows (Apple Maps and the MapKit base maps, USGS and OpenTopoMap raster layers, offline map areas
+from tiles, the Forest Service live layer) was in the original Swift app and is not (yet) in the phone or web
+app; the trail data, packs and their rules are shared by all of them.
 
 - **Explore:** trails load by themselves as you move the map, drawn in their difficulty colour with a white outline and
   a hiker pin at each trailhead (pins group into numbered bubbles when they crowd). Base maps: Apple Maps, satellite,
@@ -124,11 +142,8 @@ Difficulty is worked out from length + climb (and the SAC scale when mapped); OS
 Offline downloads are capped at 12,000 tiles per area and use three connections at a time, to stay polite to the free
 tile servers.
 
-Every push builds `Switchback-unsigned.ipa` into a `switchback-build-N` release
-(`.github/workflows/build-switchback-ipa.yml`). Sign it while installing with AltStore / SideStore / Sideloadly, or use
-TrollStore.
-
-Build locally: `xcodegen generate && open Switchback.xcodeproj`. The icon is drawn by
-`scripts/make-icon.py`.
+Every push to `mobile/` builds the phone app: an unsigned IPA (sign it while installing with AltStore / SideStore /
+Sideloadly, or use TrollStore) and an Android APK, each published as its own release. See `mobile/` and `web/` for
+building locally.
 
 Trail data licence and credits: see [DATA_LICENSE.md](DATA_LICENSE.md) (the trail files are ODbL, © OpenStreetMap contributors, with official sources credited).

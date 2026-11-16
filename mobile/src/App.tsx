@@ -1,6 +1,7 @@
 // The app shell: the map always loaded underneath; one native sheet (gorhom) that follows the finger, with
 // Explore, a trail, the hike or a recorded hike in it; Saved and Log as full native lists; and the bottom row
-// of four plain words with the yellow blaze, which steps away during a hike. Settings is pushed on a native
+// of three tabs (Hike: the map and the recorder; Saved; Log), each an icon over its word, which steps away
+// during a hike. Settings is pushed on a native
 // stack (native transition and back gesture).
 import { useEffect, useMemo, useRef } from 'react';
 import { BackHandler, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -24,6 +25,7 @@ import { TrailSheet } from './screens/TrailPage';
 import { HikeSheet } from './screens/Hike';
 import { LogScreen, SavedScreen, WalkSheet } from './screens/Lists';
 import { SettingsScreen } from './screens/Settings';
+import { SubmitModal } from './screens/Submit';
 import { useValue } from './ui/hooks';
 import { Grabber, Icon, T, Tap } from './ui/kit';
 import { fontFiles, fonts, mapColors, radius, shadow, size, useTheme } from './ui/theme';
@@ -36,8 +38,9 @@ const Stack = createNativeStackNavigator<Routes>();
 /** The height of the sheet's grabber (ui/kit.tsx Grabber). */
 const GRABBER = 22;
 
-const TABS: { tab: Tab; label: string }[] = [
-  { tab: 'explore', label: 'Explore' }, { tab: 'hike', label: 'Hike' }, { tab: 'saved', label: 'Saved' }, { tab: 'log', label: 'Log' },
+/** Hike is the map and the recorder in one: it covers both the explore and hike screens. */
+const TABS: { tab: Tab; label: string; icon: string; also?: Tab }[] = [
+  { tab: 'explore', also: 'hike', label: 'Hike', icon: 'hike' }, { tab: 'saved', label: 'Saved', icon: 'bookmark' }, { tab: 'log', label: 'Log', icon: 'log' },
 ];
 
 function TabRow() {
@@ -50,13 +53,16 @@ function TabRow() {
       backgroundColor: t.c.bg, flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.c.line,
     }} accessibilityRole="tablist">
       {TABS.map((x) => {
-        const on = current === x.tab;
+        const on = current === x.tab || (!!x.also && current === x.also);
         return (
-          <Tap key={x.tab} onPress={() => { if (tab.peek() !== x.tab) tab.value = x.tab; else if (x.tab === 'explore') closeTrail(); }}
-            accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            <View style={{ width: 8, height: 12, borderRadius: radius.blaze, backgroundColor: on ? mapColors.me : 'transparent' }} />
-            <T v="body" style={{ fontFamily: on ? fonts.semibold : fonts.medium }} color={on ? t.c.ink : t.c.muted}>{x.label}</T>
+          <Tap key={x.tab} onPress={() => { if (!on) tab.value = x.tab; else if (x.tab === 'explore') { if (current === 'hike') tab.value = 'explore'; else closeTrail(); } }}
+            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={x.label}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <View style={{ alignItems: 'center' }}>
+              <Icon name={x.icon} size={24} color={on ? t.c.ink : t.c.muted} />
+              <View style={{ position: 'absolute', bottom: -3, width: 14, height: 3, borderRadius: radius.blaze, backgroundColor: on ? mapColors.me : 'transparent' }} />
+            </View>
+            <T v="small" style={{ fontFamily: on ? fonts.semibold : fonts.medium }} color={on ? t.c.ink : t.c.muted}>{x.label}</T>
           </Tap>
         );
       })}
@@ -189,6 +195,7 @@ function Home({ navigation }: { navigation: NavigationProp<Routes> }) {
       </View>
       {!hiking && <TabRow />}
       <Toast bottom={rowH + 16} />
+      <SubmitModal />
     </View>
   );
 }
