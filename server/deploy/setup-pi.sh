@@ -190,6 +190,8 @@ TOKEN_SECRET=$(openssl rand -hex 32)
 # Email addresses are never stored, only a hash made with this key. NEVER change it: email sign-ins would stop
 # matching their accounts. It's in the GitHub/R2 backups' restore instructions too.
 EMAIL_HASH_KEY=$(openssl rand -hex 32)
+# The review page (web/review.html) signs in with this to approve submissions and take photos down. Keep it secret.
+ADMIN_TOKEN=$(openssl rand -hex 32)
 PHOTO_DIR=$PHOTOS
 TRUST_CLOUDFLARE=1
 DB_MAX_CONNS=10
@@ -203,6 +205,11 @@ EOF
 else
   sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=https://$DOMAIN|" $ETC/api.env
   grep -q '^EMAIL_HASH_KEY=.' $ETC/api.env || echo "EMAIL_HASH_KEY=$(openssl rand -hex 32)" >> $ETC/api.env
+  if ! grep -q '^ADMIN_TOKEN=.' $ETC/api.env; then
+    sed -i '/^ADMIN_TOKEN=$/d' $ETC/api.env
+    echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> $ETC/api.env
+    note "Added ADMIN_TOKEN to $ETC/api.env (for the review page)"
+  fi
   note "Kept $ETC/api.env"
 fi
 chown root:switchback $ETC/api.env
@@ -542,6 +549,7 @@ cat <<EOF
     API:        http://127.0.0.1:8080/healthz → $(curl -fs http://127.0.0.1:8080/healthz 2>/dev/null || echo "not answering")
     Public:     https://$DOMAIN (once the tunnel has its public hostname)
     Settings:   $ETC/api.env   (then: sudo systemctl restart switchback-api)
+    Admin key:  sudo grep ADMIN_TOKEN $ETC/api.env   (for the review page; keep it secret)
     Logs:       journalctl -u switchback-api -f
     Backups:    $(B=(); [[ $BACKUPS -eq 1 ]] && B+=("R2, continuous"); [[ $GH_BACKUPS -eq 1 ]] && B+=("GitHub, nightly"); [[ ${#B[@]} -gt 0 ]] && (IFS=';'; echo "${B[*]}" | sed 's/;/ + /') || echo "off: see github-backup.env.example")
     Storage:    $STORAGE ($(df -h --output=avail / | tail -1 | tr -d ' ') free)

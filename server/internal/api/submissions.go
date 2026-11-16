@@ -27,6 +27,7 @@ func (s *Server) config(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"photo": map[string]any{
 			"format":             "heic",
+			"formats":            []string{"heic", "jpeg"}, // either is accepted; the files are stored as sent
 			"display_short_side": displayShortSide,
 			"thumb_short_side":   thumbShortSide,
 			"max_display_bytes":  maxDisplayBytes,

@@ -29,6 +29,7 @@ type photoOut struct {
 	TrailID     *string    `json:"trail_id"`
 	ReviewID    *string    `json:"review_id"`
 	LogID       *string    `json:"log_id"`
+	WalkID      *string    `json:"walk_id"`
 	URL         *string    `json:"url"`
 	ThumbURL    *string    `json:"thumb_url"`
 	Width       *int       `json:"width"`
@@ -41,14 +42,14 @@ type photoOut struct {
 }
 
 const photoSelect = `
-	SELECT p.id, p.user_id, u.display_name, p.trail_id, p.review_id, p.log_id, p.display_key, p.thumb_key, p.width,
+	SELECT p.id, p.user_id, u.display_name, p.trail_id, p.review_id, p.log_id, p.walk_id, p.display_key, p.thumb_key, p.width,
 	       p.height, round(p.lat::numeric, 4)::float8, round(p.lon::numeric, 4)::float8, p.taken_at, p.status, p.created_at
 	FROM photos p JOIN users u ON u.id = p.user_id`
 
 func (s *Server) scanPhoto(row pgx.Row) (photoOut, error) {
 	var o photoOut
 	var display, thumb *string
-	err := row.Scan(&o.ID, &o.UserID, &o.DisplayName, &o.TrailID, &o.ReviewID, &o.LogID, &display, &thumb, &o.Width,
+	err := row.Scan(&o.ID, &o.UserID, &o.DisplayName, &o.TrailID, &o.ReviewID, &o.LogID, &o.WalkID, &display, &thumb, &o.Width,
 		&o.Height, &o.Lat, &o.Lon, &o.TakenAt, &o.Status, &o.CreatedAt)
 	o.URL, o.ThumbURL = s.photoURL(display), s.photoURL(thumb)
 	return o, err
@@ -95,6 +96,44 @@ func (s *Server) trailPhotos(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"photos": photos, "cursor": cursor})
 }
 
+// myPhotos lists the caller's own photos (whatever their state), newest first; ?walk= keeps one recorded hike's.
+func (s *Server) myPhotos(w http.ResponseWriter, r *http.Request, c caller) {
+	where, args := ` WHERE p.user_id = $1`, []any{c.UserID}
+	if walk := r.URL.Query().Get("walk"); walk != "" {
+		if !docNameRE.MatchString(walk) {
+			writeErr(w, r, fail(http.StatusBadRequest, "bad_name", "walk is 1 to 128 letters, digits, _ - or ."))
+			return
+		}
+		where += ` AND p.walk_id = $2`
+		args = append(args, walk)
+	}
+	s.writePhotos(w, r, photoSelect+where+` ORDER BY p.created_at DESC, p.id DESC LIMIT 2000`, args...)
+}
+
+// writePhotos answers {"photos": [...]} for a photo query.
+func (s *Server) writePhotos(w http.ResponseWriter, r *http.Request, q string, args ...any) {
+	rows, err := s.DB.Query(r.Context(), q, args...)
+	if err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	defer rows.Close()
+	photos := []photoOut{}
+	for rows.Next() {
+		o, err := s.scanPhoto(rows)
+		if err != nil {
+			writeErr(w, r, err)
+			return
+		}
+		photos = append(photos, o)
+	}
+	if err := rows.Err(); err != nil {
+		writeErr(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"photos": photos})
+}
+
 // putPhoto creates or updates a photo's record. Its files are sent next with putPhotoFile.
 func (s *Server) putPhoto(w http.ResponseWriter, r *http.Request, c caller) {
 	id, err := pathID(r)
@@ -106,6 +145,7 @@ func (s *Server) putPhoto(w http.ResponseWriter, r *http.Request, c caller) {
 		Trail    *TrailRef  `json:"trail"`
 		ReviewID *string    `json:"review_id"`
 		LogID    *string    `json:"log_id"`
+		WalkID   *string    `json:"walk_id"`
 		Lat      *float64   `json:"lat"`
 		Lon      *float64   `json:"lon"`
 		TakenAt  *time.Time `json:"taken_at"`
@@ -120,6 +160,10 @@ func (s *Server) putPhoto(w http.ResponseWriter, r *http.Request, c caller) {
 	}
 	if err := optUUID(in.LogID); err != nil {
 		writeErr(w, r, err)
+		return
+	}
+	if in.WalkID != nil && !docNameRE.MatchString(*in.WalkID) {
+		writeErr(w, r, fail(http.StatusBadRequest, "bad_name", "walk_id is 1 to 128 letters, digits, _ - or ."))
 		return
 	}
 	if (in.Lat == nil) != (in.Lon == nil) || (in.Lat != nil && !validLatLon(*in.Lat, *in.Lon)) {
@@ -171,9 +215,10 @@ func (s *Server) putPhoto(w http.ResponseWriter, r *http.Request, c caller) {
 			}
 		}
 		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO photos (id, user_id, trail_id, review_id, log_id, lat, lon, taken_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			ON CONFLICT (id) DO UPDATE SET trail_id = $3, review_id = $4, log_id = $5, lat = $6, lon = $7, taken_at = $8`,
-			id, c.UserID, trailID, in.ReviewID, in.LogID, in.Lat, in.Lon, in.TakenAt); err != nil {
+			INSERT INTO photos (id, user_id, trail_id, review_id, log_id, walk_id, lat, lon, taken_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			ON CONFLICT (id) DO UPDATE SET trail_id = $3, review_id = $4, log_id = $5, walk_id = $6, lat = $7, lon = $8, taken_at = $9`,
+			id, c.UserID, trailID, in.ReviewID, in.LogID, in.WalkID, in.Lat, in.Lon, in.TakenAt); err != nil {
 			return err
 		}
 		if err := refreshStats(r.Context(), tx, trailID); err != nil {

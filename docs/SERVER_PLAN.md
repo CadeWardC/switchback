@@ -184,7 +184,9 @@ box. When a monthly trail-pack build finds that an ID has gone, a job matches th
 
 | | Endpoint | Cached by Cloudflare |
 |---|---|---|
-| Sign in | `POST /v1/auth/email/start` → emails a 6-digit code · `POST /v1/auth/email/verify` · `POST /v1/auth/google` · `POST /v1/auth/refresh` · `POST /v1/auth/logout` | no |
+| Sign in | `POST /v1/auth/register` · `POST /v1/auth/login` (email + password) · `POST /v1/auth/email/start` → emails a 6-digit code · `POST /v1/auth/email/verify` · `POST /v1/auth/google` · `POST /v1/auth/refresh` · `POST /v1/auth/logout` | no |
+| Synced hikes and saved trails | `GET /v1/me/docs/{collection}[?since=]` · `PUT/DELETE /v1/me/docs/{collection}/{id}` (each person's own; tombstones for deletes) | no |
+| Admin (review page, `ADMIN_TOKEN`) | `GET /v1/admin/submissions` · `POST /v1/admin/submissions/{id}` · `GET /v1/admin/photos` · `POST /v1/admin/photos/{id}` | no |
 | Me | `GET/PATCH/DELETE /v1/me` (delete removes everything they posted) | no |
 | Ratings for the map | `GET /v1/cells/{cell}/stats`: every trail's rating, photo count and "hiked by" count in one 0.25° cell (the same cells as the trail packs), plus approved corrections and community trails there | **5 min** |
 | Hike logs | `PUT /v1/logs/{id}` · `DELETE /v1/logs/{id}` · `GET /v1/me/logs?cursor=` · `GET /v1/users/{id}/logs` (public ones) | no / public 1 min |
@@ -222,6 +224,10 @@ Storage: about 165 KB a photo, so a 256 GB SSD holds ~1.5 million photos.
 
 ## Accounts
 
+- **Email + password** (the main way in the app): register and log in; only a bcrypt hash of the password is kept,
+  and the email only as its keyed hash, like everywhere else. A wrong email and a wrong password get the same answer.
+  Because a password account's email isn't checked, email-code and Google sign-ins aren't linked to it, and
+  registering an email that already has an account is refused.
 - **Sign in with Google** and **email code** (6 digits, valid 10 minutes), both from the start. Both work in a
   sideloaded app. Google: a free OAuth client in Google Cloud Console; the app uses Google's sign-in SDK and sends
   the ID token to `POST /v1/auth/google`, and the server checks it against Google's public keys (no Google

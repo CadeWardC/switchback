@@ -195,9 +195,11 @@ func findOrCreateUser(ctx context.Context, tx pgx.Tx, provider, subject string, 
 		return u, false, err
 	}
 	if emailHash != nil {
+		// Only sign-ins that proved they own the email are linked. A password account's email was never checked,
+		// so linking to it would let someone sign up with another person's email and then share their account.
 		err = tx.QueryRow(ctx, `
 			SELECT u.id, u.display_name FROM identities i JOIN users u ON u.id = i.user_id
-			WHERE i.email_hash = $1 ORDER BY i.created_at LIMIT 1`, emailHash).Scan(&u.ID, &u.DisplayName)
+			WHERE i.email_hash = $1 AND i.provider <> 'password' ORDER BY i.created_at LIMIT 1`, emailHash).Scan(&u.ID, &u.DisplayName)
 		if err == nil {
 			_, err = tx.Exec(ctx, `INSERT INTO identities (provider, subject, user_id, email_hash) VALUES ($1, $2, $3, $4)`,
 				provider, subject, u.ID, emailHash)

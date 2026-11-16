@@ -1,6 +1,7 @@
 # Switchback server
 
-Accounts (Google and email code), reviews, hike logs, photos, trail submissions and reports, for the Switchback app. One Go program (`switchback-api`, ~10 MB, ~30 MB of RAM) and PostgreSQL. The plan
+Accounts (email + password, email code, Google), each person's synced hikes and saved trails, reviews, hike logs,
+photos, trail submissions, reports and the owner's review API, for the Switchback app. One Go program (`switchback-api`, ~10 MB, ~30 MB of RAM) and PostgreSQL. The plan
 behind it is in [docs/SERVER_PLAN.md](../docs/SERVER_PLAN.md).
 
 ```
@@ -21,7 +22,8 @@ Needs Go 1.24+ and PostgreSQL.
 ```sh
 createdb switchback
 cd server
-TOKEN_SECRET=$(openssl rand -hex 32) DATABASE_URL=postgres:///switchback go run ./cmd/switchback-api
+TOKEN_SECRET=$(openssl rand -hex 32) EMAIL_HASH_KEY=$(openssl rand -hex 32) ADMIN_TOKEN=$(openssl rand -hex 32) \
+  DATABASE_URL=postgres:///switchback go run ./cmd/switchback-api
 curl localhost:8080/healthz
 ```
 
@@ -37,20 +39,27 @@ TEST_DATABASE_URL=postgres:///switchback_test go test ./...
 `TestEverything` drives the whole API over HTTP: sign-in, token refresh, reviews (and who may edit them), cached
 lists with ETags, per-cell stats, hike logs, photo uploads (rejecting EXIF, wrong sizes and non-photos), trail
 submissions, reports hiding a review, that no email address is stored anywhere, and deleting an account with its
-posts and files.
+posts and files. `TestPasswords` covers register and log in (taken emails, weak passwords, one answer for a wrong
+email or password, rate limits, changing the password); `TestDocs` and `TestDocsSince` the synced documents
+(tombstones, `?since=`, one person never seeing another's, the 2 MB limit, no write missed while lists run);
+`TestAdminAndHikePhotos` photos on recorded hikes, CORS and the admin routes (approve, reject, hide a photo).
 
 ## What's stored
 
 Only what the features need. **No email addresses**: a keyed hash (HMAC) stands in for them, enough to sign in and
-to link an email and a Google sign-in with the same address. The address is used to send the code, then forgotten,
+to link an email and a Google sign-in with the same address. (A password account's email was never checked, so
+email-code and Google sign-ins aren't linked to it; registering with an email that already has any account is
+refused.) The address is used to send the code, then forgotten,
 so the server can never email anyone. No ages, birthdays, IP addresses or activity history.
 
 | | |
 |---|---|
 | Accounts | an id and a display name ("Hiker" until the person picks one) |
-| Sign-in | provider (Google or email), Google's account number or the email hash, sessions as hashed tokens |
+| Sign-in | provider (password, email code or Google), Google's account number or the email hash, sessions as hashed tokens |
+| Passwords | only a bcrypt hash (cost 11) of each password; the password itself is never stored or logged |
+| Synced documents | each person's recorded hikes and saved trails as the phone sends them (up to 2 MB each, 200 MB a person); deleted ones leave a tombstone (id and time only) |
 | Reviews | trail, stars, text, date hiked, conditions |
-| Photos | the display and thumbnail files (no EXIF), where and when taken (shown rounded to ~10 m) |
+| Photos | the display and thumbnail files (no EXIF), where and when taken (shown rounded to ~10 m), the trail and/or recorded hike they're from |
 | Hike logs | trail, date, short note, public or private |
 | Trail submissions | new trails and corrections waiting for approval |
 | Reports | who reported which post, so a post is hidden after three |
@@ -113,28 +122,49 @@ same request twice is harmless. Lists take `?cursor=` from the previous page.
 | `POST /v1/auth/email/start` `{email}` | emails a 6-digit code (10 minutes) | |
 | `POST /v1/auth/email/verify` `{email, code, device}` | → `{access_token, refresh_token, expires_in, user, new_user}` | |
 | `POST /v1/auth/google` `{id_token, device}` | same answer; same verified email = same account | |
+| `POST /v1/auth/register` `{email, password, display_name?, device?}` | → tokens, `new_user: true`. 422 `bad_email`, 422 `weak_password` (8-200 characters), 409 `email_taken` | |
+| `POST /v1/auth/login` `{email, password, device?}` | → tokens, `new_user: false`. 401 `wrong_login` for a wrong email or password alike; 10 tries per email and 30 per IP each 10 minutes | |
 | `POST /v1/auth/refresh` `{refresh_token}` | new tokens (the old refresh token stops working) | |
 | `POST /v1/auth/logout` `{refresh_token}` | ends that session | |
 | `GET` / `PATCH {display_name}` / `DELETE /v1/me` | account; delete removes everything posted | |
+| `POST /v1/me/password` `{current_password, new_password}` | 204; signs out your other devices. 401 `wrong_password`, 422 `weak_password`, 409 `no_password` | |
 | `GET /v1/me/logs` · `GET /v1/me/submissions` | your hike logs, your submissions with status and reply | |
+| `GET /v1/me/photos?walk=<hike id>` | your own photos (any status), newest first, optionally one recorded hike's | |
+| `GET /v1/me/docs/{collection}` | your live documents: `{items: [{id, updated_at, deleted: false, data}], server_time}` | |
+| `GET /v1/me/docs/{collection}?since=<server_time>` | what changed since then, deleted ones as `{id, updated_at, deleted: true, data: null}` | |
+| `PUT /v1/me/docs/{collection}/{id}` | any JSON up to 2 MB (413 `too_large`), replacing the document → `{id, updated_at, deleted: false}` | |
+| `DELETE /v1/me/docs/{collection}/{id}` | leaves a tombstone → `{id, updated_at, deleted: true}` (also if it wasn't there) | |
 | `GET /v1/cells/{row}_{col}/stats` | ratings, photo and hiker counts, corrections and community trails in a 0.25° cell | 5 min |
 | `GET /v1/trails/reviews?trail=<id>` | stats and reviews, newest first | 1 min |
 | `GET /v1/trails/photos?trail=<id>` | photos, newest first | 1 min |
 | `GET /v1/users/{id}/logs` | someone's public hike logs | 1 min |
 | `PUT` / `DELETE /v1/reviews/{id}` | `{trail, rating, body, hiked_on, conditions}`; one per person per trail | |
 | `PUT` / `DELETE /v1/logs/{id}` | `{trail, hiked_on, hike_id, note, public}` | |
-| `PUT /v1/photos/{id}` | `{trail, review_id, log_id, lat, lon, taken_at}` | |
-| `PUT /v1/photos/{id}/file?size=display\|thumb` | the HEIC/JPEG bytes, no EXIF; ready when both are in | |
+| `PUT /v1/photos/{id}` | `{trail, review_id, log_id, walk_id, lat, lon, taken_at}`, all optional | |
+| `PUT /v1/photos/{id}/file?size=display\|thumb` | the raw HEIC or JPEG bytes as the body (any Content-Type), no EXIF; display ≤ 1 MB and ≤ 1,100 px on the short side, thumb ≤ 200 KB and ≤ 440 px; ready when both are in | |
 | `DELETE /v1/photos/{id}` | | |
 | `PUT /v1/submissions/{id}` | `{kind: "new_trail", name, line, difficulty, note}` or `{kind: "correction", trail, field, value, note}` | |
 | `POST /v1/reports` `{target_kind, target_id, reason}` | three reports hide a review or photo | |
 | `GET /p/{key}` | a photo file | forever |
+| `GET /v1/admin/submissions?status=pending\|approved\|rejected\|all` | every submission with who sent it (`user_display_name`), its line and box | |
+| `POST /v1/admin/submissions/{id}` `{status: "approved"\|"rejected", reply?}` | approving adds a new trail to `community_trails` or a correction to `trail_overrides`; rejecting takes it off again | |
+| `GET /v1/admin/photos?status=ready\|hidden\|uploading\|all` · `POST /v1/admin/photos/{id}` `{status: "ready"\|"hidden"}` | photos, and taking one down (or back up) | |
 
 `trail` is `{id, name, start: [lat, lon], bbox: [south, west, north, east]}`, the app's trail id plus enough to
 find the trail again if OpenStreetMap edits change the id. `line` is an encoded polyline (5 decimals), as the app
 stores trails.
 
 Errors are `{"error": {"code": "...", "message": "..."}}` with a message that can be shown to the person.
+
+Tokens are `{access_token, token_type: "Bearer", expires_in, refresh_token, user: {id, display_name}, new_user}`.
+
+Document collections and ids, and `walk_id`, are 1-128 of `A-Z a-z 0-9 _ - .` (else 400 `bad_name`). `updated_at`
+and `server_time` are milliseconds that only ever go up across the whole server; pass a list's `server_time` as the
+next `?since=` and no write is missed. Up to 2,000 document writes an hour per person.
+
+**Admin routes** need `Authorization: Bearer <ADMIN_TOKEN>` (from `/etc/switchback/api.env`; 401 otherwise) and
+answer 404 when `ADMIN_TOKEN` isn't set. Every route sends CORS headers (`Access-Control-Allow-Origin: *`) and
+answers `OPTIONS` preflights, so the review page works opened from a file or any site. Nothing uses cookies.
 
 ## Backups
 
@@ -161,7 +191,7 @@ or set up R2 (`backup.env.example`) when you add a card to Cloudflare.
 
 ## Not built yet
 
-- Admin page: approve submissions, check reports, ban.
+- Admin: checking reports and banning (the admin API already approves submissions and hides photos).
 - Matching posts to a trail's new id after OpenStreetMap edits (the data needed is stored).
-- Shared and backed-up recorded hikes, the open-data export, R2 photo storage.
+- Sharing recorded hikes publicly, the open-data export, R2 photo storage.
 - The app side.
