@@ -1,44 +1,12 @@
 import Photos
 import SwiftUI
 
-/// Swipeable photos at the top of a trail page: Commons photos, then a satellite picture of the route.
+/// The picture at the top of a trail page: a satellite view with the route drawn on.
 struct TrailHero: View {
     let trail: Trail
-    let photos: [TrailPhoto]
     @State private var satellite: UIImage?
-    @State private var page = 0
 
     var body: some View {
-        TabView(selection: $page) {
-            ForEach(Array(photos.enumerated()), id: \.element.id) { i, p in
-                ZStack(alignment: .bottomLeading) {
-                    AsyncImage(url: p.thumb, transaction: Transaction(animation: .easeIn(duration: 0.2))) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFill()
-                        case .failure:
-                            Color.secondary.opacity(0.15).overlay(Image(systemName: "photo").foregroundStyle(.secondary))
-                        default:
-                            Color.secondary.opacity(0.12).overlay(ProgressView())
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    credit(p)
-                }
-                .tag(i)
-            }
-            satelliteView.tag(photos.count)
-        }
-        .tabViewStyle(.page(indexDisplayMode: photos.isEmpty ? .never : .automatic))
-        .frame(height: 250)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .task(id: trail.id) {
-            satellite = await Snapshots.shared.image(for: trail, size: CGSize(width: 900, height: 560))
-        }
-    }
-
-    private var satelliteView: some View {
         ZStack(alignment: .bottomLeading) {
             if let satellite {
                 Image(uiImage: satellite).resizable().scaledToFill()
@@ -55,26 +23,11 @@ struct TrailHero: View {
                 .background(.black.opacity(0.45), in: Capsule())
                 .padding(8)
         }
-    }
-
-    @ViewBuilder
-    private func credit(_ p: TrailPhoto) -> some View {
-        let text = p.credit.isEmpty ? "Wikimedia Commons" : p.credit
-        Group {
-            if let url = p.page {
-                Link(destination: url) { Label(text, systemImage: "info.circle") }
-            } else {
-                Text(text)
-            }
+        .frame(height: 250)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .task(id: trail.id) {
+            satellite = await Snapshots.shared.image(for: trail, size: CGSize(width: 900, height: 560))
         }
-        .font(.caption2)
-        .lineLimit(1)
-        .foregroundStyle(.white)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(.black.opacity(0.45), in: Capsule())
-        .padding(8)
-        .padding(.bottom, photos.count > 0 ? 18 : 0)
     }
 }
 

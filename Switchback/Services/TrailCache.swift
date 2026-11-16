@@ -28,7 +28,12 @@ actor TrailCache {
     static let emptyMaxAge: TimeInterval = 24 * 3600
 
     private var memory: [Cell: Entry] = [:]
-    private let dir = Files.caches.appendingPathComponent("TrailCells", isDirectory: true)
+    // v2: searches now include named bike paths (rail trails); older cells lack them, so they're thrown away
+    private let dir = Files.caches.appendingPathComponent("TrailCells-v2", isDirectory: true)
+
+    init() {
+        try? FileManager.default.removeItem(at: Files.caches.appendingPathComponent("TrailCells", isDirectory: true))
+    }
 
     static func cell(at c: Coord) -> Cell {
         Cell(lat: Int(floor(c.lat / cellSize)), lon: Int(floor(c.lon / cellSize)))

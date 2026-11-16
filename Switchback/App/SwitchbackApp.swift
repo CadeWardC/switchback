@@ -9,7 +9,6 @@ struct SwitchbackApp: App {
     @StateObject private var profiles = Profiles.shared
     @StateObject private var explore = ExploreModel()
     @StateObject private var highlights = Highlights.shared
-    @StateObject private var trailPhotos = TrailPhotos.shared
     @AppStorage(Units.storageKey) private var units: Units = .systemDefault
     @Environment(\.scenePhase) private var scenePhase
 
@@ -24,7 +23,6 @@ struct SwitchbackApp: App {
                 .environmentObject(profiles)
                 .environmentObject(explore)
                 .environmentObject(highlights)
-                .environmentObject(trailPhotos)
                 .onOpenURL { url in app.importGPX(from: url) }
         }
         .onChange(of: scenePhase) { _, phase in
