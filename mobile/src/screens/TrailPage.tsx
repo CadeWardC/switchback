@@ -1,9 +1,8 @@
 // A trail, in the sheet: its name, park line, the three big numbers, the ridge card with its pins and
 // the daylight line, the full loop or one of its short loops, where to start (radio rows, in step with the
-// radio markers on the map), Start hike, Directions, Share GPX, Save, "Ready offline", and photos: everyone's,
-// and adding your own of a trail you have walked (recorded or not).
+// radio markers on the map), Start hike, Directions, Share GPX, Save, and "Ready offline".
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   accessPoints, estimatedSeconds, facts, isUnwalked, lineCredit, needsVerification, officialFacts, routeType, shortLoops, summary,
@@ -26,10 +25,6 @@ import { packStates, trailMapState } from '../core/offline';
 import { useValue } from '../ui/hooks';
 import { Big, Blazes, Button, Card, Chip, GoButton, Icon, Note, RadioRow, Segmented, T, Tap } from '../ui/kit';
 import { LightLine, Ridge } from '../ui/Ridge';
-import { PhotoGrid } from '../ui/MyPhotos';
-import { loadMyPhotos, myPhotos, pickPhotos, trailPhotos, trailRef, type RemotePhoto } from '../core/myPhotos';
-import { account } from '../core/server';
-import { PUBLIC_USE } from './Submit';
 import { fonts, useTheme } from '../ui/theme';
 
 const WEBSITE = 'https://cadewardc.github.io/switchback/';
@@ -225,8 +220,6 @@ export function TrailSheet() {
         </View>
       )}
 
-      <TrailPhotos trail={whole} />
-
       {[...official, ...details].length > 0 && (
         <View style={{ gap: 8 }}>
           <T v="section">Details</T>
@@ -248,40 +241,3 @@ export function TrailSheet() {
   );
 }
 
-/** Everyone's photos of the trail, and adding your own (a trail you walked, even one you didn't record). */
-function TrailPhotos({ trail }: { trail: Trail }) {
-  const mine = useValue(myPhotos);
-  const me = useValue(account);
-  const [remote, setRemote] = useState<RemotePhoto[]>([]);
-  const [busy, setBusy] = useState(false);
-  const ref = useMemo(() => trailRef(trail), [trail]);
-  useEffect(() => {
-    let live = true;
-    void loadMyPhotos();
-    void trailPhotos(trail).then((p) => { if (live) setRemote(p); }, () => {});
-    return () => { live = false; };
-  }, [trail.key]);
-  const here = mine.filter((p) => p.trail?.id === ref.id);
-  const add = () => Alert.alert('Add your photos of this trail?', `${PUBLIC_USE}${me ? '' : '\n\nThey are kept on this phone and uploaded when you log in (Settings › Account).'}`, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Choose photos', onPress: async () => {
-      setBusy(true);
-      try {
-        const n = await pickPhotos({ trail: ref });
-        if (n) say(n === 1 ? 'Photo added' : `${n} photos added`);
-      } catch (e) {
-        Alert.alert("Couldn't add photos", (e as Error).message);
-      } finally {
-        setBusy(false);
-      }
-    } },
-  ]);
-  return (
-    <View style={{ gap: 8 }}>
-      <T v="section">Photos</T>
-      <PhotoGrid mine={here} remote={remote} />
-      {!here.length && !remote.length && <T v="small" muted>No photos of this trail yet.</T>}
-      <Button icon="camera" title={busy ? 'Adding…' : 'I hiked this: add my photos'} onPress={add} disabled={busy} />
-    </View>
-  );
-}

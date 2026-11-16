@@ -1,11 +1,10 @@
-// Your own photos: taken while recording a hike, added to a kept hike from the phone's library, or added to a
-// trail you have walked (also one you hiked before reinstalling the app, so with no recording of it).
+// Your own photos, only ever on hikes you recorded yourself: taken while recording, or added to a kept hike from
+// the phone's library.
 //
 // A photo is kept on the phone first (a copy at most 1000 px on its short side, re-encoded as JPEG, which also
 // drops its metadata: no location or camera details leave the phone inside the file), listed in my-photos.json,
 // and uploaded to your account when you are logged in and online: PUT /v1/photos/{id} (where and when, which hike
-// or trail), then the display and thumbnail files. Photos of a trail are public (shown on the trail's page, for
-// public use, as the hiker agreed); photos of a hike are yours (listed only to you).
+// they belong to), then the display and thumbnail files. They are listed only to you.
 // After a reinstall, photos already on your account still show: they come from the server (/v1/me/photos).
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -13,12 +12,9 @@ import { uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
 import { Directory, File, Paths } from 'expo-file-system';
 import { signal } from '@preact/signals-core';
 import { loadDoc, saveDoc, type Walk } from '@web/lib/storage';
-import type { Trail } from '@web/lib/trail';
 import { myLocation } from './state';
 import { account, api, isSignedIn, ServerError } from './server';
 import { uuid } from './syncFormat';
-
-export interface TrailRef { id: string; name: string; start: [number, number]; bbox: [number, number, number, number] }
 
 export interface MyPhoto {
   id: string;
@@ -33,11 +29,10 @@ export interface MyPhoto {
   /** Taken while recording, before the hike had an id: given the hike's id when it is kept. */
   recording?: boolean;
   walk?: string;
-  trail?: TrailRef;
   uploaded?: boolean;
 }
 
-/** A photo on your account (from the server), for ones this phone doesn't have (after a reinstall). */
+/** A photo on your account (from the server), for ones this phone doesn't have (after a reinstall or on another phone). */
 export interface RemotePhoto { id: string; walk_id: string | null; trail_id: string | null; url: string | null; thumb_url: string | null; lat: number | null; lon: number | null; taken_at: string | null }
 
 const DOC = 'my-photos.json';
@@ -61,14 +56,6 @@ function photosDir(): Directory {
   const d = new Directory(Paths.document, 'photos');
   if (!d.exists) d.create({ intermediates: true });
   return d;
-}
-
-/** The trail as the server knows it: its id in the app ("region/id"), name, start and box. */
-export function trailRef(t: Pick<Trail, 'region' | 'id' | 'name' | 'path'>): TrailRef {
-  const pts = t.path.length ? t.path : [[0, 0] as [number, number]];
-  let s = 90, w = 180, n = -90, e = -180;
-  for (const [lat, lon] of pts) { s = Math.min(s, lat); n = Math.max(n, lat); w = Math.min(w, lon); e = Math.max(e, lon); }
-  return { id: `${t.region}/${t.id}`, name: t.name.slice(0, 200), start: [pts[0][0], pts[0][1]], bbox: [s, w, n, e] };
 }
 
 /** "2024:06:01 14:22:05" (EXIF, the phone's local time) → ms. */
@@ -132,18 +119,18 @@ export async function takePhoto(): Promise<boolean> {
   return true;
 }
 
-/** Photos from the phone's library, for a kept hike or for a trail. Returns how many were added. */
-export async function pickPhotos(to: { walk: Walk } | { trail: TrailRef }): Promise<number> {
+/** Photos from the phone's library, for one of your kept hikes. Returns how many were added. */
+export async function pickPhotos(to: { walk: Walk }): Promise<number> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted && perm.accessPrivileges !== 'limited') throw new Error('Allow Switchback to see your photos in the phone\'s settings to add them.');
   const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 20, quality: 1, exif: true });
   if (r.canceled || !r.assets?.length) return 0;
   const out: Omit<MyPhoto, 'id'>[] = [];
   for (const a of r.assets) {
-    const t = exifTime(a.exif) ?? ('walk' in to ? to.walk.started : Date.now());
-    const place = exifPlace(a.exif) ?? ('walk' in to ? placeOnHike(to.walk, t) : null);
+    const t = exifTime(a.exif) ?? to.walk.started;
+    const place = exifPlace(a.exif) ?? placeOnHike(to.walk, t);
     const copy = await keepCopy(a.uri, a.width, a.height);
-    out.push({ ...copy, t, ...(place ?? {}), ...('walk' in to ? { walk: to.walk.id } : { trail: to.trail }) });
+    out.push({ ...copy, t, ...(place ?? {}), walk: to.walk.id });
   }
   await add(out);
   return out.length;
@@ -194,11 +181,10 @@ export function uploadPhotos(): Promise<void> {
 async function run(): Promise<void> {
   await ensureLoaded();
   for (const p of myPhotos.peek()) {
-    if (p.uploaded || p.recording || (!p.walk && !p.trail)) continue;
+    if (p.uploaded || p.recording || !p.walk) continue;
     try {
       await api.call('PUT', `/v1/photos/${p.id}`, {
-        ...(p.walk ? { walk_id: p.walk } : {}),
-        ...(p.trail ? { trail: p.trail } : {}),
+        walk_id: p.walk,
         ...(p.lat != null && p.lon != null ? { lat: p.lat, lon: p.lon } : {}),
         taken_at: new Date(p.t).toISOString(),
       });
@@ -241,8 +227,3 @@ export async function accountPhotos(walkId?: string): Promise<RemotePhoto[]> {
   return r.photos ?? [];
 }
 
-/** Everyone's photos of a trail (public). */
-export async function trailPhotos(t: Pick<Trail, 'region' | 'id'>): Promise<RemotePhoto[]> {
-  const r = (await api.call('GET', `/v1/trails/photos?trail=${encodeURIComponent(`${t.region}/${t.id}`)}`, undefined, { auth: false })) as { photos: RemotePhoto[] };
-  return r.photos ?? [];
-}
