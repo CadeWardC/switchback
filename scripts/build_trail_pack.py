@@ -1370,12 +1370,40 @@ def quality(trails, pois):
 
 MAGIC = b"SBTP1"
 
+def spread(cells, size=CELL):
+    """Files every trail in each cell its lines pass through, not only the one it starts in. The app unpacks just the
+    cells under the map, so a long trail filed once (the Katy Trail, 200 miles, at its eastern end) was missing
+    everywhere else along it. The extra entries are whole copies marked "copy": the app keeps one trail per id, and
+    anything counting trails skips the copies. `cells` maps "row_col" to its list of trails and is changed in place;
+    copies already there are replaced. Returns how many copies were filed."""
+    for key in list(cells):
+        cells[key] = [t for t in cells[key] if not t.get("copy")]
+    added = 0
+    for home, t in [(k, t) for k, ts in cells.items() for t in ts]:
+        touched = set()
+        for s in t["segments"]:
+            line = decode(s)
+            for a, b in zip(line, line[1:] or line):
+                n = max(1, int(max(abs(a[0] - b[0]), abs(a[1] - b[1])) / (size / 25)) + 1)   # a point every ~1 km
+                for i in range(n + 1):
+                    touched.add((math.floor((a[0] + (b[0] - a[0]) * i / n) / size),
+                                 math.floor((a[1] + (b[1] - a[1]) * i / n) / size)))
+        for row, col in sorted(touched):
+            key = f"{row}_{col}"
+            if key != home:
+                cells.setdefault(key, []).append(dict(t, copy=1))
+                added += 1
+    for key in [k for k, ts in cells.items() if not ts]:
+        del cells[key]
+    return added
+
 def main():
     """Writes one file per region: <region>.trails, plus a small summary <region>.json.
 
     <region>.trails = "SBTP1" + 4-byte big-endian header length + header JSON
                       {version, region, cell, bbox, cells: {"row_col": [offset, length]}}
-                      + one raw-DEFLATE JSON list of trails per cell (offsets count from the end of the header),
+                      + one raw-DEFLATE JSON list of trails per cell (offsets count from the end of the header):
+                      the trails that start there, then copies ("copy": 1) of those that pass through (see spread),
     so the app downloads the state once and unpacks only the cells it needs.
     """
     pbf, region, out = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -1394,6 +1422,7 @@ def main():
         cells[f"{row}_{col}"].append(t)
         lats.append(start[0])
         lons.append(start[1])
+    copies = spread(cells)
     version = os.environ.get("PACK_VERSION", "dev")
     bbox = [min(lats), min(lons), max(lats), max(lons)] if lats else None
     blobs, table, offset = [], {}, 0
@@ -1430,7 +1459,7 @@ def main():
     named = sum(1 for t, _ in trails if not t.get("tags", {}).get("switchback:unnamed"))
     areas = len({t.get("tags", {}).get("switchback:area") for t, _ in trails} - {None})
     print(f"{region}: {len(trails)} trails ({named} named) in {areas} areas and {len(cells)} cells, "
-          f"{len(pois)} highlights, one file of {size / 1024:.0f} KB")
+          f"{len(pois)} highlights, one file of {size / 1024:.0f} KB ({copies} copies of trails in the other cells they cross)")
     print("  quality:", ", ".join(f"{k} {v}" for k, v in sorted(q.items())))
     if long_ones:
         print("  longest (check these are real):", "; ".join(long_ones))

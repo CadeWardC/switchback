@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import check_official_trails as official  # noqa: E402
+from build_trail_pack import spread          # noqa: E402
 
 MAGIC = b"SBTP1"
 
@@ -249,7 +250,8 @@ def main():
     pack_path, info_path = os.path.join(out, f"{region_id}.trails"), os.path.join(out, f"{region_id}.json")
     info = json.load(open(info_path))
     header, cells = read(pack_path)
-    trails_by_cell = {k: json.loads(v) for k, v in cells.items() if not k.startswith("p:")}
+    # each trail once, where it starts (the copies filed in the other cells it crosses are made again at the end)
+    trails_by_cell = {k: [t for t in json.loads(v) if not t.get("copy")] for k, v in cells.items() if not k.startswith("p:")}
     trails = []
     for k, ts in trails_by_cell.items():
         for t in ts:
@@ -393,9 +395,13 @@ def main():
             counts["miles added"] = round(counts["miles added"])
     except Exception as ex:
         print(f"  federal trails couldn't be added ({ex})")
-    for k, ts in trails_by_cell.items():
+    for ts in trails_by_cell.values():
         for t in ts:
             t.pop("_lines", None)
+    counts["copies in cells crossed"] = spread(trails_by_cell, header.get("cell", 0.25))
+    for k in [k for k in cells if not k.startswith("p:")]:
+        del cells[k]
+    for k, ts in trails_by_cell.items():
         cells[k] = json.dumps(ts, ensure_ascii=False, separators=(",", ":")).encode()
     size = write(pack_path, header, cells)
     info["bytes"] = size

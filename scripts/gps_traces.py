@@ -63,6 +63,8 @@ def main():
         if key.startswith("p:"):
             continue
         for t in json.loads(zlib.decompress(body[o:o + l], -15)):
+            if t.get("copy"):
+                continue    # filed again in a cell it crosses
             line = decode(t["path"]) if "path" in t else decode(t["segments"][t["pathIndex"]])
             pts = densify(line, 20)
             inside = [p for p in pts if s <= p[0] <= n and w <= p[1] <= e]

@@ -26,6 +26,8 @@ def main():
         if k.startswith("p:"):
             continue
         for t in json.loads(v):
+            if t.get("copy"):
+                continue    # filed again in a cell it crosses
             if t.get("tags", {}).get("switchback:origin"):
                 continue    # judge against OpenStreetMap's lines only, not what we added from the lists
             for s in t["segments"]:

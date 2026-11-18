@@ -602,6 +602,8 @@ def read_pack(path):
     for k, (o, l) in h["cells"].items():
         if not k.startswith("p:"):
             for t in json.loads(zlib.decompress(body[o:o + l], -15)):
+                if t.get("copy"):
+                    continue    # filed again in a cell it crosses
                 t["_cell"] = k
                 t["_lines"] = [decode(s) for s in t["segments"]]
                 trails.append(t)
