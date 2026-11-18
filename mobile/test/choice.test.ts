@@ -31,6 +31,35 @@ describe('the open trail as chosen', () => {
     expect(defaultStart(heads, [45, -100])).toBe(0); // far from all of them
     expect(defaultStart([], [38.9, -92.3])).toBe(-1);
   });
+  it('never picks a trailhead with a much longer walk in just because it is on your side', () => {
+    const far = [{ ...heads[0], distance: 83, point: [38.9, -92.3] as Coord }, { ...heads[1], distance: 712, point: [38.89, -92.3] as Coord }];
+    expect(defaultStart(far, [38.8, -92.3])).toBe(0);        // south of both: still the 83 m walk
+    expect(defaultStart(far, [38.8901, -92.3])).toBe(1);     // standing at the far one: that one
+  });
+  it('walks a loop on a stem back down the stem, so the trailhead at its foot can be used', () => {
+    // Devil's Icebox Trail as its trail file has it: down a stem, round a loop, ending where the loop meets the stem
+    const icebox: Coord[] = [[38.87259, -92.32651], [38.8724, -92.32634], [38.87226, -92.32668], [38.87219, -92.32669], [38.87211, -92.32657],
+      [38.87188, -92.32652], [38.8718, -92.32669], [38.87172, -92.32671], [38.87159, -92.32664], [38.87157, -92.3265], [38.87139, -92.32628],
+      [38.87108, -92.32607], [38.87084, -92.32609], [38.87051, -92.3263], [38.87041, -92.32624], [38.87011, -92.32647], [38.87011, -92.32658],
+      [38.87075, -92.32688], [38.87076, -92.32709], [38.87131, -92.32695], [38.87164, -92.32666]];
+    const lot: Coord[] = [[38.87312, -92.32596], [38.87294, -92.32618], [38.87279, -92.32651], [38.87259, -92.32651]];
+    const sinkhole: Coord[] = [[38.87008, -92.32555], [38.871, -92.32591], [38.87099, -92.32608]];
+    const t = makeTrail('mo', { id: 'i', name: "Devil's Icebox Trail", source: 'osmWay', segments: [encodePolyline(icebox)], pathIndex: 0, length: 562.3, tags: {
+      'switchback:access': JSON.stringify([{ n: "Devil's Icebox Trail", d: 83, p: lot[0], l: encodePolyline(lot) }, { n: 'Sinkhole Trail', d: 712, p: sinkhole[0], l: encodePolyline(sinkhole) }]),
+    } })!;
+    expect(t.isLoop).toBe(true);
+    expect(t.path[t.path.length - 1]).toEqual(t.path[0]);
+    expect(t.length).toBeGreaterThan(680);
+    const its = accessPoints(t);
+    expect(usableStarts(t, its)).toEqual([true, true]);
+    expect(defaultStart(its, null, usableStarts(t, its))).toBe(0);
+    for (const start of [0, 1]) {
+      const walked = choose(t, [], -1, its, start).trail;
+      expect(walked.path[0]).toEqual(its[start].line[0]);
+      expect(walked.path[walked.path.length - 1]).toEqual(its[start].line[0]);
+      for (let i = 1; i < walked.path.length; i++) expect(distanceOf(walked.path[i - 1], walked.path[i])).toBeLessThanOrEqual(110);
+    }
+  });
   it('adds the walk in from the chosen trailhead to the line and the length', () => {
     expect(chosenTrail(trail, shorts, -1, heads, -1)).toBe(trail);
     const walked = chosenTrail(trail, shorts, -1, heads, 1);

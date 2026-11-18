@@ -36,14 +36,28 @@ export function usableStarts(base: Trail, heads: Access[]): boolean[] {
   return heads.map((h) => (h.line.length > 1 && h.distance >= 15 ? withWalkIn(base, h) != null : distanceToLine(h.point, base.path) <= MEET_WITHIN));
 }
 
-/** Where to start by default: of the usable starts, the one nearest you (when you are within reach of one),
- *  else the first (the list comes nearest the trail first). -1 when there is none: the trail on its own. */
+/** You are at a trailhead when within this many metres of it. */
+export const AT_START = 400;
+/** A start whose walk in is this much longer than the shortest is never picked for you (it can still be chosen). */
+export const MUCH_LONGER = 300;
+
+/** Where to start by default, of the usable starts: the one you are standing at, if any; else, of those with
+ *  about the shortest walk in, the one nearest you (the list comes shortest walk first). A trailhead a mile
+ *  down another trail is never picked just because it is on your side of the park. -1 when there is none:
+ *  the trail on its own. */
 export function defaultStart(heads: Access[], me: Coord | null, usable?: boolean[]): number {
   const ok = heads.map((_, i) => i).filter((i) => !usable || usable[i]);
   if (!ok.length) return -1;
   if (!me) return ok[0];
-  let best = ok[0], bestD = Infinity;
-  for (const i of ok) { const d = distance(me, heads[i].point); if (d < bestD) { bestD = d; best = i; } }
+  const nearest = (among: number[]): [number, number] => {
+    let best = among[0], bestD = Infinity;
+    for (const i of among) { const d = distance(me, heads[i].point); if (d < bestD) { bestD = d; best = i; } }
+    return [best, bestD];
+  };
+  const [at, atD] = nearest(ok);
+  if (atD <= AT_START) return at;
+  const shortest = Math.min(...ok.map((i) => heads[i].distance));
+  const [best, bestD] = nearest(ok.filter((i) => heads[i].distance <= shortest + MUCH_LONGER));
   // far from all of them (looking at a trail in another state): the one nearest the trail
   return bestD < 80_000 ? best : ok[0];
 }

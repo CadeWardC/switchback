@@ -1,6 +1,6 @@
 // A trail as the packs store it, and the rules the apps share (the website and the React Native app).
 import { decodeInts, decodePolyline, type Coord } from './polyline';
-import { bboxOf, distance, type BBox } from './geo';
+import { bboxOf, distance, distanceToLine, type BBox } from './geo';
 
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'veryHard';
 export const DIFFICULTIES: Difficulty[] = ['easy', 'moderate', 'hard', 'veryHard'];
@@ -138,6 +138,49 @@ export function isHikeTags(tags: Record<string, string>): boolean {
     && tags['switchback:informal'] !== 'yes' && tags['switchback:unnamed'] !== 'yes';
 }
 
+/** A loop on a stem (a "lollipop") is stored as one line that ends where the loop meets the stem again, so
+ *  its two ends are a stem apart. Walked, it comes back down the stem: this is that line with the stem added
+ *  in reverse (and its length and heights), so the ends meet and it can be joined or started anywhere like any
+ *  other loop. Null when the line is not that shape (its ends meet, or one end is not on the line). */
+const STEM_TOUCH = 20;   // metres: an end this close to the line elsewhere is on it
+export function closedLollipop(path: Coord[], length: number, profile: Profile | null): { path: Coord[]; length: number; profile: Profile | null } | null {
+  const n = path.length;
+  if (n < 4 || !isLoopLine(path, length) || distance(path[0], path[n - 1]) <= STEM_TOUCH) return null;
+  let own = 0;
+  for (let i = 1; i < n; i++) own += distance(path[i - 1], path[i]);
+  if (!(own > 0)) return null;
+  // where an end touches the line again, within the half of the line it is the far end of: [metres off, steps of stem]
+  const touch = (line: Coord[]): [number, number] | null => {
+    const end = line[n - 1];
+    let run = 0, best: [number, number] | null = null;
+    for (let j = 0; j + 1 < n && run < own / 2; j++) {
+      const d = distanceToLine(end, [line[j], line[j + 1]]);
+      if (d <= STEM_TOUCH && (!best || d < best[0])) best = [d, j];
+      run += distance(line[j], line[j + 1]);
+    }
+    return best;
+  };
+  const back = path.slice().reverse();
+  const a = touch(path), b = touch(back);
+  if (!a && !b) return null;
+  const flip = !a || (b != null && b[0] < a[0]);
+  const line = flip ? back : path, j = (flip ? b! : a!)[1];
+  const stem = line.slice(0, j + 1).reverse();
+  let stemLength = distance(line[n - 1], stem[0]);
+  for (let i = 1; i < stem.length; i++) stemLength += distance(stem[i - 1], stem[i]);
+  let chart = profile && profile.distances.length > 1 ? (flip ? backwards(profile) : profile) : null;
+  if (chart) {
+    const total = profileTotal(chart);
+    const pts = pointsBetween(chart, 0, Math.min(total, (stemLength / own) * total));   // the stem, as walked out
+    let up = 0, down = 0;
+    for (let i = 1; i < pts.length; i++) { const d = pts[i][1] - pts[i - 1][1]; if (d > 0) up += d; else down -= d; }
+    const last = pts.length ? pts[pts.length - 1][0] : 0;
+    const stemDown = joined([pts.slice().reverse().map(([d, e]) => [last - d, e] as [number, number])], down, up, chart.min, chart.max);
+    chart = pts.length > 1 ? then(chart, stemDown) : chart;
+  }
+  return { path: [...line, ...stem], length: length + stemLength, profile: chart ?? profile };
+}
+
 export function makeTrail(region: string, raw: RawTrail): Trail | null {
   if (!raw || typeof raw.id !== 'string' || !Array.isArray(raw.segments)) return null;
   const segments = raw.segments.map(decodePolyline).filter((s) => s.length > 1);
@@ -147,8 +190,11 @@ export function makeTrail(region: string, raw: RawTrail): Trail | null {
   if (!path || path.length < 2) path = segments[0];
   if (!path || path.length < 2) return null;
   const tags = raw.tags ?? {};
-  const profile = unpackProfile(raw.elev);
-  const length = Number(raw.length) || 0;
+  let profile = unpackProfile(raw.elev);
+  let length = Number(raw.length) || 0;
+  // a loop on a stem: walked back down the stem, so its ends meet (see closedLollipop)
+  const closed = closedLollipop(path, length, profile);
+  if (closed) ({ path, length, profile } = closed);
   return {
     key: `${region}/${raw.id}`, region, id: raw.id, name: raw.name || 'Trail', source: raw.source, osmId: raw.osmId,
     segments: segments.length ? segments : [path], path, length, tags, profile,
