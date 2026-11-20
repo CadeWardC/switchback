@@ -37,8 +37,11 @@ jobs:
       - name: Download the Missouri extract
         # ourselves, as the trail packs do: Planetiler's own lookup of an area by name (--area) can no longer
         # read Geofabrik's list of extracts
+        # Geofabrik first (it has refused connections from the runner), then OpenStreetMap France's copy
         run: |
-          curl -fsSL --retry 5 --retry-delay 15 -o missouri.osm.pbf "$OSM_URL"
+          curl -fsSL --retry 4 --retry-delay 20 --retry-all-errors --connect-timeout 30 -o missouri.osm.pbf "$OSM_URL" \
+            || curl -fsSL --retry 4 --retry-delay 20 --retry-all-errors --connect-timeout 30 -o missouri.osm.pbf \
+                 https://download.openstreetmap.fr/extracts/north-america/us/missouri-latest.osm.pbf
           ls -lh missouri.osm.pbf
       - name: Everything (zoom 14, every language), as the app gets it from OpenFreeMap today
         run: |
