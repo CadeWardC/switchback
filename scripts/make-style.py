@@ -267,8 +267,10 @@ def build(C):
         "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
         "sources": {
             "openmaptiles": {"type": "vector", "url": "https://tiles.openfreemap.org/planet"},
+            # zoom 12 (about 30 m a pixel) is as far as the hill shading goes: the tiles are ~110 KB each as served,
+            # so the zoom 13 ones were about half of what an offline area takes, for shading that looks the same
             "terrain": {
-                "type": "raster-dem", "encoding": "terrarium", "tileSize": 256, "maxzoom": 13,
+                "type": "raster-dem", "encoding": "terrarium", "tileSize": 256, "maxzoom": 12,
                 "tiles": ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
                 "attribution": "Terrain: Mapzen / AWS Terrain Tiles",
             },
