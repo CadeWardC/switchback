@@ -23,6 +23,9 @@ jobs:
   measure:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      OSM_URL: https://download.geofabrik.de/north-america/us/missouri-latest.osm.pbf
+      OSM: --osm-path=missouri.osm.pbf --osm-url=https://download.geofabrik.de/north-america/us/missouri-latest.osm.pbf
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -31,23 +34,29 @@ jobs:
           java-version: "21"
       - name: Fetch Planetiler
         run: curl -fsSLo planetiler.jar https://github.com/onthegomap/planetiler/releases/latest/download/planetiler.jar
+      - name: Download the Missouri extract
+        # ourselves, as the trail packs do: Planetiler's own lookup of an area by name (--area) can no longer
+        # read Geofabrik's list of extracts
+        run: |
+          curl -fsSL --retry 5 --retry-delay 15 -o missouri.osm.pbf "$OSM_URL"
+          ls -lh missouri.osm.pbf
       - name: Everything (zoom 14, every language), as the app gets it from OpenFreeMap today
         run: |
-          java -Xmx5g -jar planetiler.jar --download --area=missouri --output=full-z14.pmtiles --force
+          java -Xmx5g -jar planetiler.jar --download $OSM --output=full-z14.pmtiles --force
       - name: Names in one language
         run: |
-          java -Xmx5g -jar planetiler.jar --area=missouri --output=one-language-z14.pmtiles --languages=en --force
+          java -Xmx5g -jar planetiler.jar $OSM --output=one-language-z14.pmtiles --languages=en --force
       - name: Trail map, zoom 14 (one language, without buildings, house numbers and shop pins)
         run: |
-          java -Xmx5g -jar planetiler.jar --area=missouri --output=trail-z14.pmtiles --languages=en \
+          java -Xmx5g -jar planetiler.jar $OSM --output=trail-z14.pmtiles --languages=en \
             --exclude-layers=building,housenumber,poi,aerodrome_label --force
       - name: Trail map, zoom 13
         run: |
-          java -Xmx5g -jar planetiler.jar --area=missouri --output=trail-z13.pmtiles --maxzoom=13 --languages=en \
+          java -Xmx5g -jar planetiler.jar $OSM --output=trail-z13.pmtiles --maxzoom=13 --languages=en \
             --exclude-layers=building,housenumber,poi,aerodrome_label --force
       - name: Trail map, zoom 12
         run: |
-          java -Xmx5g -jar planetiler.jar --area=missouri --output=trail-z12.pmtiles --maxzoom=12 --languages=en \
+          java -Xmx5g -jar planetiler.jar $OSM --output=trail-z12.pmtiles --maxzoom=12 --languages=en \
             --exclude-layers=building,housenumber,poi,aerodrome_label --force
       - name: Sizes
         if: always()
